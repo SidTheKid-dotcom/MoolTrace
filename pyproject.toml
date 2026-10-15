@@ -21,6 +21,7 @@ mooltrace = "mooltrace.__main__:main"
 mooltrace-mcp = "mooltrace.mcp_server:main"
 mooltrace-api = "mooltrace.api:main"
 mooltrace-gate = "mooltrace.gate:main"
+mooltrace-labelled = "mooltrace.labelled:main"
 
 [build-system]
 requires = ["setuptools>=68"]

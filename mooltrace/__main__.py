@@ -77,6 +77,11 @@ def main(argv: list[str] | None = None) -> int:
     batch.add_argument("--depth", type=int, default=None)
     batch.add_argument("--db")
 
+    labelled = sub.add_parser("labelled", help="run the labelled set on isolated graphs")
+    labelled.add_argument("--file", default=None)
+    labelled.add_argument("--limit", type=int, default=None)
+    labelled.add_argument("--family", default=None)
+
     sub.add_parser("mcp", help="run the MCP server on stdio")
     sub.add_parser("api", help="run the demo HTTP API")
     sub.add_parser("gate", help="run the seeded live regression on throwaway graphs")
@@ -130,6 +135,17 @@ def main(argv: list[str] | None = None) -> int:
             if args.db:
                 argv_batch.extend(["--db", args.db])
             return batch_main(argv_batch)
+        if args.cmd == "labelled":
+            from mooltrace.labelled import main as labelled_main
+
+            argv_labelled: list[str] = []
+            if args.file:
+                argv_labelled.extend(["--file", args.file])
+            if args.limit is not None:
+                argv_labelled.extend(["--limit", str(args.limit)])
+            if args.family:
+                argv_labelled.extend(["--family", args.family])
+            return labelled_main(argv_labelled)
         if args.cmd == "gate":
             from mooltrace.gate import main as gate_main
 

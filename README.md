@@ -26,6 +26,41 @@ Exit codes: **0** pass, **1** block, **2** warn/review, **3** infrastructure fai
 
 The sample workflow `.github/workflows/mooltrace-fixtures.yml` installs a venv and runs `examples/answers.jsonl` on pull requests, pushes to `main`, and manual dispatch. A daily schedule re-runs that same fixture file against live catalogs. That is a fresh fixture recheck, not persistent monitoring. The web UI is an evidence viewer for the demo, not the core claim. MCP is an editor integration for the same check.
 
+## Use from an AI agent
+
+MoolTrace is a pre-ship check, not a medical model. The agent drafts. MoolTrace says whether a cited page or paper reaches a publisher notice. It does not rewrite the answer for you.
+
+**CI (the usual team path).** Put each bot answer in JSONL (`id`, `engine`, `text`, `urls`). On every pull request:
+
+```bash
+.venv/bin/python -m mooltrace batch examples/answers.jsonl --fail-on block
+```
+
+Exit **1** fails the job (retraction path). Exit **2** with `--fail-on block` still passes; GitHub prints `::warning` so the reviewer sees the Expression of Concern. Use `--fail-on warn` if your team will not merge warned fixtures. An agent that generates answers should write that JSONL, then run the same command, then read `decision` / `reasons[].notice_doi` / `reasons[].sentence`.
+
+**Editor MCP (Cursor, Claude Code, or any stdio MCP host).** Copy `mcp.example.json` and point `command` at your venv. Tools:
+
+| Tool | When the agent calls it |
+| --- | --- |
+| `check_answer` | After it drafts, before it shows the user or opens a PR. Pass `text`, `urls`, `engine`, `depth` (1–3). |
+| `trace_answer` | When it needs the hop list, not only the verdict. |
+| `check_study` | When the user pasted one DOI. |
+| `what_rests_on` | After a new notice lands, on the team's saved graph: which shipped answers reach that DOI. |
+| `shared_ancestors` | Before claiming two engines are independent. |
+| `ro_cypher` | Read-only inspection. `CREATE` is rejected. |
+
+A realistic loop:
+
+1. Collect the draft and every cited URL.
+2. Call `check_answer`.
+3. Exit 3: retry later. Do not ship. The catalogs or the graph timed out.
+4. `block`: drop that URL or DOI, rewrite, call `check_answer` again.
+5. `warn`: keep the citation only if the user-facing card names the notice and the hop sentence. Do not hide an Expression of Concern.
+6. `pass`: no counted notice within this depth. Still not a medical claim. Coverage is not shown beyond the depth cap.
+7. No DOI or URL: `no_sources` warn. The agent must ask for a source or refuse to ship.
+
+Do not put MoolTrace inside the model's system prompt as "the truth". Call it as a tool after generation. Keep `MOOLTRACE_DB` on disk so `what_rests_on` can see prior answers. The HTTP API binds `127.0.0.1` only.
+
 Hero fixture: Everyday Health URL only, no Khan DOI in the pasted text. See `examples/nutrition-draft.txt` and the first line of `examples/answers.jsonl`.
 
 ```bash
@@ -121,6 +156,16 @@ Clean DOIs are works that had no Crossref retraction / withdrawal / removal / Eo
 
 Live numbers are not hardcoded. Run the gate. Files under `results/` are marked stale and are not a score.
 
+## Labelled set
+
+`examples/labelled.jsonl` is 30 health-AI drafts with expected `pass` / `warn` / `block`: Expression of Concern, retraction, hedged wording, clean DOIs, `no_sources`, and depth-1 coverage. Each case uses its own throwaway graph.
+
+```bash
+.venv/bin/python -m mooltrace labelled
+```
+
+The report prints precision and recall on a binary flagged class (`warn` or `block`), exact three-way match, and wall / query timing. Infra rows are excluded from scored metrics. This is not a random sample and not a medical accuracy score. pytest checks the schema only. It does not call live catalogs.
+
 ## Setup
 
 Python 3.12+. Node 20+ only for the demo UI.
@@ -173,5 +218,6 @@ MoolTrace code in this repository was written with Cursor agents (including Grok
 5. UI preset Everyday Health shows path, hop sentence, and the PATHS_TO_NOTICE Cypher (not an unused query).
 6. `ro_cypher` with `CONTAINS 'set'` is allowed; `CREATE` is rejected; GRAPH.RO_QUERY is the write barrier.
 7. Public repo, 2:50 video, Track 1, AWS/FalkorDB shown, AI tools listed.
+8. `python -m pytest tests/test_labelled.py` (schema). Optional live: `python -m mooltrace labelled --limit 2`.
 
 License: MIT. Copyright holder matches the GitHub profile name for `SidTheKid-dotcom` (Siddhant Vishnu).
