@@ -301,11 +301,16 @@ def expand_work(graph: Graph, doi: str, stats: CallStats) -> None:
     ref_dois: list[str] = []
     referenced = (openalex or {}).get("referenced_works") or []
     if referenced:
-        for record in openalex_by_ids(referenced, stats):
-            ref = _store_openalex(graph, record)
-            if ref and ref != doi:
-                graph.rest_on(doi, ref)
-                ref_dois.append(ref)
+        try:
+            for record in openalex_by_ids(referenced, stats):
+                ref = _store_openalex(graph, record)
+                if ref and ref != doi:
+                    graph.rest_on(doi, ref)
+                    ref_dois.append(ref)
+        except MoolTraceError:
+            # Crossref's reference list is enough to walk one hop. Do not
+            # abort before those DOIs are stored.
+            oa_failed = True
     for ref in reference_dois(crossref):
         if ref != doi:
             graph.merge_work(ref)

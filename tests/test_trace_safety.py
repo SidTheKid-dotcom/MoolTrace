@@ -134,6 +134,59 @@ def test_expand_partial_catalog_failure_does_not_mark_expanded(tmp_path: Path, m
         graph.close()
 
 
+def test_expand_applies_crossref_refs_when_openalex_id_batch_fails(
+    tmp_path: Path, monkeypatch
+):
+    """OpenAlex 429 on referenced_works must not skip Crossref's reference list.
+
+    ScienceDaily → Perel Cochrane 2013 lists retracted Boldt trials on Crossref.
+    A one-hop DOI check of the review misses those retractions. If the OpenAlex
+    id batch fails first, those trials never enter the graph.
+    """
+    graph = Graph(tmp_path / "mooltrace.db")
+    review = "10.1002/14651858.cd000567.pub6"
+    trial = "10.1213/00000539-199376060-00002"
+
+    def fake_openalex(target, stats):
+        return {
+            "id": "https://openalex.org/W1",
+            "doi": f"https://doi.org/{target}",
+            "display_name": "Cochrane review",
+            "publication_year": 2013,
+            "referenced_works": ["https://openalex.org/W999"],
+            "authorships": [],
+        }
+
+    def boom_ids(*_args, **_kwargs):
+        raise MoolTraceError("429 from api.openalex.org")
+
+    def fake_crossref(target, stats):
+        return {"DOI": target, "title": ["Cochrane review"], "reference": [{"DOI": trial}]}
+
+    monkeypatch.setattr("mooltrace.trace.openalex_work_doi", fake_openalex)
+    monkeypatch.setattr("mooltrace.trace.openalex_by_ids", boom_ids)
+    monkeypatch.setattr("mooltrace.trace.crossref_work", fake_crossref)
+    monkeypatch.setattr("mooltrace.trace.notice_check", lambda *_a, **_k: None)
+    try:
+        try:
+            expand_work(graph, review, CallStats())
+        except MoolTraceError as exc:
+            assert "OpenAlex" in str(exc)
+        else:
+            raise AssertionError("OpenAlex batch failure should still fail closed")
+        row = graph.work_row(review)
+        assert row is None or not row.get("expanded")
+        neighbors = graph.run(
+            "neighbors",
+            "MATCH (a:Work {doi: $doi})-[:RESTS_ON]->(b:Work) RETURN b.doi AS doi",
+            {"doi": review},
+            read_only=True,
+        )
+        assert trial in [item.get("doi") for item in neighbors.rows]
+    finally:
+        graph.close()
+
+
 def test_notice_check_failure_does_not_mark_checked(tmp_path: Path, monkeypatch):
     graph = Graph(tmp_path / "mooltrace.db")
     try:
