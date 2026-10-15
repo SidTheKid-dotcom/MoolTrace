@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -39,6 +40,18 @@ def _load(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def _percentile(values: list[float], pct: float) -> float | None:
+    if not values:
+        return None
+    if len(values) == 1:
+        return round(values[0], 2)
+    rank = (pct / 100.0) * (len(values) - 1)
+    low = int(rank)
+    high = min(low + 1, len(values) - 1)
+    frac = rank - low
+    return round(values[low] * (1.0 - frac) + values[high] * frac, 2)
+
+
 def _annotate(level: str, file: str, line: int, message: str) -> None:
     safe = message.replace("\n", " ").replace("\r", " ")
     print(f"::{level} file={file},line={line}::{safe}", file=sys.stderr)
@@ -60,6 +73,7 @@ def run_batch(
         text = str(item.get("text") or "")
         urls = _urls(item)
         line = int(item["_line"])
+        started = time.perf_counter()
         try:
             payload = check_answer(
                 text=text,
@@ -85,6 +99,7 @@ def run_batch(
                 "paths": [],
                 "errors": [str(exc)],
             }
+        wall_ms = (time.perf_counter() - started) * 1000
         decision = payload.get("decision") or "incomplete"
         exit_code = int(payload.get("exit_code") or 2)
         row = {
@@ -95,8 +110,10 @@ def run_batch(
             "exit_code": exit_code,
             "summary": payload.get("summary"),
             "cypher": payload.get("cypher"),
-            "api_calls": payload.get("api_calls"),
+            "api_calls": payload.get("api_calls") or 0,
+            "cache_hits": payload.get("cache_hits") or 0,
             "elapsed_ms": payload.get("elapsed_ms"),
+            "wall_ms": round(wall_ms, 2),
             "errors": (payload.get("errors") or [])[:8],
             "reasons": [
                 {
@@ -153,6 +170,11 @@ def run_batch(
         exit_code = 2
     else:
         exit_code = 0
+    query_ms = sorted(
+        float(row["elapsed_ms"])
+        for row in results
+        if isinstance(row.get("elapsed_ms"), (int, float))
+    )
     return {
         "product": "MoolTrace",
         "file": str(path),
@@ -160,6 +182,14 @@ def run_batch(
         "worst": worst,
         "failed": failed,
         "exit_code": exit_code,
+        "timing": {
+            "answers": len(results),
+            "query_ms_p50": _percentile(query_ms, 50),
+            "query_ms_p95": _percentile(query_ms, 95),
+            "infra": sum(1 for row in results if int(row.get("exit_code") or 0) == 3),
+            "api_calls": sum(int(row.get("api_calls") or 0) for row in results),
+            "cache_hits": sum(int(row.get("cache_hits") or 0) for row in results),
+        },
         "remediation_clusters": clusters,
         "results": results,
     }

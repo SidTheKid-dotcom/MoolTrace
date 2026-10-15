@@ -5,21 +5,32 @@ These are the public APIs. MoolTrace does not keep its own citation index.
 
 from __future__ import annotations
 
+import hashlib
+import json
+import os
+import random
 import threading
 import time
 from collections import OrderedDict
 from dataclasses import dataclass, field
+from email.utils import parsedate_to_datetime
+from pathlib import Path
 from typing import Any
-from urllib.parse import quote, urlparse
+from urllib.parse import parse_qsl, quote, urlencode, urlparse, urlunparse
 
 import httpx
 
 from mooltrace.config import (
     CACHE_MAX,
+    CROSSREF_MAX_RPS,
     DIABETES_CARE_ISSNS,
     HTTP_MAX_BYTES,
+    HTTP_RETRY_AFTER_CAP_S,
+    HTTP_RETRY_ATTEMPTS,
     MAILTO,
     MAX_REDIRECTS,
+    NCBI_MAX_RPS,
+    OPENALEX_MAX_RPS,
     PAGE_USER_AGENT,
     USER_AGENT,
 )
@@ -37,8 +48,12 @@ class MoolTraceError(Exception):
     code = "error"
 
 
-class InfraError(MoolTraceError):
-    """Graph timeout, process crash, or exhausted upstream budget."""
+class InfraError(Exception):
+    """Graph timeout, process crash, or exhausted upstream budget.
+
+    Not a MoolTraceError: ingest catches those and turns them into a warn.
+    Exhausted 429/5xx must leave the check as infra (exit 3).
+    """
 
     code = "infra"
 
@@ -73,13 +88,130 @@ class _Limiter:
             self._last = time.monotonic()
 
 
-_limiter = _Limiter(0.1)
+def _rps_interval(rps: float) -> float:
+    return 1.0 / max(0.1, float(rps))
+
+
+_HOST_RPS = {
+    "api.openalex.org": OPENALEX_MAX_RPS,
+    "api.crossref.org": CROSSREF_MAX_RPS,
+    "www.ncbi.nlm.nih.gov": NCBI_MAX_RPS,
+}
+
+_limiters: dict[str, _Limiter] = {}
+_limiters_lock = threading.Lock()
 _client_lock = threading.Lock()
 _client: httpx.Client | None = None
 _pages: OrderedDict[str, tuple[str, str]] = OrderedDict()
 _resources: OrderedDict[str, tuple[int, str, bytes]] = OrderedDict()
 _pages_lock = threading.Lock()
 _resources_lock = threading.Lock()
+_json_lock = threading.Lock()
+
+
+def _limiter_for(url: str) -> _Limiter:
+    host = urlparse(url).netloc.lower()
+    with _limiters_lock:
+        limiter = _limiters.get(host)
+        if limiter is None:
+            rps = _HOST_RPS.get(host, min(OPENALEX_MAX_RPS, 8.0))
+            limiter = _Limiter(_rps_interval(rps))
+            _limiters[host] = limiter
+        return limiter
+
+
+def _cache_dir() -> Path:
+    raw = os.environ.get("MOOLTRACE_HTTP_CACHE")
+    if raw:
+        return Path(raw)
+    from mooltrace.config import DB_PATH
+
+    return Path(os.environ.get("MOOLTRACE_DB", str(DB_PATH))).parent / "http-cache"
+
+
+def _cache_key(url: str) -> str:
+    parsed = urlparse(url)
+    query = [
+        (key, value)
+        for key, value in parse_qsl(parsed.query, keep_blank_values=True)
+        if key.lower() != "mailto"
+    ]
+    normalized = urlunparse(
+        (
+            parsed.scheme.lower(),
+            parsed.netloc.lower(),
+            parsed.path,
+            parsed.params,
+            urlencode(query, doseq=True),
+            "",
+        )
+    )
+    return hashlib.sha256(normalized.encode()).hexdigest()
+
+
+def _disk_get(url: str) -> tuple[int, Any] | None:
+    path = _cache_dir() / _cache_key(url)
+    if not path.is_file():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(payload, dict) or "status" not in payload:
+        return None
+    status = int(payload["status"])
+    if status == 429 or status >= 500:
+        return None
+    return status, payload.get("body")
+
+
+def _disk_set(url: str, status: int, body: Any) -> None:
+    directory = _cache_dir()
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / _cache_key(url)
+    tmp = path.with_suffix(".tmp")
+    blob = json.dumps({"status": int(status), "body": body}, ensure_ascii=True)
+    with _json_lock:
+        tmp.write_text(blob, encoding="utf-8")
+        tmp.replace(path)
+
+
+def _retry_after_s(response: httpx.Response) -> float | None:
+    raw = (response.headers.get("Retry-After") or "").strip()
+    if not raw:
+        return None
+    try:
+        return min(HTTP_RETRY_AFTER_CAP_S, max(0.0, float(raw)))
+    except ValueError:
+        pass
+    try:
+        when = parsedate_to_datetime(raw)
+        delay = when.timestamp() - time.time()
+        return min(HTTP_RETRY_AFTER_CAP_S, max(0.0, delay))
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def _backoff(attempt: int, retry_after: float | None) -> float:
+    if retry_after is not None:
+        return retry_after
+    base = 0.4 * (2**attempt)
+    return min(30.0, base + random.uniform(0.0, 0.3 * base))
+
+
+def reset_http_state() -> None:
+    """Drop in-memory HTTP state. Tests use this between cases."""
+    global _client
+    with _client_lock:
+        if _client is not None:
+            _client.close()
+            _client = None
+    with _pages_lock:
+        _pages.clear()
+    with _resources_lock:
+        _resources.clear()
+    with _limiters_lock:
+        _limiters.clear()
 
 
 def _lru_get(cache: OrderedDict, lock: threading.Lock, key: str):
@@ -125,62 +257,98 @@ def request_json(
     *,
     as_text: bool = False,
 ) -> tuple[int, Any]:
-    """GET a URL. 429 returns immediately. 404 returns ``(404, None)``."""
+    """GET a URL. 429 returns immediately (Semantic Scholar). 404 returns ``(404, None)``."""
+    cached = _disk_get(url)
+    if cached is not None:
+        stats.hit()
+        status, body = cached
+        if as_text and not isinstance(body, str):
+            return status, json.dumps(body) if body is not None else ""
+        return status, body
     last_error: Exception | None = None
-    for attempt in range(3):
-        _limiter.wait()
+    attempts = max(1, HTTP_RETRY_ATTEMPTS)
+    for attempt in range(attempts):
+        _limiter_for(url).wait()
         stats.bump(url)
         try:
             response = _http().get(url, headers=headers, follow_redirects=True)
         except httpx.HTTPError as exc:
             last_error = exc
-            time.sleep(0.8 * (attempt + 1))
+            if attempt + 1 < attempts:
+                time.sleep(_backoff(attempt, None))
             continue
         code = response.status_code
         if code == 404:
+            _disk_set(url, 404, None)
             return 404, None
         if code == 429:
             return 429, None
         if code in {500, 502, 503}:
             last_error = MoolTraceError(f"{code} from {urlparse(url).netloc}")
-            time.sleep(1.2 * (attempt + 1))
+            if attempt + 1 < attempts:
+                time.sleep(_backoff(attempt, _retry_after_s(response)))
             continue
         if code >= 400:
             raise MoolTraceError(
                 f"{code} from {urlparse(url).netloc}: {response.text[:180]}"
             )
         if as_text:
-            return code, response.text
+            text = response.text
+            _disk_set(url, code, text)
+            return code, text
         try:
-            return code, response.json()
+            payload = response.json()
         except ValueError:
-            return code, response.text
+            payload = response.text
+        _disk_set(url, code, payload)
+        return code, payload
     raise MoolTraceError(f"giving up on {urlparse(url).netloc}: {last_error}")
 
 
 def _get_json(url: str, stats: CallStats, headers: dict[str, str] | None = None) -> Any:
+    cached = _disk_get(url)
+    if cached is not None:
+        stats.hit()
+        status, body = cached
+        if status == 404:
+            return None
+        return body
     last_error: Exception | None = None
-    for attempt in range(3):
-        _limiter.wait()
+    host = urlparse(url).netloc
+    attempts = max(1, HTTP_RETRY_ATTEMPTS)
+    for attempt in range(attempts):
+        _limiter_for(url).wait()
         stats.bump(url)
         try:
             response = _http().get(url, headers=headers, follow_redirects=True)
         except httpx.HTTPError as exc:
             last_error = exc
-            time.sleep(0.8 * (attempt + 1))
+            if attempt + 1 < attempts:
+                time.sleep(_backoff(attempt, None))
             continue
-        if response.status_code == 404:
+        code = response.status_code
+        if code == 404:
+            _disk_set(url, 404, None)
             return None
-        if response.status_code in {429, 500, 502, 503}:
-            last_error = MoolTraceError(f"{response.status_code} from {urlparse(url).netloc}")
-            time.sleep(1.2 * (attempt + 1))
+        if code in {429, 500, 502, 503}:
+            last_error = InfraError(f"{code} from {host}")
+            retry_after = _retry_after_s(response)
+            # A Retry-After at the cap means the daily window is exhausted.
+            # Waiting and hitting the same URL again will not recover it.
+            if code == 429 and retry_after is not None and retry_after >= HTTP_RETRY_AFTER_CAP_S:
+                break
+            if attempt + 1 < attempts:
+                time.sleep(_backoff(attempt, retry_after))
             continue
-        if response.status_code >= 400:
-            raise MoolTraceError(
-                f"{response.status_code} from {urlparse(url).netloc}: {response.text[:180]}"
-            )
-        return response.json()
-    raise MoolTraceError(f"giving up on {urlparse(url).netloc}: {last_error}")
+        if code >= 400:
+            raise MoolTraceError(f"{code} from {host}: {response.text[:180]}")
+        try:
+            payload = response.json()
+        except ValueError:
+            payload = response.text
+        _disk_set(url, code, payload)
+        return payload
+    raise InfraError(f"giving up on {host}: {last_error}")
 
 
 def _oa(path_and_query: str, stats: CallStats) -> Any:
@@ -215,36 +383,59 @@ def openalex_context_record(doi: str, stats: CallStats) -> dict[str, Any] | None
     return data if isinstance(data, dict) and data.get("id") else None
 
 
+def _openalex_one(path: str, stats: CallStats) -> dict[str, Any] | None:
+    data = _oa(path, stats)
+    return data if isinstance(data, dict) and data.get("id") else None
+
+
 def openalex_by_ids(openalex_ids: list[str], stats: CallStats) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
     ids = [item.rsplit("/", 1)[-1] for item in openalex_ids if item]
+    select = "id,doi,display_name,publication_year,is_retracted,cited_by_count,type"
     for start in range(0, len(ids), 50):
         chunk = ids[start : start + 50]
         filt = "|".join(chunk)
-        data = _oa(
-            f"/works?filter=openalex_id:{filt}&per-page=50"
-            "&select=id,doi,display_name,publication_year,is_retracted,cited_by_count,type",
-            stats,
-        )
+        try:
+            data = _oa(
+                f"/works?filter=openalex_id:{filt}&per-page=50&select={select}",
+                stats,
+            )
+        except InfraError:
+            data = None
         if isinstance(data, dict):
             results.extend(data.get("results") or [])
+            continue
+        for item in chunk:
+            record = _openalex_one(f"/works/{quote(item, safe='')}?select={select}", stats)
+            if record:
+                results.append(record)
     return results
 
 
 def openalex_by_dois(dois: list[str], stats: CallStats) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
+    select = (
+        "id,doi,display_name,publication_year,is_retracted,"
+        "cited_by_count,referenced_works,type"
+    )
     for start in range(0, len(dois), 25):
         chunk = dois[start : start + 25]
         # Slashes in DOIs must stay literal; OpenAlex rejects %2F inside filter.
         filt = "|".join(quote(doi, safe="/") for doi in chunk)
-        data = _oa(
-            f"/works?filter=doi:{filt}&per-page=25"
-            "&select=id,doi,display_name,publication_year,is_retracted,"
-            "cited_by_count,referenced_works,type",
-            stats,
-        )
+        try:
+            data = _oa(
+                f"/works?filter=doi:{filt}&per-page=25&select={select}",
+                stats,
+            )
+        except InfraError:
+            data = None
         if isinstance(data, dict):
             results.extend(data.get("results") or [])
+            continue
+        for doi in chunk:
+            record = openalex_work_doi(doi, stats)
+            if record:
+                results.append(record)
     return results
 
 
@@ -362,7 +553,7 @@ def _public_get(
         # Re-resolve immediately before connect so a DNS change cannot
         # sneak a private hop past the first check.
         public_http_url(current, reason="fetch")
-        _limiter.wait()
+        _limiter_for(current).wait()
         stats.bump(current)
         try:
             with _http().stream(

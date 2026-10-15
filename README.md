@@ -101,8 +101,8 @@ The deciding query (bounds are literals; depth 2 shown). `FLAGS` is matched sepa
 
 ```cypher
 MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)
-MATCH (n:Notice)-[:FLAGS]->(w:Work)
 MATCH p = (s)-[:RESTS_ON*1..2]->(w)
+MATCH (n:Notice)-[:FLAGS]->(w:Work)
 WITH s, w, n, p, relationships(p) AS rels
 WITH s, w, n, p, rels,
      reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) AS path_score

@@ -32,6 +32,8 @@ def test_batch_fails_on_block_not_warn(tmp_path: Path, monkeypatch):
         assert blocked["worst"] == "block"
         assert blocked["exit_code"] == 1
         assert blocked["remediation_clusters"]["algorithm"] == "algo.WCC"
+        assert blocked["timing"]["answers"] == 2
+        assert blocked["timing"]["infra"] == 0
     finally:
         graph.close()
 

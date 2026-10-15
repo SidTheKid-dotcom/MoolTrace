@@ -307,9 +307,10 @@ def expand_work(graph: Graph, doi: str, stats: CallStats) -> None:
                 if ref and ref != doi:
                     graph.rest_on(doi, ref)
                     ref_dois.append(ref)
-        except MoolTraceError:
+        except (MoolTraceError, InfraError):
             # Crossref's reference list is enough to walk one hop. Do not
-            # abort before those DOIs are stored.
+            # abort before those DOIs are stored. Exhausted OpenAlex 429 is
+            # InfraError, not MoolTraceError.
             oa_failed = True
     for ref in reference_dois(crossref):
         if ref != doi:

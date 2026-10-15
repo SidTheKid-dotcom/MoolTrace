@@ -15,8 +15,8 @@ from mooltrace.config import MAX_DEPTH, clamp_depth
 # path. shortestPath is not used.
 PATHS_TO_NOTICE = """
 MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)
-MATCH (n:Notice)-[:FLAGS]->(w:Work)
 MATCH p = (s)-[:RESTS_ON*1..3]->(w)
+MATCH (n:Notice)-[:FLAGS]->(w:Work)
 WITH s, w, n, p, relationships(p) AS rels
 WITH s, w, n, p, rels,
      reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) AS path_score
@@ -47,8 +47,8 @@ LIMIT 80
 WHAT_RESTS_ON = """
 MATCH (n:Notice)-[:FLAGS]->(w:Work)
 WHERE n.doi = $doi OR w.doi = $doi
-OPTIONAL MATCH (a:Answer)-[:CITES]->(s:Source)
-OPTIONAL MATCH p = (s)-[:RESTS_ON*1..3]->(w)
+OPTIONAL MATCH p = (s:Source)-[:RESTS_ON*1..3]->(w)
+OPTIONAL MATCH (a:Answer)-[:CITES]->(s)
 WITH n, w, a, s, p, relationships(p) AS rels
 WHERE p IS NOT NULL OR a IS NULL
 WITH n, w, a, s,
@@ -81,6 +81,10 @@ LIMIT 50
 
 # Weakly connected Work clusters that contain a publisher notice.
 # Validated on FalkorDBLite 0.10.0: CALL algo.WCC({nodeLabels, relationshipTypes}).
+# Join answers at one Source-RESTS_ON hop: WCC already collected every Work
+# in the component, so RESTS_ON*1..3 here is a cartesian timeout, not extra
+# membership. A source that reaches a flagged work at hop 2 still RESTS_ON a
+# Work inside the same component.
 WCC_CLUSTERS = """
 CALL algo.WCC({nodeLabels: ['Work'], relationshipTypes: ['RESTS_ON']})
 YIELD node, componentId
@@ -91,7 +95,7 @@ WITH componentId,
      [d IN collect(DISTINCT flag.doi) WHERE d IS NOT NULL] AS notice_dois,
      [t IN collect(DISTINCT flag.type) WHERE t IS NOT NULL] AS notice_types
 WHERE size(notice_dois) > 0
-MATCH (a:Answer)-[:CITES]->(:Source)-[:RESTS_ON*1..3]->(w:Work)
+MATCH (a:Answer)-[:CITES]->(:Source)-[:RESTS_ON]->(w:Work)
 WHERE w.doi IN work_dois
 RETURN componentId,
        work_dois,
@@ -111,8 +115,11 @@ LIMIT 40
 """.strip()
 
 SHARED_HUBS = """
-MATCH (a:Answer)-[:CITES]->(:Source)-[:RESTS_ON*1..3]->(hub:Work)-[:RESTS_ON*1..3]->(root:Work)<-[:FLAGS]-(n:Notice)
+MATCH (a:Answer)
 WHERE a.id IN $answer_ids
+MATCH (a)-[:CITES]->(:Source)-[:RESTS_ON*1..3]->(hub:Work)
+MATCH (hub)-[:RESTS_ON*1..3]->(root:Work)
+MATCH (n:Notice)-[:FLAGS]->(root)
 WITH hub, root, n, collect(DISTINCT a.id) AS answers, collect(DISTINCT a.engine) AS engines
 WHERE size(answers) >= 2
 RETURN hub.doi AS hub_doi,
@@ -129,8 +136,9 @@ LIMIT 25
 """.strip()
 
 FIRST_HOPS = """
-MATCH (a:Answer)-[:CITES]->(:Source)-[:RESTS_ON]->(first:Work)-[:RESTS_ON*0..3]->(root:Work)<-[:FLAGS]-(:Notice)
-WHERE a.id = $answer_id
+MATCH (a:Answer {id: $answer_id})-[:CITES]->(:Source)-[:RESTS_ON]->(first:Work)
+MATCH (first)-[:RESTS_ON*0..3]->(root:Work)
+MATCH (:Notice)-[:FLAGS]->(root)
 RETURN collect(DISTINCT first.doi) AS first_hops
 """.strip()
 
@@ -161,8 +169,8 @@ RETURN labels(n)[0] AS label, count(n) AS count
 # Every RESTS_ON hop on a path from a cited source to a flagged work.
 CITATION_EDGES = """
 MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)
-MATCH (:Notice)-[:FLAGS]->(w:Work)
 MATCH p = (s)-[:RESTS_ON*1..3]->(w)
+MATCH (:Notice)-[:FLAGS]->(w)
 UNWIND relationships(p) AS r
 WITH DISTINCT startNode(r) AS citer, r, endNode(r) AS dest
 WHERE dest.doi IS NOT NULL
@@ -183,8 +191,8 @@ RETURN citer.doi AS citer_doi,
 
 INDEPENDENT_CITERS = """
 MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)
-MATCH (n:Notice)-[:FLAGS]->(root:Work)
 MATCH (s)-[:RESTS_ON*0..2]->(citer)-[r:RESTS_ON]->(root)
+MATCH (n:Notice)-[:FLAGS]->(root)
 WHERE r.judged = true AND r.weight >= 0.5 AND r.sentence <> ''
 RETURN DISTINCT coalesce(citer.doi, citer.url) AS citer,
        citer.doi AS citer_doi,
