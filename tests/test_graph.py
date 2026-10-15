@@ -640,6 +640,111 @@ def test_cli_hedged_retraction_still_blocks(tmp_path: Path):
     assert payload["decision"] == "block"
 
 
+def test_what_rests_on_uses_the_forward_hop_rule(tmp_path: Path):
+    """Reverse counted_answer_ids must match PATH_RULE, not product >= 0.25.
+
+    mention × mention is 0.55 * 0.55 = 0.3025, so the old floor counted it.
+    Forward verdicts discount that path. Reverse lookup must too.
+    """
+    graph = Graph(tmp_path / "mooltrace.db")
+    try:
+        graph.merge_work(
+            "10.9999/flagged",
+            title="Flagged",
+            expanded=True,
+            notice_checked=True,
+        )
+        graph.merge_notice(
+            "10.9999/eoc",
+            "10.9999/flagged",
+            "expression_of_concern",
+            "Expression of concern",
+            "publisher",
+            "2025-08-20",
+        )
+
+        graph.merge_answer("a_mention", "mention-only", "h1", "2026-10-15T00:00:00+00:00")
+        graph.merge_source("https://example.com/mention", "Mention page", "example.com", True)
+        graph.cite("a_mention", "https://example.com/mention")
+        graph.merge_work("10.9999/review-m", title="Mention review")
+        graph.source_rests_on("https://example.com/mention", "10.9999/review-m")
+        graph.rest_on("10.9999/review-m", "10.9999/flagged")
+        graph.set_reliance(
+            None,
+            "https://example.com/mention",
+            "10.9999/review-m",
+            reliance="mention",
+            weight=0.55,
+            sentence="This draft names the review by DOI as further reading.",
+            evidence_from="draft",
+        )
+        graph.set_reliance(
+            "10.9999/review-m",
+            None,
+            "10.9999/flagged",
+            reliance="mention",
+            weight=0.55,
+            sentence="The review names the flagged trial in passing.",
+            evidence_from="semantic_scholar",
+        )
+
+        graph.merge_answer("a_included", "included-hop", "h2", "2026-10-15T00:00:00+00:00")
+        graph.merge_source("https://example.com/included", "Included page", "example.com", True)
+        graph.cite("a_included", "https://example.com/included")
+        graph.merge_work("10.9999/review-i", title="Included review")
+        graph.source_rests_on("https://example.com/included", "10.9999/review-i")
+        graph.rest_on("10.9999/review-i", "10.9999/flagged")
+        graph.set_reliance(
+            None,
+            "https://example.com/included",
+            "10.9999/review-i",
+            reliance="mention",
+            weight=0.55,
+            sentence="This health-information draft cites a single systematic review.",
+            evidence_from="draft",
+        )
+        graph.set_reliance(
+            "10.9999/review-i",
+            None,
+            "10.9999/flagged",
+            reliance="included",
+            weight=1.0,
+            sentence="Listed among included studies (Table 1: Characteristics of included studies)",
+            evidence_from="pmc_included",
+        )
+
+        graph.merge_answer("a_direct", "direct-mention", "h3", "2026-10-15T00:00:00+00:00")
+        graph.merge_source("https://example.com/direct", "Direct page", "example.com", True)
+        graph.cite("a_direct", "https://example.com/direct")
+        graph.source_rests_on("https://example.com/direct", "10.9999/flagged")
+        graph.set_reliance(
+            None,
+            "https://example.com/direct",
+            "10.9999/flagged",
+            reliance="mention",
+            weight=0.55,
+            sentence="A draft cites the flagged trial by DOI 10.9999/flagged.",
+            evidence_from="draft",
+        )
+
+        reverse = graph.what_rests_on("10.9999/eoc")
+        assert reverse.rows
+        row = reverse.rows[0]
+        answers = set(row.get("answer_ids") or [])
+        counted = set(row.get("counted_answer_ids") or [])
+        assert answers == {"a_mention", "a_included", "a_direct"}
+        assert "a_mention" not in counted
+        assert "a_included" in counted
+        assert "a_direct" in counted
+        assert "shortestPath" not in reverse.cypher
+        assert "path_score >= 0.25" not in reverse.cypher
+        assert "MATCH (n:Notice)-[:FLAGS]->(w:Work)" in reverse.cypher
+        assert "included" in reverse.cypher
+        assert "uses_data_or_method" in reverse.cypher
+    finally:
+        graph.close()
+
+
 def test_what_rests_on_ignores_unrelated_answers(tmp_path: Path):
     graph = Graph(tmp_path / "mooltrace.db")
     try:

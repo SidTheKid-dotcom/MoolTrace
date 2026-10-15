@@ -130,7 +130,7 @@ YIELD node, score
 
 That groups answers that share a Work component containing a publisher notice. The fixture batch report includes these clusters. `algo.pageRank` ranks which counted notice is shown first. `algo.MaxFlow` is not registered in this build. Independent sources are distinct citers on counted paths.
 
-Reverse lookup lists every matching notice and only the answers whose sources reach that work. The Cypher `counted` flag still uses hop weight ≥ 0.5, a stored sentence, and product `path_score` ≥ 0.25 (that query is not the forward verdict). It is not a monitoring or alert scheduler.
+Reverse lookup lists every matching notice and only the answers whose sources reach that work. The Cypher `counted` flag uses the same hop rule as the forward verdict: every hop has a stored sentence and weight ≥ 0.5, and the path is one hop or has an `included` / `relies` / `uses_data_or_method` hop. Mention-only multi-hop paths do not count. It is not a monitoring or alert scheduler.
 
 Every query the tools run is in `mooltrace/cypher.py`.
 

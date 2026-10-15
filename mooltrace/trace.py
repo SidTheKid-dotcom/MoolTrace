@@ -29,6 +29,7 @@ from mooltrace.clients import (
 from mooltrace import cypher as C
 from mooltrace.decision import EXIT_INFRA, EXIT_WARN, decide, path_score
 from mooltrace.graph import Graph, get_graph
+from mooltrace.reliance import PATH_RULE
 from mooltrace.ssrf import UnsafeURL, public_http_url
 from mooltrace.judge import judge_citation_edges
 from mooltrace.ids import (
@@ -931,12 +932,15 @@ def what_rests_on(doi: str, graph: Graph | None = None, depth: int | None = None
         "cypher": impact.cypher,
         "elapsed_ms": round(impact.elapsed_ms, 2),
         "upstream_elapsed_ms": round(upstream.elapsed_ms, 2),
+        "path_rule": PATH_RULE,
         "note": (
             "Reverse lookup lists matching publisher notices and only the "
-            "answers whose sources reach that work. counted_answer_ids is "
-            "still computed in Cypher (hop weight ≥ 0.5, stored sentence, "
-            "product path_score ≥ 0.25). Forward verdicts use path_rule "
-            "instead. This is not a monitoring or alert scheduler."
+            "answers whose sources reach that work. counted_answer_ids uses "
+            "the same hop rule as forward verdicts (path_rule): every hop "
+            "has a stored sentence and weight ≥ 0.5, and the path is one hop "
+            "or has an included/relies/uses_data_or_method hop. Mention-only "
+            "multi-hop paths do not count. This is not a monitoring or "
+            "alert scheduler."
         ),
     }
 

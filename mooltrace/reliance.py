@@ -12,9 +12,8 @@ from dataclasses import dataclass
 
 # Counted toward warn/block and the independent-source count.
 WEIGHT_FLOOR = 0.5
-# Forward verdicts no longer multiply hop weights against this floor.
-# Cypher reverse lookup (owned elsewhere) still ranks by the product and
-# treats product >= 0.25 as counted. Do not change that query here.
+# Retired gate. path_score is the product of hop weights and ranks forward
+# paths; it does not decide counted. Reverse lookup uses PATH_RULE too.
 PATH_SCORE_FLOOR = 0.25
 PATH_RULE = (
     "count if every hop has a sentence and weight ≥ 0.5, and the path is "

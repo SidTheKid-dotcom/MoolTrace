@@ -40,7 +40,10 @@ LIMIT 80
 
 # Reverse impact: only answers whose cited sources reach this flagged work.
 # Unrelated drafts in the same graph are dropped. Counted answers use the
-# same hop rule as the forward verdict, including the path-score floor.
+# same hop rule as the forward verdict (PATH_RULE / STRONG_RELIANCE):
+# every hop has a stored sentence and weight >= 0.5, and the path is one
+# hop or has an included/relies/uses_data_or_method hop. Mention-only
+# multi-hop paths do not count. shortestPath is not used.
 WHAT_RESTS_ON = """
 MATCH (n:Notice)-[:FLAGS]->(w:Work)
 WHERE n.doi = $doi OR w.doi = $doi
@@ -48,10 +51,8 @@ OPTIONAL MATCH (a:Answer)-[:CITES]->(s:Source)
 OPTIONAL MATCH p = (s)-[:RESTS_ON*1..3]->(w)
 WITH n, w, a, s, p, relationships(p) AS rels
 WHERE p IS NOT NULL OR a IS NULL
-WITH n, w, a, s, p, rels,
-     CASE WHEN p IS NULL THEN 0.0 ELSE reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) END AS path_score
 WITH n, w, a, s,
-     CASE WHEN p IS NULL THEN false ELSE ALL(r IN rels WHERE coalesce(r.weight, 0.0) >= 0.5 AND coalesce(r.sentence, '') <> '') AND path_score >= 0.25 END AS counted
+     CASE WHEN p IS NULL THEN false ELSE ALL(r IN rels WHERE coalesce(r.weight, 0.0) >= 0.5 AND coalesce(r.sentence, '') <> '') AND (size(rels) = 1 OR ANY(r IN rels WHERE r.reliance IN ['included', 'relies', 'uses_data_or_method'])) END AS counted
 RETURN n.doi AS notice_doi,
        n.type AS notice_type,
        n.label AS notice_label,
