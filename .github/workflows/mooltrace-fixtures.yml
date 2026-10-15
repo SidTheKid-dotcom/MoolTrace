@@ -1,0 +1,36 @@
+# Sample workflow for this repository. Not a reusable GitHub Action.
+# No repository secrets. Python 3.12+ must be on the runner.
+# Default: fail on block (exit 1) and infra (exit 3). Warn is annotated.
+# The daily schedule re-runs examples/answers.jsonl against live catalogs.
+# That is a fresh fixture recheck, not persistent monitoring.
+name: MoolTrace fixture gate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 4 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install and run fixture batch
+        env:
+          MOOLTRACE_MAILTO: mooltrace-ci@example.com
+        run: |
+          set -euo pipefail
+          python3 --version
+          python3 -m venv .venv
+          .venv/bin/pip install -U pip
+          .venv/bin/pip install -e .
+          .venv/bin/python -m mooltrace batch examples/answers.jsonl --fail-on block
+        # To fail on warn too: add `--fail-on warn`.
