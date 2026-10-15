@@ -6,10 +6,15 @@ host sees is_error rather than a successful result dictionary.
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from mcp.server.mcpserver import MCPServer
+from mcp_types import ToolAnnotations
+from pydantic import Field
 
 from mooltrace import TAGLINE
 from mooltrace.clients import InfraError, MoolTraceError
+from mooltrace.graph import get_graph
 from mooltrace.ssrf import UnsafeURL
 from mooltrace.trace import (
     check_answer as run_check_answer,
@@ -29,6 +34,8 @@ except ImportError:  # pragma: no cover
         class ToolError(Exception):
             """Fallback when the installed MCP SDK has no ToolError."""
 
+
+_READ_ONLY = ToolAnnotations(read_only_hint=True)
 
 server = MCPServer(
     "mooltrace",
@@ -51,6 +58,17 @@ def _raise(exc: Exception) -> None:
     raise ToolError(str(exc)) from exc
 
 
+def _call(fn, **kwargs):
+    try:
+        return fn(**kwargs)
+    except (MoolTraceError, UnsafeURL, InfraError) as exc:
+        _raise(exc)
+        raise
+    except Exception as exc:
+        reason = str(exc).splitlines()[0].strip()[:180] or type(exc).__name__
+        raise ToolError(reason) from exc
+
+
 @server.tool(
     description=(
         "Pre-ship check for a health-AI draft or answer fixture. Pass the draft "
@@ -62,16 +80,18 @@ def _raise(exc: Exception) -> None:
     )
 )
 def check_answer(
-    text: str = "",
-    urls: list[str] | None = None,
-    engine: str = "draft",
-    depth: int = 2,
+    text: Annotated[str, Field(description="Draft or fixture text to check.")] = "",
+    urls: Annotated[
+        list[str] | None, Field(description="Cited source URLs from the draft.")
+    ] = None,
+    engine: Annotated[
+        str, Field(description="Engine or fixture name for this draft.")
+    ] = "draft",
+    depth: Annotated[
+        int, Field(ge=1, le=3, description="Hop budget from 1 to 3.")
+    ] = 2,
 ) -> dict:
-    try:
-        payload = run_check_answer(text=text, urls=urls, engine=engine, depth=depth)
-    except (MoolTraceError, UnsafeURL, InfraError) as exc:
-        _raise(exc)
-        raise
+    payload = _call(run_check_answer, text=text, urls=urls, engine=engine, depth=depth)
     if payload.get("exit_code") == 3:
         raise ToolError(payload.get("summary") or "infrastructure failure")
     return payload
@@ -85,16 +105,18 @@ def check_answer(
     )
 )
 def trace_answer(
-    text: str = "",
-    urls: list[str] | None = None,
-    engine: str = "draft",
-    depth: int = 2,
+    text: Annotated[str, Field(description="Draft or fixture text to ingest.")] = "",
+    urls: Annotated[
+        list[str] | None, Field(description="Cited source URLs to walk from.")
+    ] = None,
+    engine: Annotated[
+        str, Field(description="Engine or fixture name for this draft.")
+    ] = "draft",
+    depth: Annotated[
+        int, Field(ge=1, le=3, description="Hop budget from 1 to 3.")
+    ] = 2,
 ) -> dict:
-    try:
-        return run_trace(text=text, urls=urls, engine=engine, depth=depth)
-    except (MoolTraceError, UnsafeURL, InfraError) as exc:
-        _raise(exc)
-        raise
+    return _call(run_trace, text=text, urls=urls, engine=engine, depth=depth)
 
 
 @server.tool(
@@ -104,12 +126,10 @@ def trace_answer(
         "OpenAlex is_retracted can be false for an Expression of Concern."
     )
 )
-def check_study(doi_or_pmid: str) -> dict:
-    try:
-        return run_check_study(doi_or_pmid)
-    except (MoolTraceError, UnsafeURL, InfraError) as exc:
-        _raise(exc)
-        raise
+def check_study(
+    doi_or_pmid: Annotated[str, Field(description="DOI or PMID of one study.")],
+) -> dict:
+    return _call(run_check_study, identifier=doi_or_pmid)
 
 
 @server.tool(
@@ -119,35 +139,37 @@ def check_study(doi_or_pmid: str) -> dict:
         "This is not a monitoring or alert scheduler."
     )
 )
-def what_rests_on(doi: str) -> dict:
-    try:
-        return run_rests(doi)
-    except (MoolTraceError, UnsafeURL, InfraError) as exc:
-        _raise(exc)
-        raise
+def what_rests_on(
+    doi: Annotated[str, Field(description="Notice DOI or study DOI to reverse from.")],
+) -> dict:
+    return _call(run_rests, doi=doi)
 
 
 @server.tool(
+    annotations=_READ_ONLY,
     description=(
         "Compare two drafts (by answer id or engine name) and return hub works "
         "that both use on a path to a publisher notice. First-hop counts are "
         "not a node-disjoint flow."
-    )
+    ),
 )
 def shared_ancestors(
-    answer_a: str = "",
-    answer_b: str = "",
-    engine_a: str = "",
-    engine_b: str = "",
+    answer_a: Annotated[str, Field(description="First answer id already in the graph.")] = "",
+    answer_b: Annotated[str, Field(description="Second answer id already in the graph.")] = "",
+    engine_a: Annotated[str, Field(description="Engine name if answer_a is omitted.")] = "",
+    engine_b: Annotated[str, Field(description="Engine name if answer_b is omitted.")] = "",
 ) -> dict:
-    try:
-        return run_shared(answer_a, answer_b, engine_a, engine_b)
-    except (MoolTraceError, UnsafeURL, InfraError) as exc:
-        _raise(exc)
-        raise
+    return _call(
+        run_shared,
+        answer_a=answer_a,
+        answer_b=answer_b,
+        engine_a=engine_a,
+        engine_b=engine_b,
+    )
 
 
 @server.tool(
+    annotations=_READ_ONLY,
     description=(
         "Run read-only OpenCypher against the MoolTrace graph using FalkorDB "
         "GRAPH.RO_QUERY. Writes are rejected. A LIMIT is added when the query "
@@ -155,15 +177,20 @@ def shared_ancestors(
         "timeout_ms is 100-15000."
     )
 )
-def ro_cypher(query: str, timeout_ms: int = 3000) -> dict:
-    try:
-        return run_ro_cypher(query, timeout_ms=timeout_ms)
-    except (MoolTraceError, UnsafeURL, InfraError) as exc:
-        _raise(exc)
-        raise
+def ro_cypher(
+    query: Annotated[str, Field(description="Read-only OpenCypher to run.")],
+    timeout_ms: Annotated[
+        int, Field(ge=100, le=15000, description="Query timeout in milliseconds, 100-15000.")
+    ] = 3000,
+) -> dict:
+    return _call(run_ro_cypher, statement=query, timeout_ms=timeout_ms)
 
 
 def main() -> None:
+    try:
+        get_graph()
+    except Exception:
+        pass
     server.run(transport="stdio")
 
 

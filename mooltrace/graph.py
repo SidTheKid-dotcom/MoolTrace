@@ -7,6 +7,7 @@ inside the wheel. Import ``falkordblite`` when a future wheel exposes it.
 from __future__ import annotations
 
 import atexit
+import fcntl
 import threading
 from collections import OrderedDict
 from dataclasses import dataclass, field
@@ -43,11 +44,20 @@ _INDEXES = (
 
 
 def _open_falkordb(path: str):
+    """Open the embedded server. One process starts it; others wait on the lock."""
     try:
         from falkordblite import FalkorDB
     except ImportError:
         from redislite import FalkorDB
-    return FalkorDB(path)
+    db_path = Path(path)
+    lock_path = Path(str(db_path) + ".lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(lock_path, "a+b") as lock_file:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        try:
+            return FalkorDB(str(db_path))
+        except Exception as exc:
+            raise InfraError("graph backend failed to start") from exc
 
 
 def _plain(value: Any) -> Any:
@@ -82,8 +92,13 @@ class Graph:
     def __init__(self, path: str | Path):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.db = _open_falkordb(str(self.path))
-        self.graph = self.db.select_graph(GRAPH_NAME)
+        try:
+            self.db = _open_falkordb(str(self.path))
+            self.graph = self.db.select_graph(GRAPH_NAME)
+        except InfraError:
+            raise
+        except Exception as exc:
+            raise InfraError("graph backend failed to start") from exc
         self._lock = threading.RLock()
         self._schema_ready = False
         self._harden_persistence()
@@ -91,6 +106,23 @@ class Graph:
 
     def _client(self):
         return getattr(self.db, "client", None)
+
+    def _shared_clients(self) -> bool:
+        """True when another process or Graph object is using this Redis."""
+        client = self._client()
+        if client is None:
+            return False
+        count_fn = getattr(client, "_connection_count", None)
+        if callable(count_fn):
+            try:
+                return int(count_fn()) > 1
+            except Exception:
+                pass
+        try:
+            listed = client.client_list() or []
+        except Exception:
+            return False
+        return len(listed) > 1
 
     def _harden_persistence(self) -> None:
         client = self._client()
@@ -114,6 +146,16 @@ class Graph:
     def close(self) -> None:
         self.persist()
         client = self._client()
+        if client is None:
+            return
+        if self._shared_clients():
+            try:
+                pool = getattr(client, "connection_pool", None)
+                if pool is not None:
+                    pool.disconnect()
+            except Exception:
+                pass
+            return
         shutdown = getattr(client, "shutdown", None)
         if shutdown is None:
             return
@@ -177,10 +219,15 @@ class Graph:
                     read_only=read_only,
                     timeout=timeout,
                 )
+            except InfraError:
+                raise
             except Exception as exc:
                 text = str(exc).lower()
+                name = type(exc).__name__.lower()
                 if "timed out" in text or "timeout" in text:
                     raise InfraError(f"graph query timed out: {exc}") from exc
+                if "connection" in text or "connection" in name or "no such file" in text:
+                    raise InfraError("graph backend unavailable") from exc
                 raise
             elapsed = (time.perf_counter() - started) * 1000
         names = self._names(result.header)

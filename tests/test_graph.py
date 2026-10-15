@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from mooltrace.clients import MoolTraceError
+from mooltrace.clients import InfraError, MoolTraceError
 from mooltrace.graph import Graph
 from mooltrace.trace import ro_cypher
 
@@ -83,6 +83,40 @@ def test_path_and_reverse_roundtrip(tmp_path: Path):
         assert again_judged[0]["sentence"] == stored
         independent = graph.independent_citers("a1")
         assert any(row.get("citer") == "10.1370/afm.1517" for row in independent.rows)
+    finally:
+        graph.close()
+
+
+def test_close_does_not_kill_other_clients(tmp_path: Path):
+    db = tmp_path / "mooltrace.db"
+    first = Graph(db)
+    second = None
+    try:
+        first.merge_work("10.1/shared", title="keep")
+        second = Graph(db)
+        first.close()
+        row = second.work_row("10.1/shared")
+        assert row is not None
+        assert row["title"] == "keep"
+    finally:
+        if second is not None:
+            second.close()
+
+
+def test_connection_loss_is_infra_error(tmp_path: Path, monkeypatch):
+    graph = Graph(tmp_path / "mooltrace.db")
+    try:
+
+        def boom(*_args, **_kwargs):
+            raise ConnectionError("Error 2 connecting to redis.socket. No such file or directory.")
+
+        monkeypatch.setattr(graph, "_execute", boom)
+        try:
+            graph.work_row("10.1/x")
+        except InfraError as exc:
+            assert "unavailable" in str(exc)
+        else:
+            raise AssertionError("connection loss was not InfraError")
     finally:
         graph.close()
 
