@@ -78,6 +78,15 @@ const PRESETS = [
     urls: ["https://www.everydayhealth.com/diabetes/cinnamon-for-diabetes/"],
   },
   {
+    id: "healthline",
+    label: "Healthline cinnamon",
+    hint: "URL-only page, counted 2-hop",
+    engine: "nutrition-coach",
+    depth: 2,
+    text: "",
+    urls: ["https://www.healthline.com/nutrition/cinnamon-and-diabetes"],
+  },
+  {
     id: "hedge",
     label: "Hedged Khan",
     hint: "Draft names the EoC and still cites the trial",
