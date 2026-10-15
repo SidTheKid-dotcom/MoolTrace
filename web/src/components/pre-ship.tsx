@@ -26,7 +26,13 @@ type Reason = {
   evidence_from?: string | null
   cypher?: string
   path_score?: number | null
-  hops_evidence?: { weight?: number | null; reliance?: string | null; sentence?: string | null }[]
+  hops_evidence?: {
+    weight?: number | null
+    reliance?: string | null
+    sentence?: string | null
+    evidence_from?: string | null
+  }[]
+  pagerank?: number | null
   label?: string | null
 }
 type Check = {
@@ -37,6 +43,9 @@ type Check = {
   discounted?: Reason[]
   independent_source_count?: number
   weight_floor?: number
+  path_score_floor?: number
+  coverage?: string
+  not_shown?: string
   cypher?: string
   elapsed_ms?: number
   limits?: string
@@ -67,6 +76,15 @@ const PRESETS = [
     urls: ["https://www.everydayhealth.com/diabetes/cinnamon-for-diabetes/"],
   },
   {
+    id: "hedge",
+    label: "Hedged Khan",
+    hint: "Draft names the EoC and still cites the trial",
+    engine: "nutrition-coach",
+    depth: 1,
+    text: "Khan 2003 (doi 10.2337/diacare.26.12.3215) reported fasting glucose changes, although the paper now carries an expression of concern. This note is not medical advice.",
+    urls: [] as string[],
+  },
+  {
     id: "allen",
     label: "Allen 2013",
     hint: "Expression of Concern path",
@@ -86,8 +104,8 @@ const PRESETS = [
   },
   {
     id: "clean",
-    label: "Clean DOI",
-    hint: "No flagged ancestor at depth 2",
+    label: "No notice in range",
+    hint: "No flagged ancestor at depth 2; not shown beyond",
     engine: "clean-check",
     depth: 2,
     text: "10.1016/j.jsps.2015.03.013",
@@ -293,6 +311,9 @@ export function PreShip() {
                     {result.independent_source_count ?? 0} independent source
                     {(result.independent_source_count ?? 0) === 1 ? "" : "s"} at weight ≥{" "}
                     {result.weight_floor ?? 0.5}
+                    {result.path_score_floor != null ? ` · path score ≥ ${result.path_score_floor}` : ""}
+                    {result.coverage ? ` · ${result.coverage.replace("_", " ")}` : ""}
+                    {result.not_shown ? ` · ${result.not_shown}` : ""}
                     {result.elapsed_ms != null ? ` · ${result.elapsed_ms} ms` : ""}
                   </span>
                 </div>
@@ -331,20 +352,37 @@ export function PreShip() {
                       ))}
                     </ol>
                     {reason.hops_evidence && reason.hops_evidence.length > 0 ? (
-                      <p className="text-xs text-muted-foreground">
-                        {reason.hops_evidence.length} judged hop
-                        {reason.hops_evidence.length === 1 ? "" : "s"}
-                        {reason.path_score != null ? ` · path score ${reason.path_score}` : ""}
-                      </p>
+                      <ol className="flex flex-col gap-2 text-sm">
+                        {reason.hops_evidence.map((hop, hopIndex) => (
+                          <li key={`${hop.reliance}-${hopIndex}`} className="rounded-md bg-muted px-3 py-2">
+                            <p className="text-xs text-muted-foreground">
+                              hop {hopIndex + 1}
+                              {hop.reliance ? ` · ${hop.reliance}` : ""}
+                              {hop.weight != null ? ` · weight ${hop.weight}` : ""}
+                              {hop.evidence_from ? ` · ${hop.evidence_from}` : ""}
+                            </p>
+                            {hop.sentence ? (
+                              <p className="mt-1 leading-6">{hop.sentence}</p>
+                            ) : (
+                              <p className="mt-1 text-muted-foreground">Reliance unverified on this hop.</p>
+                            )}
+                          </li>
+                        ))}
+                        <li className="text-xs text-muted-foreground">
+                          path score {reason.path_score ?? "—"}
+                          {reason.pagerank != null ? ` · PageRank ${reason.pagerank.toFixed(3)}` : ""}
+                        </li>
+                      </ol>
                     ) : null}
                   </article>
                 ))}
                 {(result.discounted || []).length > 0 ? (
                   <p className="text-sm text-muted-foreground">
                     {result.discounted?.length} citation path
-                    {result.discounted?.length === 1 ? "" : "s"} reached a notice only as background
-                    or a dispute, so {result.discounted?.length === 1 ? "it does" : "they do"} not
-                    change this check.
+                    {result.discounted?.length === 1 ? "" : "s"} reached a notice only as background,
+                    a scholarly dispute, or a path score below the floor, so{" "}
+                    {result.discounted?.length === 1 ? "it does" : "they do"} not change this check.
+                    Coverage is not shown beyond the requested depth.
                   </p>
                 ) : null}
                 {result.context_notes && result.context_notes.length > 0 ? (

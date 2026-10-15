@@ -44,7 +44,7 @@ Hero fixture: Everyday Health URL only, no Khan DOI in the pasted text. See `exa
 | warn | A counted path reaches an Expression of Concern, a reachable path is unverified, the check did not finish, or no verifiable citation or source was provided (`no_sources`) | 2 |
 | incomplete (infra) | Graph timeout or exhausted upstream. Not a silent pass and not a block | 3 |
 
-A **counted path** needs every `RESTS_ON` hop judged with a stored sentence and weight ≥ 0.5. The product of hop weights is `path_score`. A weak background hop does not hide a counted longer path: the check classifies **every** path within the depth cap, not `shortestPath`. Depth is 1–3. Depth 4 is not implemented.
+A **counted path** needs every `RESTS_ON` hop judged with a stored sentence and weight ≥ 0.5, and a `path_score` (the product of those weights) ≥ 0.25. A chain of bare mentions (`0.55 × 0.55 × 0.55`) does not count. A two-hop use (`0.85 × 0.85`) does. The draft cannot hedge-bypass: naming an Expression of Concern or writing "we excluded" in the pasted answer does not turn a cited flagged study into a pass. A scholarly review can still set a study aside. A weak background hop does not hide a counted longer path: the check classifies **every** path within the depth cap, not `shortestPath`. Depth is 1–3. Depth 4 is not implemented. `pass` means no counted or unverified notice was found within that depth. Coverage is **not shown** beyond it.
 
 ## Graph model
 
@@ -88,9 +88,14 @@ CALL algo.WCC({nodeLabels: ['Work'], relationshipTypes: ['RESTS_ON']})
 YIELD node, componentId
 ```
 
-That groups answers that share a Work component containing a publisher notice. The fixture batch report includes these clusters. `algo.MaxFlow` is not registered in this build. Independent sources are distinct citers on counted paths.
+```cypher
+CALL algo.pageRank('Work', 'RESTS_ON')
+YIELD node, score
+```
 
-Reverse lookup lists every matching notice. Counted answers use the same hop rule. It is not a monitoring or alert scheduler.
+That groups answers that share a Work component containing a publisher notice. The fixture batch report includes these clusters. `algo.pageRank` ranks which counted notice is shown first. `algo.MaxFlow` is not registered in this build. Independent sources are distinct citers on counted paths.
+
+Reverse lookup lists every matching notice and only the answers whose sources reach that work. Counted answers use the same hop rule, including the path-score floor. It is not a monitoring or alert scheduler.
 
 Every query the tools run is in `mooltrace/cypher.py`.
 

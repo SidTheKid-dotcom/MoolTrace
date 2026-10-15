@@ -7,6 +7,7 @@ data/*.db
 data/*.db-*
 data/*.db.settings
 data/*.rdb
+data/appendonlydir/
 uploads/
 web/node_modules/
 web/.next/
