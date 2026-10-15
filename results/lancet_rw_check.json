@@ -1,0 +1,23 @@
+{
+  "checked_at": "2026-10-15T05:30:00+00:00",
+  "original_doi": "10.1016/S0140-6736(20)31180-6",
+  "title": "RETRACTED: Hydroxychloroquine or chloroquine with or without a macrolide for treatment of COVID-19: a multinational registry analysis",
+  "authors": ["Mehra", "Desai", "Ruschitzka", "Patel"],
+  "crossref_updated_by": {
+    "type": "retraction",
+    "doi": "10.1016/s0140-6736(20)31324-6",
+    "source": "retraction-watch",
+    "label": "Retraction",
+    "date": "2020-06-05"
+  },
+  "retraction_watch_csv": {
+    "url": "https://api.labs.crossref.org/data/retractionwatch",
+    "nature": "Retraction",
+    "retraction_doi": "10.1016/S0140-6736(20)31324-6",
+    "original_doi": "10.1016/S0140-6736(20)31180-6",
+    "date": "6/5/2020 0:00",
+    "journal": "Lancet",
+    "authors": "Mandeep R Mehra;Sapan S Desai;Frank Ruschitzka;Amit N Patel"
+  },
+  "note": "Crossref also lists an Expression of Concern and a correction on this DOI. Corrections and errata are not flags. A second updated-by retraction, 10.1016/s0140-6736(20)31174-0, is a different article; the Retraction Watch row above is the notice used as the lead reason."
+}

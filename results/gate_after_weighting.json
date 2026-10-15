@@ -1,0 +1,4 @@
+{
+  "kind": "stale",
+  "message": "Leftover from an earlier gate. Live numbers come from `python -m mooltrace.gate`. Do not treat this file as a score."
+}
