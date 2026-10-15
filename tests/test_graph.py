@@ -482,6 +482,182 @@ def test_cli_check_answer_warns_when_a_weak_direct_path_hides_a_counted_route(tm
     assert payload.get("discounted")
 
 
+def test_cli_hedged_draft_still_warns(tmp_path: Path):
+    import json
+    import os
+    import subprocess
+    import sys
+    from datetime import datetime, timezone
+
+    stamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    graph = Graph(tmp_path / "mooltrace.db")
+    try:
+        graph.merge_work(
+            "10.2337/diacare.26.12.3215",
+            title="Cinnamon improves glucose and lipids of people with type 2 diabetes",
+            year=2003,
+            first_author="Khan",
+            expanded=True,
+            notice_checked=True,
+            notice_checked_at=stamp,
+        )
+        graph.merge_notice(
+            "10.2337/dc25-ec09",
+            "10.2337/diacare.26.12.3215",
+            "expression_of_concern",
+            "Expression of concern",
+            "publisher",
+            "2025-08-20",
+        )
+        graph.persist()
+    finally:
+        graph.close()
+    env = os.environ.copy()
+    env["MOOLTRACE_DB"] = str(tmp_path / "mooltrace.db")
+    env["MOOLTRACE_MAILTO"] = "mooltrace-test@example.com"
+    env["PYTHONUNBUFFERED"] = "1"
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "mooltrace",
+            "check-answer",
+            "--text",
+            (
+                "Khan 2003 (doi 10.2337/diacare.26.12.3215) reported fasting "
+                "glucose changes, although the paper now carries an expression of concern."
+            ),
+            "--engine",
+            "nutrition-coach",
+            "--depth",
+            "1",
+        ],
+        cwd=str(Path(__file__).resolve().parents[1]),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    payload = json.loads(proc.stdout)
+    assert proc.returncode == 2, payload
+    assert payload["decision"] == "warn"
+    assert any(reason.get("code") == "expression_of_concern" for reason in payload.get("reasons") or [])
+    assert payload.get("api_calls") == 0
+
+
+def test_cli_hedged_retraction_still_blocks(tmp_path: Path):
+    import json
+    import os
+    import subprocess
+    import sys
+    from datetime import datetime, timezone
+
+    stamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    graph = Graph(tmp_path / "mooltrace.db")
+    try:
+        graph.merge_work(
+            "10.1016/s0140-6736(20)31180-6",
+            title="Hydroxychloroquine or chloroquine with or without a macrolide",
+            year=2020,
+            first_author="Mehra",
+            expanded=True,
+            notice_checked=True,
+            notice_checked_at=stamp,
+        )
+        graph.merge_notice(
+            "10.1016/s0140-6736(20)31324-6",
+            "10.1016/s0140-6736(20)31180-6",
+            "retraction",
+            "Retraction",
+            "publisher",
+            "2020-06-05",
+        )
+        graph.persist()
+    finally:
+        graph.close()
+    env = os.environ.copy()
+    env["MOOLTRACE_DB"] = str(tmp_path / "mooltrace.db")
+    env["MOOLTRACE_MAILTO"] = "mooltrace-test@example.com"
+    env["PYTHONUNBUFFERED"] = "1"
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "mooltrace",
+            "check-answer",
+            "--text",
+            (
+                "Mehra is disputed, but we excluded weaker data from "
+                "10.1016/S0140-6736(20)31180-6."
+            ),
+            "--engine",
+            "patient-chatbot",
+            "--depth",
+            "1",
+        ],
+        cwd=str(Path(__file__).resolve().parents[1]),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    payload = json.loads(proc.stdout)
+    assert proc.returncode == 1, payload
+    assert payload["decision"] == "block"
+
+
+def test_what_rests_on_ignores_unrelated_answers(tmp_path: Path):
+    graph = Graph(tmp_path / "mooltrace.db")
+    try:
+        graph.merge_answer("a1", "nutrition-coach", "hash", "2026-10-15T00:00:00+00:00")
+        graph.merge_source("https://example.com/khan", "Khan page", "example.com", True)
+        graph.cite("a1", "https://example.com/khan")
+        graph.merge_work("10.2337/diacare.26.12.3215", title="Khan", expanded=True, notice_checked=True)
+        graph.source_rests_on("https://example.com/khan", "10.2337/diacare.26.12.3215")
+        graph.merge_notice(
+            "10.2337/dc25-ec09",
+            "10.2337/diacare.26.12.3215",
+            "expression_of_concern",
+            "Expression of concern",
+            "publisher",
+            "2025-08-20",
+        )
+        graph.merge_answer("a2", "unrelated", "hash2", "2026-10-15T00:00:00+00:00")
+        graph.merge_source("https://example.com/other", "Other", "example.com", True)
+        graph.cite("a2", "https://example.com/other")
+        graph.merge_work("10.2222/isolated", title="Isolated")
+        graph.source_rests_on("https://example.com/other", "10.2222/isolated")
+        reverse = graph.what_rests_on("10.2337/dc25-ec09")
+        assert reverse.rows
+        assert reverse.rows[0]["answer_ids"] == ["a1"]
+        assert reverse.rows[0]["answer_count"] == 1
+        assert "a2" not in (reverse.rows[0].get("answer_ids") or [])
+        assert "WHERE p IS NOT NULL OR a IS NULL" in reverse.cypher
+    finally:
+        graph.close()
+
+
+def test_page_rank_scores_work_nodes(tmp_path: Path):
+    graph = Graph(tmp_path / "mooltrace.db")
+    try:
+        graph.merge_work("10.1370/afm.1517", title="Allen")
+        graph.merge_work("10.2337/diacare.26.12.3215", title="Khan")
+        graph.rest_on("10.1370/afm.1517", "10.2337/diacare.26.12.3215")
+        procs = graph.run(
+            "procedures",
+            "CALL dbms.procedures() YIELD name RETURN name",
+            read_only=True,
+        )
+        assert any("pageRank" in str(row.get("name") or "") for row in procs.rows)
+        run = graph.page_rank()
+        assert "algo.pageRank" in run.cypher
+        dois = {row.get("doi") for row in run.rows}
+        assert "10.2337/diacare.26.12.3215" in dois
+        assert all("score" in row for row in run.rows)
+    finally:
+        graph.close()
+
+
 def test_depth_cap_is_honored(tmp_path: Path):
     graph = Graph(tmp_path / "mooltrace.db")
     try:

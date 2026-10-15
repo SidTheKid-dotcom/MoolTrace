@@ -741,20 +741,36 @@ def check_answer(
                 f"is a warn rather than a pass. Depth requested: {depth}."
             ),
         }
+    graph = graph or get_graph()
+    ranks: dict[str, float] = {}
+    page_rank_run = None
+    try:
+        page_rank_run = graph.page_rank()
+        for row in page_rank_run.rows:
+            doi = (row.get("doi") or "").lower()
+            if doi:
+                try:
+                    ranks[doi] = float(row.get("score") or 0.0)
+                except (TypeError, ValueError):
+                    continue
+    except Exception:
+        page_rank_run = None
     verdict = decide(
         traced["paths"],
         incomplete=traced["incomplete"],
         depth=traced["depth"],
         has_sources=True,
+        pagerank=ranks,
     )
     counted = any(
         reason.get("code") not in {None, "incomplete", "no_sources"}
         for reason in verdict["reasons"]
     )
     pitch = PITCH if verdict["decision"] in {"warn", "block"} and counted else None
-    graph = graph or get_graph()
     clusters = _clusters(graph)
     queries = list(traced["queries"])
+    if page_rank_run is not None:
+        queries.append(page_rank_run.as_public())
     if clusters.get("cypher"):
         queries.append(
             {
@@ -779,6 +795,9 @@ def check_answer(
         "independent_sources": verdict["independent_sources"],
         "independent_source_count": verdict["independent_source_count"],
         "weight_floor": verdict["weight_floor"],
+        "path_score_floor": verdict.get("path_score_floor"),
+        "coverage": verdict.get("coverage"),
+        "not_shown": verdict.get("not_shown"),
         "remediation_clusters": clusters,
         "answer_id": traced["answer_id"],
         "engine": traced["engine"],
@@ -913,9 +932,10 @@ def what_rests_on(doi: str, graph: Graph | None = None, depth: int | None = None
         "elapsed_ms": round(impact.elapsed_ms, 2),
         "upstream_elapsed_ms": round(upstream.elapsed_ms, 2),
         "note": (
-            "Reverse lookup lists every matching publisher notice. "
-            "counted_answer_ids uses the same hop rule as the forward check. "
-            "This is not a monitoring or alert scheduler."
+            "Reverse lookup lists matching publisher notices and only the "
+            "answers whose sources reach that work. counted_answer_ids uses "
+            "the same hop rule as the forward check, including the path-score "
+            "floor. This is not a monitoring or alert scheduler."
         ),
     }
 

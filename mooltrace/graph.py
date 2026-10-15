@@ -442,6 +442,15 @@ class Graph:
             timeout=RO_QUERY_TIMEOUT_MS,
         )
 
+    def page_rank(self) -> QueryRun:
+        return self.run(
+            "page_rank",
+            C.PAGERANK_WORKS,
+            None,
+            read_only=True,
+            timeout=RO_QUERY_TIMEOUT_MS,
+        )
+
     def upstream_works(self, doi: str) -> QueryRun:
         return self.run(
             "upstream_works",

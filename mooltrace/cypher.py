@@ -38,16 +38,20 @@ ORDER BY path_score DESC, hops ASC
 LIMIT 80
 """.strip()
 
-# Reverse impact: every matching notice, plus answers that reach it.
-# Counted answers use the same hop rule as the forward verdict.
+# Reverse impact: only answers whose cited sources reach this flagged work.
+# Unrelated drafts in the same graph are dropped. Counted answers use the
+# same hop rule as the forward verdict, including the path-score floor.
 WHAT_RESTS_ON = """
 MATCH (n:Notice)-[:FLAGS]->(w:Work)
 WHERE n.doi = $doi OR w.doi = $doi
 OPTIONAL MATCH (a:Answer)-[:CITES]->(s:Source)
 OPTIONAL MATCH p = (s)-[:RESTS_ON*1..3]->(w)
 WITH n, w, a, s, p, relationships(p) AS rels
+WHERE p IS NOT NULL OR a IS NULL
+WITH n, w, a, s, p, rels,
+     CASE WHEN p IS NULL THEN 0.0 ELSE reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) END AS path_score
 WITH n, w, a, s,
-     CASE WHEN p IS NULL THEN false ELSE ALL(r IN rels WHERE coalesce(r.weight, 0.0) >= 0.5 AND coalesce(r.sentence, '') <> '') END AS counted
+     CASE WHEN p IS NULL THEN false ELSE ALL(r IN rels WHERE coalesce(r.weight, 0.0) >= 0.5 AND coalesce(r.sentence, '') <> '') AND path_score >= 0.25 END AS counted
 RETURN n.doi AS notice_doi,
        n.type AS notice_type,
        n.label AS notice_label,
@@ -62,6 +66,16 @@ RETURN n.doi AS notice_doi,
        [id IN collect(DISTINCT CASE WHEN counted THEN a.id END) WHERE id IS NOT NULL] AS counted_answer_ids,
        size([id IN collect(DISTINCT a.id) WHERE id IS NOT NULL]) AS answer_count,
        size([u IN collect(DISTINCT s.url) WHERE u IS NOT NULL]) AS source_count
+""".strip()
+
+# PageRank over Work nodes connected by RESTS_ON. Used to rank which
+# counted notice is shown first. Validated on FalkorDBLite 0.10.0.
+PAGERANK_WORKS = """
+CALL algo.pageRank('Work', 'RESTS_ON')
+YIELD node, score
+RETURN node.doi AS doi, score
+ORDER BY score DESC
+LIMIT 50
 """.strip()
 
 # Weakly connected Work clusters that contain a publisher notice.
