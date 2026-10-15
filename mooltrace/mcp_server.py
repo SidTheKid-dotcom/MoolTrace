@@ -1,0 +1,171 @@
+"""MCP server. CI over JSONL fixtures is the primary product workflow.
+
+check_answer remains available for editors. Errors raise ToolError so the
+host sees is_error rather than a successful result dictionary.
+"""
+
+from __future__ import annotations
+
+from mcp.server.mcpserver import MCPServer
+
+from mooltrace import TAGLINE
+from mooltrace.clients import InfraError, MoolTraceError
+from mooltrace.ssrf import UnsafeURL
+from mooltrace.trace import (
+    check_answer as run_check_answer,
+    check_study as run_check_study,
+    ro_cypher as run_ro_cypher,
+    shared_ancestors as run_shared,
+    trace_answer as run_trace,
+    what_rests_on as run_rests,
+)
+
+try:
+    from mcp.server.mcpserver.exceptions import ToolError
+except ImportError:  # pragma: no cover
+    try:
+        from mcp.shared.exceptions import McpError as ToolError
+    except ImportError:  # pragma: no cover
+        class ToolError(Exception):
+            """Fallback when the installed MCP SDK has no ToolError."""
+
+
+server = MCPServer(
+    "mooltrace",
+    title="MoolTrace",
+    instructions=(
+        f"{TAGLINE} Pre-merge check for health-AI answer fixtures. "
+        "Prefer the CLI `mooltrace batch` in CI. "
+        "check_answer returns pass, warn, or block with the FalkorDB path "
+        "and the Cypher that produced it. "
+        "Flag reliance on a publisher notice. Do not call the draft wrong, "
+        "and do not call an Expression of Concern a retraction. "
+        "Depth is 1..3. Depth 4 is not implemented."
+    ),
+)
+
+
+def _raise(exc: Exception) -> None:
+    if isinstance(exc, InfraError):
+        raise ToolError(f"infra: {exc}") from exc
+    raise ToolError(str(exc)) from exc
+
+
+@server.tool(
+    description=(
+        "Pre-ship check for a health-AI draft or answer fixture. Pass the draft "
+        "text and cited URLs. Returns pass, warn, or block. warn: counted path "
+        "to an Expression of Concern, unverified hop, unfinished check, or "
+        "no verifiable citation or source (`no_sources`). "
+        "block: counted path to a retraction, withdrawal, or removal. "
+        "exit_code 3 is infrastructure failure. Depth 1-3."
+    )
+)
+def check_answer(
+    text: str = "",
+    urls: list[str] | None = None,
+    engine: str = "draft",
+    depth: int = 2,
+) -> dict:
+    try:
+        payload = run_check_answer(text=text, urls=urls, engine=engine, depth=depth)
+    except (MoolTraceError, UnsafeURL, InfraError) as exc:
+        _raise(exc)
+        raise
+    if payload.get("exit_code") == 3:
+        raise ToolError(payload.get("summary") or "infrastructure failure")
+    return payload
+
+
+@server.tool(
+    description=(
+        "Ingest a draft or its source URLs, expand RESTS_ON in FalkorDB, and "
+        "return every path that ends on a publisher notice, plus the Cypher. "
+        "Does not decide pass/warn/block."
+    )
+)
+def trace_answer(
+    text: str = "",
+    urls: list[str] | None = None,
+    engine: str = "draft",
+    depth: int = 2,
+) -> dict:
+    try:
+        return run_trace(text=text, urls=urls, engine=engine, depth=depth)
+    except (MoolTraceError, UnsafeURL, InfraError) as exc:
+        _raise(exc)
+        raise
+
+
+@server.tool(
+    description=(
+        "Look up one DOI or PMID. Returns publisher notices on that study and "
+        "works/sources already in the graph that cite it. "
+        "OpenAlex is_retracted can be false for an Expression of Concern."
+    )
+)
+def check_study(doi_or_pmid: str) -> dict:
+    try:
+        return run_check_study(doi_or_pmid)
+    except (MoolTraceError, UnsafeURL, InfraError) as exc:
+        _raise(exc)
+        raise
+
+
+@server.tool(
+    description=(
+        "Reverse impact. Given a notice DOI or a study DOI, list answers and "
+        "sources in this graph that rest on it. Returns every matching notice. "
+        "This is not a monitoring or alert scheduler."
+    )
+)
+def what_rests_on(doi: str) -> dict:
+    try:
+        return run_rests(doi)
+    except (MoolTraceError, UnsafeURL, InfraError) as exc:
+        _raise(exc)
+        raise
+
+
+@server.tool(
+    description=(
+        "Compare two drafts (by answer id or engine name) and return hub works "
+        "that both use on a path to a publisher notice. First-hop counts are "
+        "not a node-disjoint flow."
+    )
+)
+def shared_ancestors(
+    answer_a: str = "",
+    answer_b: str = "",
+    engine_a: str = "",
+    engine_b: str = "",
+) -> dict:
+    try:
+        return run_shared(answer_a, answer_b, engine_a, engine_b)
+    except (MoolTraceError, UnsafeURL, InfraError) as exc:
+        _raise(exc)
+        raise
+
+
+@server.tool(
+    description=(
+        "Run read-only OpenCypher against the MoolTrace graph using FalkorDB "
+        "GRAPH.RO_QUERY. Writes are rejected. A LIMIT is added when the query "
+        "has RETURN and no LIMIT outside string literals. Rows are sliced to 50. "
+        "timeout_ms is 100-15000."
+    )
+)
+def ro_cypher(query: str, timeout_ms: int = 3000) -> dict:
+    try:
+        return run_ro_cypher(query, timeout_ms=timeout_ms)
+    except (MoolTraceError, UnsafeURL, InfraError) as exc:
+        _raise(exc)
+        raise
+
+
+def main() -> None:
+    server.run(transport="stdio")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "mooltrace": {
+      "command": "/absolute/path/to/MoolTrace/.venv/bin/python",
+      "args": ["-m", "mooltrace.mcp_server"],
+      "env": {
+        "MOOLTRACE_DB": "/absolute/path/to/MoolTrace/data/mooltrace.db",
+        "MOOLTRACE_MAILTO": "you@example.com"
+      }
+    }
+  }
+}
