@@ -26,6 +26,14 @@ Exit codes: **0** pass, **1** block, **2** warn/review, **3** infrastructure fai
 
 The sample workflow `.github/workflows/mooltrace-fixtures.yml` installs a venv and runs `examples/answers.jsonl` on pull requests, pushes to `main`, and manual dispatch. A daily schedule re-runs that same fixture file against live catalogs. That is a fresh fixture recheck, not persistent monitoring. The web UI is an evidence viewer for the demo, not the core claim. MCP is an editor integration for the same check.
 
+## Demo
+
+```bash
+docker compose up --build
+```
+
+Open [http://127.0.0.1:4318](http://127.0.0.1:4318). API health is [http://127.0.0.1:4317/health](http://127.0.0.1:4317/health). Click Everyday Health (warn: Expression of Concern, not a retraction) then Lancet 2020 (block: retraction). First boot seeds those two live fixtures into `/data/demo.db` (a Compose volume, not `data/mooltrace.db`). No copyrighted full text. This does not say cinnamon works or does not. Private, loopback, and credentialed URLs stay refused. There is no public host URL in this checkout: Railway, Fly, and Render were not logged in. Later: `railway login && railway init && railway up` or `fly auth login && fly launch` or `render login`.
+
 ## Use from an AI agent
 
 MoolTrace is a pre-ship check, not a medical model. The agent drafts. MoolTrace says whether a cited page or paper reaches a publisher notice. It does not rewrite the answer for you.

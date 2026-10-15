@@ -1,0 +1,51 @@
+# Signed-out local demo. One command: docker compose up --build
+# Viewer http://127.0.0.1:4318   API http://127.0.0.1:4317
+# Graph volume is /data/demo.db. data/mooltrace.db is not mounted.
+
+name: mooltrace
+
+services:
+  api:
+    build:
+      context: .
+      target: api
+    environment:
+      MOOLTRACE_DB: /data/demo.db
+      MOOLTRACE_API_HOST: "0.0.0.0"
+      MOOLTRACE_API_PORT: "4317"
+      MOOLTRACE_MAILTO: mooltrace-demo@example.com
+      MOOLTRACE_CORS_ORIGINS: "http://127.0.0.1:4318,http://localhost:4318"
+      MOOLTRACE_SEED: "1"
+    volumes:
+      - mooltrace-demo:/data
+    ports:
+      - "4317:4317"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4317/health', timeout=3)",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 36
+      start_period: 300s
+
+  web:
+    build:
+      context: .
+      target: web
+      args:
+        MOOLTRACE_API_ORIGIN: http://api:4317
+    environment:
+      MOOLTRACE_API_ORIGIN: http://api:4317
+    ports:
+      - "4318:4318"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  mooltrace-demo:

@@ -1,14 +1,19 @@
 import type { NextConfig } from "next";
 
+const apiOrigin = (process.env.MOOLTRACE_API_ORIGIN || "http://127.0.0.1:4317").replace(
+  /\/$/,
+  "",
+);
+
 const nextConfig: NextConfig = {
   cacheComponents: true,
-  allowedDevOrigins: ["127.0.0.1"],
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   agentRules: false,
   async rewrites() {
     return [
       {
         source: "/nw/:path*",
-        destination: "http://127.0.0.1:4317/:path*",
+        destination: `${apiOrigin}/:path*`,
       },
     ];
   },

@@ -85,6 +85,12 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("mcp", help="run the MCP server on stdio")
     sub.add_parser("api", help="run the demo HTTP API")
     sub.add_parser("gate", help="run the seeded live regression on throwaway graphs")
+    seed = sub.add_parser("seed", help="seed a demo graph from examples/ (live catalogs)")
+    seed.add_argument(
+        "--if-empty",
+        action="store_true",
+        help="Skip when the demo graph already has Answer nodes.",
+    )
 
     args = parser.parse_args(argv)
     try:
@@ -150,6 +156,11 @@ def main(argv: list[str] | None = None) -> int:
             from mooltrace.gate import main as gate_main
 
             return gate_main()
+        if args.cmd == "seed":
+            from mooltrace.seed import main as seed_main
+
+            argv_seed = ["--if-empty"] if args.if_empty else []
+            return seed_main(argv_seed)
     except InfraError as exc:
         print(str(exc), file=sys.stderr)
         return 3

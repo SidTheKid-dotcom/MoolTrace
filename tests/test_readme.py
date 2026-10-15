@@ -48,6 +48,18 @@ def test_readme_names_no_sources_and_fixture_recheck():
     assert "not persistent monitoring" in text
 
 
+def test_readme_demo_is_compose_and_honest():
+    text = (ROOT / "README.md").read_text()
+    demo = text.split("## Demo", 1)[1].split("## ", 1)[0]
+    assert "docker compose up --build" in demo
+    assert "127.0.0.1:4318" in demo
+    assert "127.0.0.1:4317" in demo
+    assert "Expression of Concern, not a retraction" in demo
+    assert "does not say cinnamon works or does not" in demo
+    assert "not logged in" in demo
+    assert "railway.app" not in demo.lower()
+
+
 def test_clean_set_excludes_known_flagged_ancestors():
     assert "10.5114/amsad/184245" not in CLEAN
     assert "10.1093/jn/136.4.977" not in CLEAN
