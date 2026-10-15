@@ -174,3 +174,71 @@ def test_retraction_note_does_not_erase_a_reported_finding():
     )
     assert kind == "relies"
     assert weight == 1.0
+
+
+def test_draft_hedge_does_not_discount_a_named_study():
+    picked = choose_reliance(
+        [
+            (
+                "Khan 2003 (doi 10.2337/diacare.26.12.3215) reported fasting "
+                "glucose changes, although the paper now carries an expression of concern.",
+                "draft",
+            )
+        ],
+        cited_doi="10.2337/diacare.26.12.3215",
+        cited_author="Khan",
+    )
+    assert picked is not None
+    assert picked.reliance != "critical"
+    assert picked.weight >= 0.5
+    assert picked.evidence_from == "draft"
+
+
+def test_draft_exclusion_hedge_still_counts():
+    picked = choose_reliance(
+        [
+            (
+                "We excluded weaker data from Mehra "
+                "10.1016/s0140-6736(20)31180-6.",
+                "draft",
+            )
+        ],
+        cited_doi="10.1016/s0140-6736(20)31180-6",
+        cited_author="Mehra",
+    )
+    assert picked is not None
+    assert picked.weight >= 0.5
+
+
+def test_review_exclusion_is_still_critical():
+    picked = choose_reliance(
+        [
+            (
+                "Khan 2003 was excluded after an expression of concern.",
+                "pmc_full_text",
+            )
+        ],
+        cited_author="Khan",
+    )
+    assert picked is not None
+    assert picked.reliance == "critical"
+    assert picked.weight == 0.0
+
+
+def test_page_source_list_is_a_counted_mention():
+    picked = choose_reliance(
+        [
+            (
+                "14. Khan A, Safdar M, Ali Khan MM, et al. "
+                "Cinnamon improves glucose and lipids of people with type 2 diabetes. "
+                "Diabetes Care. 2003;26(12):3215-3218.",
+                "page_list",
+            )
+        ],
+        cited_doi="10.2337/diacare.26.12.3215",
+        cited_author="Khan",
+        cited_title=KHAN_TITLE,
+    )
+    assert picked is not None
+    assert picked.reliance == "mention"
+    assert picked.weight == 0.55

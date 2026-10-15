@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from mooltrace.ids import normalize_update_type
-from mooltrace.reliance import WEIGHT_FLOOR
+from mooltrace.reliance import PATH_SCORE_FLOOR, WEIGHT_FLOOR
 
 PRESHIP_EOC = (
     "Before your bot ships this answer, MoolTrace flags that a cited page "
@@ -92,15 +92,23 @@ def path_status(path: dict[str, Any]) -> str:
 
     When hops_evidence is present, every RESTS_ON hop must count. A weak
     last hop cannot hide a stronger alternate path; each path is classified
-    on its own hops. Without hops_evidence, the last-edge fields are used.
+    on its own hops. The product of hop weights must also clear
+    PATH_SCORE_FLOOR, so a chain of bare mentions does not count.
+    Without hops_evidence, the last-edge fields are used.
     """
     hops = path.get("hops_evidence") or []
     if hops:
-        return _worst_status([_edge_status(edge) for edge in hops])
+        status = _worst_status([_edge_status(edge) for edge in hops])
+        if status == "count" and path_score(path) < PATH_SCORE_FLOOR:
+            return "discount"
+        return status
     weighted = "weight" in path or "judged" in path or "sentence" in path
     if not weighted:
         return "count"
-    return _edge_status(path)
+    status = _edge_status(path)
+    if status == "count" and path_score(path) < PATH_SCORE_FLOOR:
+        return "discount"
+    return status
 
 
 def path_score(path: dict[str, Any]) -> float:
@@ -152,14 +160,18 @@ def _reason(path: dict[str, Any], kind: str) -> dict[str, Any]:
     return reason
 
 
-def _reason_rank(reason: dict[str, Any]) -> tuple[int, int, int]:
+def _reason_rank(reason: dict[str, Any]) -> tuple[int, int, float, int]:
     kind_rank = {"retraction": 0, "withdrawal": 1, "expression_of_concern": 2}.get(
         reason.get("code") or "", 3
     )
     source = (reason.get("notice_source") or "").lower()
     source_rank = 0 if "retraction-watch" in source else 1
     hops = reason.get("hops")
-    return (kind_rank, source_rank, hops if isinstance(hops, int) else 99)
+    try:
+        rank = -float(reason.get("pagerank") or 0.0)
+    except (TypeError, ValueError):
+        rank = 0.0
+    return (kind_rank, source_rank, rank, hops if isinstance(hops, int) else 99)
 
 
 def independent_sources(paths: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -201,6 +213,7 @@ def decide(
     incomplete: bool,
     depth: int,
     has_sources: bool = True,
+    pagerank: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     """Turn traced paths into pass, warn, or block.
 
@@ -209,13 +222,16 @@ def decide(
             flagged path is unverified or unknown, the check stopped early,
             or the draft named no verifiable source.
     pass  — cited works were checked and no counted or unverified notice remains.
+            This is not a claim that the draft is clean beyond the depth.
 
-    A counted path has every hop at weight >= 0.5 with a stored sentence.
-    A reachable unverified path never passes. A discounted short path does
-    not hide a counted longer path: every returned path is classified.
-    Plain prose with no DOI, PMID, PMCID, scholarly identifier, or public URL
-    is warn (`no_sources`), not pass.
+    A counted path has every hop at weight >= 0.5 with a stored sentence
+    and a path_score at or above PATH_SCORE_FLOOR. PageRank on Work nodes
+    ranks which counted notice is shown first. A reachable unverified path
+    never passes. A discounted short path does not hide a counted longer
+    path: every returned path is classified. Plain prose with no DOI,
+    PMID, PMCID, scholarly identifier, or public URL is warn (`no_sources`).
     """
+    ranks = pagerank or {}
     counted: list[dict[str, Any]] = []
     discounted: list[dict[str, Any]] = []
     unverified: list[dict[str, Any]] = []
@@ -234,6 +250,10 @@ def decide(
     reasons = [
         _reason(path, _kind((path.get("notice") or {}).get("type"))) for path in counted
     ]
+    for reason in reasons:
+        doi = (reason.get("root_doi") or "").lower()
+        if doi in ranks:
+            reason["pagerank"] = ranks[doi]
     reasons.sort(key=_reason_rank)
     kinds = {reason["code"] for reason in reasons}
     discounted_reasons = [
@@ -294,11 +314,15 @@ def decide(
             summary = (
                 f"No counted reliance on a flagged study within {depth} hops. "
                 f"{len(discounted)} citation path"
-                f"{'s' if len(discounted) != 1 else ''} reach a notice only as "
-                "background or a dispute, so they do not change this check."
+                f"{'s' if len(discounted) != 1 else ''} reached a notice only as "
+                "background, a scholarly dispute, or a path score below "
+                f"{PATH_SCORE_FLOOR}. Coverage is not shown beyond this depth."
             )
         else:
-            summary = f"No flagged study within {depth} hops."
+            summary = (
+                f"No publisher notice was found within {depth} hops. "
+                "Coverage is not shown beyond that depth."
+            )
 
     if decision in {"warn", "block"} and kinds and unverified:
         reasons.extend(_reason(path, "unverified") for path in unverified)
@@ -316,6 +340,9 @@ def decide(
         "independent_sources": sources,
         "independent_source_count": len(sources),
         "weight_floor": WEIGHT_FLOOR,
+        "path_score_floor": PATH_SCORE_FLOOR,
+        "coverage": f"depth_{depth}",
+        "not_shown": "beyond requested depth",
     }
     if any(reason.get("code") == "no_sources" for reason in reasons):
         payload["error_code"] = "no_sources"

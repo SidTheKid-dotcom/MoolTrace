@@ -7,6 +7,7 @@ from mooltrace.decision import (
     UNVERIFIED_LABEL,
     decide,
 )
+from mooltrace.reliance import PATH_SCORE_FLOOR
 
 
 def _path(notice_type: str, root: str = "10.1/root") -> dict:
@@ -202,6 +203,98 @@ def test_weak_direct_path_does_not_mask_a_counted_longer_path():
     assert verdict["decision"] == "warn"
     assert verdict["exit_code"] == EXIT_WARN
     assert verdict["summary"] == PRESHIP_EOC
+
+
+def test_weak_mention_chain_is_below_path_score_floor():
+    path = _path("expression_of_concern")
+    path.update(
+        hops=3,
+        hops_evidence=[
+            {
+                "weight": 0.55,
+                "judged": True,
+                "reliance": "mention",
+                "sentence": "The draft cites W1 as the first hop.",
+                "evidence_from": "page",
+            },
+            {
+                "weight": 0.55,
+                "judged": True,
+                "reliance": "mention",
+                "sentence": "W1 mentions W2 in passing.",
+                "evidence_from": "page",
+            },
+            {
+                "weight": 0.55,
+                "judged": True,
+                "reliance": "mention",
+                "sentence": "W2 mentions the flagged study.",
+                "evidence_from": "page",
+            },
+        ],
+    )
+    verdict = decide([path], incomplete=False, depth=3)
+    assert 0.55 * 0.55 * 0.55 < PATH_SCORE_FLOOR
+    assert verdict["decision"] == "pass"
+    assert verdict["exit_code"] == EXIT_PASS
+    assert verdict["reasons"] == []
+    assert verdict["discounted"]
+    assert "not shown" in verdict["summary"]
+    assert verdict["path_score_floor"] == PATH_SCORE_FLOOR
+
+
+def test_strong_two_hop_clears_path_score_floor():
+    path = _path("expression_of_concern")
+    path.update(
+        hops=2,
+        hops_evidence=[
+            {
+                "weight": 0.85,
+                "judged": True,
+                "reliance": "uses_data_or_method",
+                "sentence": "The page cites Allen as the review.",
+                "evidence_from": "page",
+            },
+            {
+                "weight": 0.85,
+                "judged": True,
+                "reliance": "uses_data_or_method",
+                "sentence": "analyzing the results Khan and colleagues 6",
+                "evidence_from": "pmc_html",
+            },
+        ],
+    )
+    verdict = decide([path], incomplete=False, depth=2)
+    assert verdict["decision"] == "warn"
+    assert verdict["reasons"][0]["path_score"] == 0.85 * 0.85
+
+
+def test_pagerank_picks_the_deciding_notice():
+    low = _path("expression_of_concern", "10.1/low")
+    low.update(
+        weight=0.85,
+        judged=True,
+        reliance="uses_data_or_method",
+        sentence="low centrality flagged study",
+        hops=1,
+    )
+    high = _path("expression_of_concern", "10.1/high")
+    high.update(
+        weight=0.85,
+        judged=True,
+        reliance="uses_data_or_method",
+        sentence="high centrality flagged study",
+        hops=1,
+    )
+    verdict = decide(
+        [low, high],
+        incomplete=False,
+        depth=2,
+        pagerank={"10.1/high": 0.4, "10.1/low": 0.01},
+    )
+    assert verdict["decision"] == "warn"
+    assert verdict["reasons"][0]["root_doi"] == "10.1/high"
+    assert verdict["reasons"][0]["pagerank"] == 0.4
 
 
 def test_new_version_is_not_a_path_kind_here():

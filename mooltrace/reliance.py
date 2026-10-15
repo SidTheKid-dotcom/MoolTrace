@@ -12,6 +12,13 @@ from dataclasses import dataclass
 
 # Counted toward warn/block and the independent-source count.
 WEIGHT_FLOOR = 0.5
+# Product of hop weights. A chain of bare mentions (0.55³ ≈ 0.17) does
+# not count; a two-hop use (0.85 × 0.85) does. The graph path decides.
+PATH_SCORE_FLOOR = 0.25
+
+# The draft or cited web page cannot hedge-bypass a publisher notice.
+# Scholarly full text can still set a study aside.
+_NO_DISPUTE_SOURCES = frozenset({"draft", "page", "page_list"})
 
 WEIGHTS = {
     "relies": 1.0,
@@ -271,6 +278,7 @@ def classify_sentence(
     cited_doi: str | None = None,
     cited_author: str | None = None,
     cited_title: str | None = None,
+    allow_dispute: bool = True,
 ) -> tuple[str, float]:
     """Map one citation sentence to a class and a weight.
 
@@ -279,6 +287,8 @@ def classify_sentence(
     is it one of three or more references; otherwise is it a direct mention.
     A grouped citation with no author and no DOI stays background, so a
     shared reference list does not count as reliance.
+    Drafts and cited web pages pass allow_dispute=False so naming an
+    Expression of Concern cannot turn a counted citation into a pass.
     """
     text = re.sub(r"\s+", " ", (sentence or "")).strip()
     if not text:
@@ -290,7 +300,11 @@ def classify_sentence(
         is_author_list(text) and not uses_data_or_method(text)
     ):
         kind = "background"
-    elif disputes_the_study(text) and (named or has_doi or _points_at_this(text)):
+    elif (
+        allow_dispute
+        and disputes_the_study(text)
+        and (named or has_doi or _points_at_this(text))
+    ):
         kind = "critical"
     elif uses_data_or_method(text) and (named or has_doi):
         kind = "uses_data_or_method"
@@ -360,9 +374,13 @@ def _focus_quote(sentence: str, author: str | None, doi: str | None, year: str =
 
 
 def as_source_list(item: Reliance) -> Reliance:
-    """A source-list or script hit is background even if the title states a result."""
-    if item.reliance in {"relies", "uses_data_or_method", "mention"}:
-        return Reliance("background", WEIGHTS["background"], item.sentence, item.evidence_from)
+    """A source-list hit cites the work. It is not a prose claim about results.
+
+    Consumer pages cite through a source list. That is a counted mention,
+    not background, or the page → study hop would never warn.
+    """
+    if item.reliance in {"relies", "uses_data_or_method"}:
+        return Reliance("mention", WEIGHTS["mention"], item.sentence, item.evidence_from)
     return item
 
 
@@ -410,7 +428,17 @@ def choose_reliance(
             cited_doi=cited_doi,
             cited_author=cited_author,
             cited_title=cited_title,
+            allow_dispute=source not in _NO_DISPUTE_SOURCES,
         )
+        named = names_the_author(text, cited_author)
+        has_doi = mentions_doi(text, cited_doi)
+        overlap = title_overlap(text, cited_title)
+        if source in _NO_DISPUTE_SOURCES:
+            if source == "page_list" and kind in {"relies", "uses_data_or_method"}:
+                kind, weight = "mention", WEIGHTS["mention"]
+            elif kind == "background" and (named or has_doi or overlap >= 0.5):
+                # A health page's source list is how it cites. Count it.
+                kind, weight = "mention", WEIGHTS["mention"]
         quote = _focus_quote(text, cited_author, cited_doi, year)
         year_hit = 1 if year and year in quote else 0
         rank = (weight, year_hit, -len(quote), source_rank.get(source, 0))
