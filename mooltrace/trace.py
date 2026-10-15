@@ -18,7 +18,7 @@ from mooltrace.clients import (
     fetch_page,
     html_title,
     openalex_by_ids,
-    openalex_diabetes_care,
+    resolve_diabetes_care,
     openalex_doi,
     openalex_id,
     openalex_work_doi,
@@ -352,7 +352,7 @@ def _resolve_loose(
             errors.append(f"unresolved PMID:{pmid}")
     for volume, issue, page in found.diabetes_care:
         try:
-            doi = openalex_diabetes_care(volume, issue, page, stats)
+            doi = resolve_diabetes_care(volume, issue, page, stats)
         except MoolTraceError as exc:
             errors.append(str(exc))
             doi = None

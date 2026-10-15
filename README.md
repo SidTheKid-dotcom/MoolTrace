@@ -2,11 +2,11 @@
 
 Trace a health-AI answer to its root, and see if that root is flagged.
 
-Mool means root. The user is an engineer or reviewer on a health-AI team, before merging an answer fixture or shipping a content draft. Health models cite web pages. Direct DOI or retraction checkers miss the page → review → study → publisher Expression of Concern chain. MoolTrace returns a deterministic **pass / warn / block** with the exact path, each hop's sentence and weight, the notice, and the Cypher that decided it.
+Mool means root. The user is an engineer or reviewer on a health-AI team, before merging an answer fixture or shipping a content draft. Health models cite web pages. Direct DOI or retraction checkers miss a cited page that rests on a flagged study, including when the path goes through a review. MoolTrace returns a deterministic **pass / warn / block** with the exact path, each hop's sentence and weight, the notice, and the Cypher that decided it.
 
 It reports a path to a publisher notice. It does not say the draft is medically correct or incorrect. An Expression of Concern is not a retraction.
 
-WeMakeDevs × FalkorDB Graph Hacks, **Track 1**. The verdict is computed from FalkorDB paths and `RESTS_ON` hop properties. Notices come from Crossref. Citation lists come from OpenAlex. Citation sentences come from Semantic Scholar contexts, PMC, the citing page, or the pasted draft.
+WeMakeDevs × FalkorDB Graph Hacks, **Track 1**. The verdict is computed from FalkorDB paths and `RESTS_ON` hop properties. Notices come from Crossref. Citation lists come from OpenAlex. Diabetes Care `care/article/{volume}/{issue}/{page}` URLs resolve through Crossref on the ADA DOI pattern, then OpenAlex. Citation sentences come from Semantic Scholar contexts, PMC, the citing page, or the pasted draft.
 
 ## Primary workflow: CI over answer fixtures
 

@@ -23,7 +23,7 @@ from mooltrace.config import (
     PAGE_USER_AGENT,
     USER_AGENT,
 )
-from mooltrace.ids import clean_doi, page_title, valid_doi
+from mooltrace.ids import clean_doi, diabetes_care_doi, page_title, valid_doi
 from mooltrace.ssrf import UnsafeURL, public_http_url, redirect_target
 
 OPENALEX = "https://api.openalex.org"
@@ -248,6 +248,18 @@ def openalex_by_dois(dois: list[str], stats: CallStats) -> list[dict[str, Any]]:
     return results
 
 
+def _diabetes_care_issn_match(message: dict[str, Any]) -> bool:
+    raw: list[Any] = list(message.get("ISSN") or [])
+    for item in message.get("issn-type") or []:
+        if isinstance(item, dict):
+            raw.append(item.get("value"))
+        else:
+            raw.append(item)
+    found = {str(item).replace("-", "") for item in raw if item}
+    expected = {issn.replace("-", "") for issn in DIABETES_CARE_ISSNS}
+    return bool(found & expected)
+
+
 def openalex_diabetes_care(
     volume: str, issue: str, page: str, stats: CallStats
 ) -> str | None:
@@ -266,6 +278,24 @@ def openalex_diabetes_care(
             if valid_doi(doi):
                 return doi
     return None
+
+
+def resolve_diabetes_care(
+    volume: str, issue: str, page: str, stats: CallStats
+) -> str | None:
+    """Prefer Crossref on the ADA DOI pattern; OpenAlex is the fallback.
+
+    Everyday Health cites Khan via diabetesjournals.org/care/article/26/12/3215
+    with no DOI on the page. OpenAlex 429 must not strand that hop.
+    """
+    candidate = diabetes_care_doi(volume, issue, page)
+    if valid_doi(candidate):
+        message = crossref_work(candidate, stats)
+        if isinstance(message, dict) and _diabetes_care_issn_match(message):
+            doi = clean_doi(message.get("DOI") or candidate)
+            if valid_doi(doi):
+                return doi
+    return openalex_diabetes_care(volume, issue, page, stats)
 
 
 def crossref_works(dois: list[str], stats: CallStats) -> list[dict[str, Any]]:

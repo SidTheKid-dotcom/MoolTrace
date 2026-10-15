@@ -1,4 +1,10 @@
-from mooltrace.ids import clean_doi, extract_identifiers, has_verifiable_source, is_publisher_flag
+from mooltrace.ids import (
+    clean_doi,
+    diabetes_care_doi,
+    extract_identifiers,
+    has_verifiable_source,
+    is_publisher_flag,
+)
 
 
 def test_expression_of_concern_is_a_flag():
@@ -37,6 +43,7 @@ def test_extract_page_identifiers():
     assert "37818728" in found.pmids
     assert "PMC3767714" in found.pmcids
     assert ("26", "12", "3215") in found.diabetes_care
+    assert diabetes_care_doi("26", "12", "3215") == "10.2337/diacare.26.12.3215"
 
 
 def test_has_verifiable_source_accepts_inline_and_explicit_ids():

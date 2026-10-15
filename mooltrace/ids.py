@@ -81,6 +81,15 @@ def _dedupe(items: list[str]) -> list[str]:
     return out
 
 
+def diabetes_care_doi(volume: str, issue: str, page: str) -> str:
+    """ADA print-era Diabetes Care DOI from a care/article URL path.
+
+    Example: /care/article/26/12/3215/... → 10.2337/diacare.26.12.3215.
+    Callers must confirm the DOI against Crossref (ISSN) before trusting it.
+    """
+    return f"10.2337/diacare.{volume}.{issue}.{page}".lower()
+
+
 def extract_identifiers(text: str) -> Identifiers:
     if not text:
         return Identifiers()
