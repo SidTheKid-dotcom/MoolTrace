@@ -14,6 +14,9 @@ def test_readme_quotes_the_executed_path_query():
     executed = paths_to_notice(2)
     assert "MATCH (n:Notice)-[:FLAGS]->(w:Work)" in text
     assert "MATCH p = (s)-[:RESTS_ON*1..2]->(w)" in text
+    assert text.find("MATCH p = (s)-[:RESTS_ON*1..2]->(w)") < text.find(
+        "MATCH (n:Notice)-[:FLAGS]->(w:Work)"
+    )
     assert "(w)<-[:FLAGS]" not in text
     assert "shortestPath" in text
     for line in executed.splitlines():
@@ -54,6 +57,9 @@ def test_readme_demo_is_compose_and_honest():
     assert "docker compose up --build" in demo
     assert "127.0.0.1:4318" in demo
     assert "127.0.0.1:4317" in demo
+    assert "Healthline cinnamon" in demo
+    assert "1-hop" in demo
+    assert "counted 2-hop" in demo
     assert "Expression of Concern, not a retraction" in demo
     assert "does not say cinnamon works or does not" in demo
     assert "not logged in" in demo
