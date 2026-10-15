@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import { stepLabel } from "@/lib/step-label"
 
 type Step = { kind?: string; doi?: string | null; title?: string | null; url?: string | null; year?: number | null }
 type Reason = {
@@ -118,10 +119,6 @@ function decisionVariant(decision: string): "default" | "secondary" | "destructi
   if (decision === "block") return "destructive"
   if (decision === "warn") return "secondary"
   return "default"
-}
-
-function stepLabel(step: Step): string {
-  return step.doi || step.url || step.title || "step"
 }
 
 export function PreShip() {
