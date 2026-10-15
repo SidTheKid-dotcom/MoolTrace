@@ -7,7 +7,7 @@ from mooltrace.decision import (
     UNVERIFIED_LABEL,
     decide,
 )
-from mooltrace.reliance import PATH_SCORE_FLOOR
+from mooltrace.reliance import PATH_RULE, WEIGHTS
 
 
 def _path(notice_type: str, root: str = "10.1/root") -> dict:
@@ -205,7 +205,7 @@ def test_weak_direct_path_does_not_mask_a_counted_longer_path():
     assert verdict["summary"] == PRESHIP_EOC
 
 
-def test_weak_mention_chain_is_below_path_score_floor():
+def test_mention_only_multi_hop_does_not_count():
     path = _path("expression_of_concern")
     path.update(
         hops=3,
@@ -234,16 +234,122 @@ def test_weak_mention_chain_is_below_path_score_floor():
         ],
     )
     verdict = decide([path], incomplete=False, depth=3)
-    assert 0.55 * 0.55 * 0.55 < PATH_SCORE_FLOOR
     assert verdict["decision"] == "pass"
     assert verdict["exit_code"] == EXIT_PASS
     assert verdict["reasons"] == []
     assert verdict["discounted"]
     assert "not shown" in verdict["summary"]
-    assert verdict["path_score_floor"] == PATH_SCORE_FLOOR
+    assert verdict["path_rule"] == PATH_RULE
+    assert "path_score_floor" not in verdict or verdict.get("path_score_floor") is None
 
 
-def test_strong_two_hop_clears_path_score_floor():
+def test_two_hop_mention_only_does_not_count():
+    path = _path("expression_of_concern")
+    path.update(
+        hops=2,
+        hops_evidence=[
+            {
+                "weight": 0.55,
+                "judged": True,
+                "reliance": "mention",
+                "sentence": "This draft cites the review by DOI.",
+                "evidence_from": "draft",
+            },
+            {
+                "weight": 0.55,
+                "judged": True,
+                "reliance": "mention",
+                "sentence": "The review names Abd-Elsalam 2020 in passing.",
+                "evidence_from": "semantic_scholar",
+            },
+        ],
+    )
+    verdict = decide([path], incomplete=False, depth=2)
+    assert verdict["decision"] == "pass"
+    assert verdict["discounted"]
+
+
+def test_mention_then_included_counts():
+    path = _path("retraction")
+    path.update(
+        hops=2,
+        hops_evidence=[
+            {
+                "weight": 0.55,
+                "judged": True,
+                "reliance": "mention",
+                "sentence": "This health-information draft cites a single systematic review.",
+                "evidence_from": "draft",
+            },
+            {
+                "weight": 1.0,
+                "judged": True,
+                "reliance": "included",
+                "sentence": "Listed among included studies (Table 1: Demographic data of the retained studies)",
+                "evidence_from": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12510581/",
+            },
+        ],
+    )
+    verdict = decide([path], incomplete=False, depth=2)
+    assert verdict["decision"] == "block"
+    assert verdict["reasons"][0]["reliance"] == "included"
+    assert verdict["reasons"][0]["sentence"].startswith("Listed among included studies")
+    assert verdict["path_rule"] == PATH_RULE
+
+
+def test_three_hop_strong_path_counts_without_a_product_floor():
+    path = _path("expression_of_concern")
+    path.update(
+        hops=3,
+        hops_evidence=[
+            {
+                "weight": WEIGHTS["included"],
+                "judged": True,
+                "reliance": "included",
+                "sentence": "Listed among included studies (Table 1: Characteristics of included studies)",
+                "evidence_from": "https://pmc.ncbi.nlm.nih.gov/articles/PMC1/",
+            },
+            {
+                "weight": 0.85,
+                "judged": True,
+                "reliance": "uses_data_or_method",
+                "sentence": "The page cites Allen as the review.",
+                "evidence_from": "page",
+            },
+            {
+                "weight": 1.0,
+                "judged": True,
+                "reliance": "relies",
+                "sentence": "Khan and colleagues found that cinnamon reduced fasting glucose.",
+                "evidence_from": "pmc_html",
+            },
+        ],
+    )
+    verdict = decide([path], incomplete=False, depth=3)
+    assert verdict["decision"] == "warn"
+    assert verdict["reasons"][0]["code"] == "expression_of_concern"
+    assert verdict["path_rule"] == PATH_RULE
+
+
+def test_direct_mention_of_the_flagged_study_still_counts():
+    path = _path("retraction")
+    path.update(
+        hops=1,
+        hops_evidence=[
+            {
+                "weight": 0.55,
+                "judged": True,
+                "reliance": "mention",
+                "sentence": "A draft cites Mehra 2020, DOI 10.1016/s0140-6736(20)31180-6.",
+                "evidence_from": "draft",
+            }
+        ],
+    )
+    verdict = decide([path], incomplete=False, depth=1)
+    assert verdict["decision"] == "block"
+
+
+def test_strong_two_hop_still_counts():
     path = _path("expression_of_concern")
     path.update(
         hops=2,

@@ -12,15 +12,23 @@ from dataclasses import dataclass
 
 # Counted toward warn/block and the independent-source count.
 WEIGHT_FLOOR = 0.5
-# Product of hop weights. A chain of bare mentions (0.55³ ≈ 0.17) does
-# not count; a two-hop use (0.85 × 0.85) does. The graph path decides.
+# Forward verdicts no longer multiply hop weights against this floor.
+# Cypher reverse lookup (owned elsewhere) still ranks by the product and
+# treats product >= 0.25 as counted. Do not change that query here.
 PATH_SCORE_FLOOR = 0.25
+PATH_RULE = (
+    "count if every hop has a sentence and weight ≥ 0.5, and the path is "
+    "one hop or has an included/relies/uses_data_or_method hop; "
+    "mention-only multi-hop paths do not count; unverified hops warn"
+)
+STRONG_RELIANCE = frozenset({"included", "relies", "uses_data_or_method"})
 
 # The draft or cited web page cannot hedge-bypass a publisher notice.
 # Scholarly full text can still set a study aside.
 _NO_DISPUTE_SOURCES = frozenset({"draft", "page", "page_list"})
 
 WEIGHTS = {
+    "included": 1.0,
     "relies": 1.0,
     "uses_data_or_method": 0.85,
     "mention": 0.55,
@@ -253,6 +261,28 @@ def is_reference_metadata(sentence: str) -> bool:
     )
 
 
+def is_flattened_table_header(sentence: str) -> bool:
+    """Yes when HTML flattened a risk-of-bias or study table into one line."""
+    lowered = (sentence or "").lower()
+    marks = (
+        "overall bias",
+        "randomization process",
+        "deviations from intended",
+        "bias in measurement of outcome",
+        "bias to missing outcome data",
+        "selecting the reported results",
+        "authors randomization",
+    )
+    if sum(1 for mark in marks if mark in lowered) >= 2:
+        return True
+    return "overall bias" in lowered and "et al" in lowered and lowered.count(".") <= 1
+
+
+def is_included_listing(sentence: str) -> bool:
+    """Yes when the stored quote is the included-studies listing, not prose."""
+    return re.match(r"listed among included studies\b", (sentence or "").strip(), re.I) is not None
+
+
 def disputes_the_study(sentence: str) -> bool:
     """Yes when the citer sets the study aside or contradicts it."""
     return any(_has(sentence, phrase) for phrase in _REJECT)
@@ -293,6 +323,8 @@ def classify_sentence(
     text = re.sub(r"\s+", " ", (sentence or "")).strip()
     if not text:
         return "unresolved", WEIGHTS["unresolved"]
+    if is_included_listing(text):
+        return "included", WEIGHTS["included"]
     named = names_the_author(text, cited_author)
     has_doi = mentions_doi(text, cited_doi)
     group = citation_group_size(text)
@@ -334,6 +366,22 @@ class Reliance:
     weight: float
     sentence: str
     evidence_from: str
+
+
+def included_evidence(where: str, source_url: str) -> Reliance:
+    """Audit quote for a trial listed among a review's included studies."""
+    place = re.sub(r"\s+", " ", (where or "").strip()).rstrip(".")
+    sentence = f"Listed among included studies ({place})" if place else "Listed among included studies"
+    return Reliance("included", WEIGHTS["included"], sentence, source_url)
+
+
+def prefer_included(picked: Reliance | None, included: Reliance | None) -> Reliance | None:
+    """An included-studies listing outranks a mention. A scholarly exclusion stands."""
+    if included is None:
+        return picked
+    if picked is not None and picked.reliance == "critical":
+        return picked
+    return included
 
 
 def _focus_quote(sentence: str, author: str | None, doi: str | None, year: str = "") -> str:
@@ -379,7 +427,7 @@ def as_source_list(item: Reliance) -> Reliance:
     Consumer pages cite through a source list. That is a counted mention,
     not background, or the page → study hop would never warn.
     """
-    if item.reliance in {"relies", "uses_data_or_method"}:
+    if item.reliance in {"included", "relies", "uses_data_or_method"}:
         return Reliance("mention", WEIGHTS["mention"], item.sentence, item.evidence_from)
     return item
 
@@ -399,7 +447,7 @@ def choose_reliance(
     cut at 800 characters so the edge stays an audit quote.
     """
     best: Reliance | None = None
-    best_key: tuple[float, int, int, int] | None = None
+    best_key: tuple[float, int, int, int, int] | None = None
     year = ""
     if cited_year not in (None, ""):
         try:
@@ -411,6 +459,7 @@ def choose_reliance(
         "europepmc_xml": 4,
         "pmc_html": 4,
         "pmc_oa": 4,
+        "pmc_included": 5,
         "publisher_html": 3,
         "publisher_pdf": 3,
         "page": 3,
@@ -419,9 +468,14 @@ def choose_reliance(
         "openalex_abstract": 1,
         "europepmc_references": 0,
     }
+    class_rank = {"included": 3, "relies": 2, "uses_data_or_method": 1}
     for sentence, source in candidates:
         text = re.sub(r"\s+", " ", sentence or "").strip()
-        if len(text) < 12 or cites_a_different_year(text, cited_author, year):
+        if len(text) < 12:
+            continue
+        if is_flattened_table_header(text) and not is_included_listing(text):
+            continue
+        if cites_a_different_year(text, cited_author, year):
             continue
         kind, weight = classify_sentence(
             text,
@@ -434,14 +488,20 @@ def choose_reliance(
         has_doi = mentions_doi(text, cited_doi)
         overlap = title_overlap(text, cited_title)
         if source in _NO_DISPUTE_SOURCES:
-            if source == "page_list" and kind in {"relies", "uses_data_or_method"}:
+            if source == "page_list" and kind in {"included", "relies", "uses_data_or_method"}:
                 kind, weight = "mention", WEIGHTS["mention"]
             elif kind == "background" and (named or has_doi or overlap >= 0.5):
                 # A health page's source list is how it cites. Count it.
                 kind, weight = "mention", WEIGHTS["mention"]
-        quote = _focus_quote(text, cited_author, cited_doi, year)
+        quote = text if is_included_listing(text) else _focus_quote(text, cited_author, cited_doi, year)
         year_hit = 1 if year and year in quote else 0
-        rank = (weight, year_hit, -len(quote), source_rank.get(source, 0))
+        host_rank = source_rank.get(source, 0)
+        if host_rank == 0 and (
+            "pmc.ncbi.nlm.nih.gov" in (source or "").lower()
+            or "europepmc.org" in (source or "").lower()
+        ):
+            host_rank = 4
+        rank = (weight, class_rank.get(kind, 0), year_hit, -len(quote), host_rank)
         if best_key is None or rank > best_key:
             best_key = rank
             best = Reliance(kind, weight, quote, source)

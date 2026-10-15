@@ -79,7 +79,7 @@ Hero fixture: Everyday Health URL only, no Khan DOI in the pasted text. See `exa
 | warn | A counted path reaches an Expression of Concern, a reachable path is unverified, the check did not finish, or no verifiable citation or source was provided (`no_sources`) | 2 |
 | incomplete (infra) | Graph timeout or exhausted upstream. Not a silent pass and not a block | 3 |
 
-A **counted path** needs every `RESTS_ON` hop judged with a stored sentence and weight ≥ 0.5, and a `path_score` (the product of those weights) ≥ 0.25. A chain of bare mentions (`0.55 × 0.55 × 0.55`) does not count. A two-hop use (`0.85 × 0.85`) does. The draft cannot hedge-bypass: naming an Expression of Concern or writing "we excluded" in the pasted answer does not turn a cited flagged study into a pass. A scholarly review can still set a study aside. A weak background hop does not hide a counted longer path: the check classifies **every** path within the depth cap, not `shortestPath`. Depth is 1–3. Depth 4 is not implemented. `pass` means no counted or unverified notice was found within that depth. Coverage is **not shown** beyond it.
+A **counted path** needs every `RESTS_ON` hop judged with a stored sentence and weight ≥ 0.5, and is either a **single hop** or has at least one `included` / `relies` / `uses_data_or_method` hop. Mention-only multi-hop paths do not count. A two-hop use (`uses` × `uses`) does. A draft that only names a review DOI is a mention; that path counts when the review→trial hop is `included` or another strong use. The old product-with-floor rule (`0.55³ ≈ 0.17 < 0.25`) is retired so hop count does not silently drop a strong 3-hop chain. `path_score` is still the product of hop weights and is used to rank paths, not to gate them. The output field `path_rule` states this. Unverified hops warn; they never silently pass. The draft cannot hedge-bypass: naming an Expression of Concern or writing "we excluded" in the pasted answer does not turn a cited flagged study into a pass. A scholarly review can still set a study aside. A weak background hop does not hide a counted longer path: the check classifies **every** path within the depth cap, not `shortestPath`. Depth is 1–3. Depth 4 is not implemented. `pass` means no counted or unverified notice was found within that depth. Coverage is **not shown** beyond it.
 
 ## Graph model
 
@@ -130,7 +130,7 @@ YIELD node, score
 
 That groups answers that share a Work component containing a publisher notice. The fixture batch report includes these clusters. `algo.pageRank` ranks which counted notice is shown first. `algo.MaxFlow` is not registered in this build. Independent sources are distinct citers on counted paths.
 
-Reverse lookup lists every matching notice and only the answers whose sources reach that work. Counted answers use the same hop rule, including the path-score floor. It is not a monitoring or alert scheduler.
+Reverse lookup lists every matching notice and only the answers whose sources reach that work. The Cypher `counted` flag still uses hop weight ≥ 0.5, a stored sentence, and product `path_score` ≥ 0.25 (that query is not the forward verdict). It is not a monitoring or alert scheduler.
 
 Every query the tools run is in `mooltrace/cypher.py`.
 
@@ -138,11 +138,14 @@ Every query the tools run is in `mooltrace/cypher.py`.
 
 | Class | Weight | Counts |
 | --- | --- | --- |
+| included | 1.0 | yes (strongest: listed among a review's included studies) |
 | relies | 1.0 | yes |
 | uses_data_or_method | 0.85 | yes |
-| mention | 0.55 | yes |
+| mention | 0.55 | 1-hop only; mention-only multi-hop paths do not count |
 | background | 0.2 | no |
 | critical | 0.0 | no |
+
+`included` is detected from PMC full-text XML (Europe PMC `fullTextXML` / PMC OA): characteristics-of-included-studies tables, risk-of-bias tables, forest-plot or study lists, PRISMA "were included" prose, and reference-list sections labelled included. Study labels map to a reference DOI by author surname **and** year or reference id, not surname alone. The stored sentence looks like `Listed among included studies (Table 1: Characteristics of included studies)` plus the PMC article URL. A flattened table header is never stored as the hop sentence. This does not say the review is wrong: it records that the review included a trial that was later retracted.
 
 Semantic Scholar [citation context data](https://www.semanticscholar.org/) may appear in hop evidence (`evidence_from: semantic_scholar`). Intent labels from that API are not requested.
 

@@ -2,7 +2,8 @@
 
 The decision flags reliance on a publisher notice. It does not say the
 draft is medically wrong. A counted path needs every RESTS_ON hop judged
-with a stored sentence and weight at or above the floor.
+with a stored sentence and weight at or above the floor, and is either a
+single hop or has at least one included/relies/uses_data_or_method hop.
 """
 
 from __future__ import annotations
@@ -10,7 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 from mooltrace.ids import normalize_update_type
-from mooltrace.reliance import PATH_SCORE_FLOOR, WEIGHT_FLOOR
+from mooltrace.reliance import PATH_RULE, STRONG_RELIANCE, WEIGHT_FLOOR
 
 PRESHIP_EOC = (
     "Before your bot ships this answer, MoolTrace flags that a cited page "
@@ -92,23 +93,30 @@ def path_status(path: dict[str, Any]) -> str:
 
     When hops_evidence is present, every RESTS_ON hop must count. A weak
     last hop cannot hide a stronger alternate path; each path is classified
-    on its own hops. The product of hop weights must also clear
-    PATH_SCORE_FLOOR, so a chain of bare mentions does not count.
-    Without hops_evidence, the last-edge fields are used.
+    on its own hops. Mention-only multi-hop paths do not count. A path
+    counts when every hop meets the floor and it is a single hop or has an
+    included/relies/uses_data_or_method hop. Without hops_evidence, the
+    last-edge fields are used.
     """
     hops = path.get("hops_evidence") or []
     if hops:
         status = _worst_status([_edge_status(edge) for edge in hops])
-        if status == "count" and path_score(path) < PATH_SCORE_FLOOR:
+        if status == "count" and not _clears_hop_rule(hops):
             return "discount"
         return status
     weighted = "weight" in path or "judged" in path or "sentence" in path
     if not weighted:
         return "count"
-    status = _edge_status(path)
-    if status == "count" and path_score(path) < PATH_SCORE_FLOOR:
-        return "discount"
-    return status
+    return _edge_status(path)
+
+
+def _clears_hop_rule(hops: list[dict[str, Any]]) -> bool:
+    """Single-hop mentions count. Multi-hop paths need a strong use."""
+    if len(hops) <= 1:
+        return True
+    return any(
+        (edge.get("reliance") or "").strip().lower() in STRONG_RELIANCE for edge in hops
+    )
 
 
 def path_score(path: dict[str, Any]) -> float:
@@ -224,8 +232,9 @@ def decide(
     pass  — cited works were checked and no counted or unverified notice remains.
             This is not a claim that the draft is clean beyond the depth.
 
-    A counted path has every hop at weight >= 0.5 with a stored sentence
-    and a path_score at or above PATH_SCORE_FLOOR. PageRank on Work nodes
+    A counted path has every hop at weight >= 0.5 with a stored sentence,
+    and is either one hop or has an included/relies/uses_data_or_method hop.
+    Mention-only multi-hop paths do not count. PageRank on Work nodes
     ranks which counted notice is shown first. A reachable unverified path
     never passes. A discounted short path does not hide a counted longer
     path: every returned path is classified. Plain prose with no DOI,
@@ -315,8 +324,8 @@ def decide(
                 f"No counted reliance on a flagged study within {depth} hops. "
                 f"{len(discounted)} citation path"
                 f"{'s' if len(discounted) != 1 else ''} reached a notice only as "
-                "background, a scholarly dispute, or a path score below "
-                f"{PATH_SCORE_FLOOR}. Coverage is not shown beyond this depth."
+                "background, a scholarly dispute, or a mention-only multi-hop "
+                "path. Coverage is not shown beyond this depth."
             )
         else:
             summary = (
@@ -340,7 +349,7 @@ def decide(
         "independent_sources": sources,
         "independent_source_count": len(sources),
         "weight_floor": WEIGHT_FLOOR,
-        "path_score_floor": PATH_SCORE_FLOOR,
+        "path_rule": PATH_RULE,
         "coverage": f"depth_{depth}",
         "not_shown": "beyond requested depth",
     }

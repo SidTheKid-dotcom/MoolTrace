@@ -44,6 +44,7 @@ type Check = {
   independent_source_count?: number
   weight_floor?: number
   path_score_floor?: number
+  path_rule?: string
   coverage?: string
   not_shown?: string
   cypher?: string
@@ -311,7 +312,7 @@ export function PreShip() {
                     {result.independent_source_count ?? 0} independent source
                     {(result.independent_source_count ?? 0) === 1 ? "" : "s"} at weight ≥{" "}
                     {result.weight_floor ?? 0.5}
-                    {result.path_score_floor != null ? ` · path score ≥ ${result.path_score_floor}` : ""}
+                    {result.path_rule ? ` · ${result.path_rule}` : result.path_score_floor != null ? ` · path score ≥ ${result.path_score_floor}` : ""}
                     {result.coverage ? ` · ${result.coverage.replace("_", " ")}` : ""}
                     {result.not_shown ? ` · ${result.not_shown}` : ""}
                     {result.elapsed_ms != null ? ` · ${result.elapsed_ms} ms` : ""}

@@ -23,13 +23,20 @@ from mooltrace.contexts import (
     page_candidates,
     pmc_author,
     pmc_html_sentences,
+    pmc_included_studies,
     pmc_oa_xml,
     pmc_sentences_for,
     semantic_scholar_contexts,
     s2_disabled,
 )
 from mooltrace.graph import Graph
-from mooltrace.reliance import WEIGHT_FLOOR, Reliance, as_source_list, choose_reliance
+from mooltrace.reliance import (
+    WEIGHT_FLOOR,
+    Reliance,
+    as_source_list,
+    choose_reliance,
+    prefer_included,
+)
 
 
 def _edge_key(row: dict[str, Any]) -> tuple[str, str]:
@@ -127,8 +134,15 @@ def _judge_page(
     return True
 
 
-def _counted(row: dict[str, Any], by_doi: dict[str, list[tuple[str, str]]]) -> bool:
-    picked = _finish(by_doi.get(row.get("root_doi") or "", []), row)
+def _counted(
+    row: dict[str, Any],
+    by_doi: dict[str, list[tuple[str, str]]],
+    included_by_doi: dict[str, Reliance] | None = None,
+) -> bool:
+    doi = row.get("root_doi") or ""
+    if included_by_doi and doi in included_by_doi:
+        return True
+    picked = _finish(by_doi.get(doi, []), row)
     return picked is not None and picked.weight >= WEIGHT_FLOOR
 
 
@@ -146,6 +160,7 @@ def _judge_work_group(
     citer = rows[0].get("citer_doi") or ""
     answered = False
     by_doi: dict[str, list[tuple[str, str]]] = {}
+    included_by_doi: dict[str, Reliance] = {}
 
     s2 = semantic_scholar_contexts(citer, stats)
     if s2 is None and s2_disabled() and not any(note.startswith("Semantic Scholar") for note in notes):
@@ -187,7 +202,10 @@ def _judge_work_group(
             answered = True
             for doi, sentences in html_map.items():
                 _extend(by_doi, doi, sentences, "pmc_html")
-        if any(not _counted(row, by_doi) for row in rows):
+        included_by_doi.update(pmc_included_studies(pmcid, dois, stats))
+        if included_by_doi:
+            answered = True
+        if any(not _counted(row, by_doi, included_by_doi) for row in rows):
             oa_xml = pmc_oa_xml(pmcid, stats)
             if oa_xml is not None:
                 answered = True
@@ -196,9 +214,10 @@ def _judge_work_group(
                 if oa_map:
                     for doi, sentences in oa_map.items():
                         _extend(by_doi, doi, sentences, "pmc_oa")
+                included_by_doi.update(pmc_included_studies(pmcid, dois, stats, xml_text=oa_xml))
 
     alex: dict[str, Any] | None = None
-    weak = [row for row in rows if not _counted(row, by_doi)]
+    weak = [row for row in rows if not _counted(row, by_doi, included_by_doi)]
     if weak:
         try:
             alex = openalex_context_record(citer, stats)
@@ -235,7 +254,12 @@ def _judge_work_group(
         row
         for row in rows
         if not (
-            (picked := _finish(by_doi.get(row.get("root_doi") or "", []), row))
+            (
+                picked := prefer_included(
+                    _finish(by_doi.get(row.get("root_doi") or "", []), row),
+                    included_by_doi.get(row.get("root_doi") or ""),
+                )
+            )
             and picked.sentence
         )
     ]
@@ -252,7 +276,10 @@ def _judge_work_group(
             if author:
                 row["root_author"] = author
         candidates = by_doi.get(doi, [])
-        best = _finish(candidates, row) if candidates else None
+        best = prefer_included(
+            _finish(candidates, row) if candidates else None,
+            included_by_doi.get(doi),
+        )
         if best:
             _store(graph, row, best)
             notes.append(f"{citer} → {doi}: {best.evidence_from}")

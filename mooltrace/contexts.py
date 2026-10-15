@@ -29,7 +29,14 @@ from mooltrace.clients import (
 )
 from mooltrace.config import CACHE_MAX, HTTP_MAX_DECOMPRESS
 from mooltrace.ids import clean_doi, valid_doi
-from mooltrace.reliance import doi_markers, names_the_author, title_overlap
+from mooltrace.reliance import (
+    Reliance,
+    doi_markers,
+    included_evidence,
+    is_flattened_table_header,
+    names_the_author,
+    title_overlap,
+)
 
 S2 = "https://api.semanticscholar.org/graph/v1"
 EUROPE_PMC = "https://www.ebi.ac.uk/europepmc/webservices/rest"
@@ -350,33 +357,76 @@ def _pmc_xml(pmcid: str, stats: CallStats) -> str | None:
     return text
 
 
+_XLINK_HREF = "{http://www.w3.org/1999/xlink}href"
+
+
+def _element_doi(element: ET.Element) -> str:
+    """DOI from pub-id, ext-link, or a doi: token in mixed citation text."""
+    for child in element.iter():
+        name = _local(child.tag)
+        if name == "pub-id" and (child.get("pub-id-type") or "").lower() == "doi":
+            doi = clean_doi("".join(child.itertext()))
+            if valid_doi(doi):
+                return doi
+        if name == "ext-link" and (child.get("ext-link-type") or "").lower() == "doi":
+            href = child.get("href") or child.get(_XLINK_HREF) or ""
+            doi = clean_doi(href or "".join(child.itertext()))
+            if valid_doi(doi):
+                return doi
+    match = re.search(r"doi:\s*(10\.\d{4,9}/\S+)", " ".join(element.itertext()), re.I)
+    if match:
+        doi = clean_doi(match.group(1).rstrip(".).,;"))
+        if valid_doi(doi):
+            return doi
+    return ""
+
+
+def _citation_surname_year(ref: ET.Element) -> tuple[str, str]:
+    surname = ""
+    year = ""
+    for child in ref.iter():
+        name = _local(child.tag)
+        if name == "surname" and not surname:
+            surname = "".join(child.itertext()).strip()
+        elif name == "year" and not year:
+            year = "".join(child.itertext()).strip()
+    text = " ".join(ref.itertext())
+    if not surname:
+        lead = re.match(r"\s*(?:\d+\.?\s*)?([A-Z][A-Za-z][A-Za-z'`-]+)", text)
+        if lead:
+            surname = lead.group(1)
+    if not year:
+        found = re.search(r"\b((?:19|20)\d{2})\b", text)
+        if found:
+            year = found.group(1)
+    return surname, year
+
+
+def _label_key(label: str) -> str:
+    return re.sub(r"[^\dA-Za-z]+", "", label or "")
+
+
 def _ref_index(root: ET.Element) -> dict[str, dict[str, str]]:
     """DOI → reference id, label, surname, year."""
     index: dict[str, dict[str, str]] = {}
     for ref in root.iter():
         if _local(ref.tag) != "ref":
             continue
-        doi = ""
-        surname = ""
-        year = ""
+        doi = _element_doi(ref)
+        if not valid_doi(doi):
+            continue
+        surname, year = _citation_surname_year(ref)
         label = ""
         for child in ref.iter():
-            name = _local(child.tag)
-            if name == "label" and not label:
+            if _local(child.tag) == "label" and not label:
                 label = "".join(child.itertext()).strip()
-            elif name == "surname" and not surname:
-                surname = "".join(child.itertext()).strip()
-            elif name == "year" and not year:
-                year = "".join(child.itertext()).strip()
-            elif name == "pub-id" and (child.get("pub-id-type") or "").lower() == "doi":
-                doi = clean_doi("".join(child.itertext()))
-        if valid_doi(doi):
-            index[doi] = {
-                "rid": ref.get("id") or "",
-                "label": label,
-                "surname": surname,
-                "year": year,
-            }
+        index[doi] = {
+            "rid": ref.get("id") or "",
+            "label": label,
+            "label_key": _label_key(label),
+            "surname": surname,
+            "year": year,
+        }
     return index
 
 
@@ -444,12 +494,259 @@ def pmc_sentences_for(
             if not points:
                 continue
             for sentence in split_sentences(text):
+                if is_flattened_table_header(sentence):
+                    continue
                 if meta["surname"] and names_the_author(sentence, meta["surname"]):
                     found[doi].append(sentence)
                 elif not meta["surname"] and meta["label"] and re.search(
                     rf"\b{re.escape(meta['label'])}\b", sentence
                 ):
                     found[doi].append(sentence)
+    return found
+
+
+_INCLUDED_HINTS = (
+    "included studies",
+    "included study",
+    "included randomized",
+    "included rcts",
+    "included trials",
+    "characteristics of included",
+    "baseline characteristics of included",
+    "retained studies",
+    "risk of bias",
+    "risk-of-bias",
+    "quality assessment",
+    "study characteristics",
+    "studies included",
+    "forest plot",
+    "prisma",
+    "study selection",
+    "selection of studies",
+)
+_EXCLUDED_HINTS = (
+    "excluded studies",
+    "excluded study",
+    "studies excluded",
+    "excluded trials",
+)
+_PRISMA_PHRASES = (
+    "included in the meta-analysis",
+    "included in the metaanalysis",
+    "included in this review",
+    "included in the review",
+    "included in the quantitative",
+    "studies were included",
+    "trials were included",
+    "rcts were included",
+)
+_AUTHOR_YEAR = re.compile(
+    r"(?:(?P<num>\d+)\s*[-.)]\s*)?"
+    r"(?P<surname>[A-Z][A-Za-z][A-Za-z'`-]+)"
+    r"(?:\s+et\s+al\.?,?)?"
+    r"(?:\s*\(?(?P<year>(?:19|20)\d{2})\)?)?"
+    r"(?:\s*\[(?P<label>\d+)\])?",
+)
+
+
+def pmc_article_url(pmcid: str) -> str:
+    return f"https://pmc.ncbi.nlm.nih.gov/articles/{(pmcid or '').upper()}/"
+
+
+def _is_excluded_context(text: str) -> bool:
+    lowered = (text or "").lower()
+    if any(hint in lowered for hint in _EXCLUDED_HINTS):
+        return "included studies" not in lowered and "included study" not in lowered
+    return False
+
+
+def _is_included_context(text: str) -> bool:
+    if not text or _is_excluded_context(text):
+        return False
+    lowered = text.lower()
+    return any(hint in lowered for hint in _INCLUDED_HINTS)
+
+
+def _where_rank(where: str) -> int:
+    lowered = where.lower()
+    if _is_excluded_context(where):
+        return -1
+    if any(token in lowered for token in ("character", "retained", "baseline")):
+        return 3
+    if "risk of bias" in lowered or "quality" in lowered:
+        return 2
+    if "prisma" in lowered or "selection" in lowered:
+        return 1
+    return 0
+
+
+def _format_where(label: str, caption: str, fallback: str = "") -> str:
+    place = re.sub(r"\s+", " ", caption or "").strip().rstrip(".")
+    tag = (label or "").strip()
+    if tag and place:
+        return f"{tag}: {place}"
+    return place or tag or fallback
+
+
+def _section_titles(element: ET.Element, parents: dict[ET.Element, ET.Element]) -> list[str]:
+    titles: list[str] = []
+    cursor: ET.Element | None = element
+    while cursor is not None:
+        for child in list(cursor):
+            if _local(child.tag) == "title":
+                titles.append("".join(child.itertext()).strip())
+                break
+        cursor = parents.get(cursor)
+    return titles
+
+
+def _table_label_caption(table_wrap: ET.Element) -> tuple[str, str]:
+    label = ""
+    caption = ""
+    for child in table_wrap:
+        name = _local(child.tag)
+        if name == "label" and not label:
+            label = "".join(child.itertext()).strip()
+        elif name == "caption" and not caption:
+            caption = re.sub(r"\s+", " ", "".join(child.itertext())).strip()
+    if not caption:
+        for child in table_wrap.iter():
+            if _local(child.tag) == "title":
+                caption = re.sub(r"\s+", " ", "".join(child.itertext())).strip()
+                break
+    return label, caption
+
+
+def _unique_doi(dois: list[str]) -> str:
+    found = {clean_doi(doi) for doi in dois if valid_doi(doi)}
+    return next(iter(found)) if len(found) == 1 else ""
+
+
+def _mark(hits: dict[str, str], doi: str, where: str) -> None:
+    doi = clean_doi(doi)
+    if not doi:
+        return
+    current = hits.get(doi, "")
+    if _where_rank(where) >= _where_rank(current):
+        hits[doi] = where
+
+
+def pmc_included_studies(
+    pmcid: str,
+    cited_dois: list[str],
+    stats: CallStats,
+    xml_text: str | None = None,
+) -> dict[str, Reliance]:
+    """Map cited DOIs that a review lists as included studies.
+
+    Tables (characteristics, risk of bias, retained studies), PRISMA
+    included-study prose, and reference-list sections labelled included.
+    Matching is surname+year, reference id, or xref rid — not surname alone.
+    The stored quote is a listing, never a raw table header.
+    """
+    if xml_text is None:
+        xml_text = _pmc_xml(pmcid, stats)
+    if not xml_text:
+        return {}
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError:
+        return {}
+    refs = _ref_index(root)
+    wanted = {clean_doi(doi) for doi in cited_dois if valid_doi(doi) and clean_doi(doi) in refs}
+    if not wanted:
+        return {}
+    by_rid: dict[str, list[str]] = {}
+    by_surname_year: dict[tuple[str, str], list[str]] = {}
+    by_label: dict[str, list[str]] = {}
+    for doi, meta in refs.items():
+        if meta.get("rid"):
+            by_rid.setdefault(meta["rid"], []).append(doi)
+        surname = (meta.get("surname") or "").lower()
+        year = str(meta.get("year") or "")
+        if surname and year:
+            by_surname_year.setdefault((surname, year), []).append(doi)
+        key = meta.get("label_key") or _label_key(meta.get("label") or "")
+        if key:
+            by_label.setdefault(key, []).append(doi)
+    parents: dict[ET.Element, ET.Element] = {}
+    for parent in root.iter():
+        for child in list(parent):
+            parents[child] = parent
+    hits: dict[str, str] = {}
+
+    def absorb_xrefs(element: ET.Element, where: str) -> None:
+        for child in element.iter():
+            if _local(child.tag) != "xref":
+                continue
+            doi = _unique_doi(by_rid.get(child.get("rid") or "", []))
+            if doi in wanted:
+                _mark(hits, doi, where)
+
+    def absorb_author_year(text: str, where: str) -> None:
+        for match in _AUTHOR_YEAR.finditer(text):
+            surname = (match.group("surname") or "").lower()
+            year = match.group("year") or ""
+            label = match.group("label") or ""
+            doi = ""
+            if surname and year:
+                doi = _unique_doi(by_surname_year.get((surname, year), []))
+            elif surname and label:
+                labeled = _unique_doi(by_label.get(label, []))
+                meta = refs.get(labeled) or {}
+                if labeled and (meta.get("surname") or "").lower() == surname:
+                    doi = labeled
+            if doi in wanted:
+                _mark(hits, doi, where)
+
+    for table_wrap in root.iter():
+        if _local(table_wrap.tag) != "table-wrap":
+            continue
+        label, caption = _table_label_caption(table_wrap)
+        section = " ".join(_section_titles(table_wrap, parents))
+        context = f"{label} {caption} {section}"
+        if _is_excluded_context(context) or not _is_included_context(context):
+            continue
+        where = _format_where(label, caption, fallback=section or "included studies table")
+        absorb_xrefs(table_wrap, where)
+        absorb_author_year(re.sub(r"\s+", " ", " ".join(table_wrap.itertext())), where)
+
+    for paragraph in root.iter():
+        if _local(paragraph.tag) != "p" or _in_ref_list(paragraph, parents):
+            continue
+        section = " ".join(_section_titles(paragraph, parents))
+        text = re.sub(r"\s+", " ", " ".join(paragraph.itertext())).strip()
+        lowered = text.lower()
+        prisma = any(phrase in lowered for phrase in _PRISMA_PHRASES)
+        if _is_excluded_context(section) or not (prisma or _is_included_context(section)):
+            continue
+        if "excluded" in lowered and "included" not in lowered:
+            continue
+        where = _format_where("", section, fallback="PRISMA included studies")
+        absorb_xrefs(paragraph, where)
+
+    for ref_list in root.iter():
+        if _local(ref_list.tag) != "ref-list":
+            continue
+        title = ""
+        for child in list(ref_list):
+            if _local(child.tag) == "title":
+                title = "".join(child.itertext()).strip()
+                break
+        if "included" not in title.lower() or _is_excluded_context(title):
+            continue
+        where = _format_where("", title, fallback="included reference list")
+        for ref in ref_list:
+            if _local(ref.tag) != "ref":
+                continue
+            doi = _element_doi(ref)
+            if doi in wanted:
+                _mark(hits, doi, where)
+
+    url = pmc_article_url(pmcid)
+    found: dict[str, Reliance] = {}
+    for doi, where in hits.items():
+        found[doi] = included_evidence(where, url)
     return found
 
 
@@ -478,6 +775,8 @@ def pmc_html_sentences(
         author = target.get("author") or ""
         hits: list[str] = []
         for sentence in split_sentences(prose):
+            if is_flattened_table_header(sentence):
+                continue
             names = bool(author) and names_the_author(sentence, author)
             marks = any(marker in sentence.lower() for marker in doi_markers(doi))
             if names or marks:

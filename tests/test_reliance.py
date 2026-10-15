@@ -225,6 +225,27 @@ def test_review_exclusion_is_still_critical():
     assert picked.weight == 0.0
 
 
+def test_included_listing_outranks_a_mention():
+    picked = choose_reliance(
+        [
+            (
+                "See Abbas et al., 2019 for the trial protocol and nothing further.",
+                "pmc_html",
+            ),
+            (
+                "Listed among included studies (Table 1: Demographic data of the retained studies)",
+                "https://pmc.ncbi.nlm.nih.gov/articles/PMC12510581/",
+            ),
+        ],
+        cited_author="Abbas",
+        cited_doi="10.1016/j.jogoh.2018.10.023",
+        cited_year=2018,
+    )
+    assert picked is not None
+    assert picked.reliance == "included"
+    assert picked.sentence.startswith("Listed among included studies")
+
+
 def test_page_source_list_is_a_counted_mention():
     picked = choose_reliance(
         [
