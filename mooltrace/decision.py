@@ -1,0 +1,322 @@
+"""Pass, warn, or block for a draft health-AI answer.
+
+The decision flags reliance on a publisher notice. It does not say the
+draft is medically wrong. A counted path needs every RESTS_ON hop judged
+with a stored sentence and weight at or above the floor.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from mooltrace.ids import normalize_update_type
+from mooltrace.reliance import WEIGHT_FLOOR
+
+PRESHIP_EOC = (
+    "Before your bot ships this answer, MoolTrace flags that a cited page "
+    "or review reaches a study under an Expression of Concern."
+)
+PRESHIP_RETRACTION = (
+    "Before your bot ships this answer, MoolTrace flags that a cited page "
+    "or review reaches a retracted study."
+)
+PRESHIP_WITHDRAWAL = (
+    "Before your bot ships this answer, MoolTrace flags that a cited page "
+    "or review reaches a study the publisher has withdrawn."
+)
+UNVERIFIED_LABEL = "cites flagged study; reliance unverified"
+NO_SOURCES_SUMMARY = (
+    "No verifiable citation or source was provided. "
+    "MoolTrace cannot inspect this answer's evidence chain."
+)
+
+EXIT_PASS = 0
+EXIT_BLOCK = 1
+EXIT_WARN = 2
+EXIT_INFRA = 3
+
+
+def _kind(notice_type: str | None) -> str:
+    raw = normalize_update_type(notice_type)
+    if raw == "expression_of_concern":
+        return "expression_of_concern"
+    if "retract" in raw:
+        return "retraction"
+    if "withdraw" in raw or raw == "removal":
+        return "withdrawal"
+    return raw or "notice"
+
+
+def _judged_flag(value: Any) -> bool | None:
+    if value is True or value is False:
+        return value
+    if value in (1, "true", "True"):
+        return True
+    if value in (0, "false", "False"):
+        return False
+    return None
+
+
+def _edge_status(edge: dict[str, Any]) -> str:
+    judged = _judged_flag(edge.get("judged"))
+    sentence = (edge.get("sentence") or "").strip()
+    weight = edge.get("weight")
+    reliance = (edge.get("reliance") or "").strip().lower()
+    if reliance == "unverified" or (judged is True and not sentence):
+        return "unverified"
+    if judged is True:
+        if weight is None or float(weight) < WEIGHT_FLOOR:
+            return "discount"
+        return "count"
+    if weight is not None and sentence and float(weight) >= WEIGHT_FLOOR:
+        return "count"
+    if weight is not None and sentence and float(weight) < WEIGHT_FLOOR:
+        return "discount"
+    if weight is not None and not sentence:
+        return "unverified"
+    return "unknown"
+
+
+def _worst_status(statuses: list[str]) -> str:
+    """A path counts only when every hop counts. Weak or missing hops win."""
+    order = {"unknown": 0, "unverified": 1, "discount": 2, "count": 3}
+    worst = "count"
+    for status in statuses:
+        if order.get(status, 0) < order.get(worst, 3):
+            worst = status
+    return worst
+
+
+def path_status(path: dict[str, Any]) -> str:
+    """``count``, ``discount``, ``unverified``, or ``unknown``.
+
+    When hops_evidence is present, every RESTS_ON hop must count. A weak
+    last hop cannot hide a stronger alternate path; each path is classified
+    on its own hops. Without hops_evidence, the last-edge fields are used.
+    """
+    hops = path.get("hops_evidence") or []
+    if hops:
+        return _worst_status([_edge_status(edge) for edge in hops])
+    weighted = "weight" in path or "judged" in path or "sentence" in path
+    if not weighted:
+        return "count"
+    return _edge_status(path)
+
+
+def path_score(path: dict[str, Any]) -> float:
+    hops = path.get("hops_evidence") or []
+    if hops:
+        score = 1.0
+        for edge in hops:
+            try:
+                score *= float(edge.get("weight") if edge.get("weight") is not None else 0.0)
+            except (TypeError, ValueError):
+                return 0.0
+        return score
+    try:
+        return float(path["path_score"])
+    except (KeyError, TypeError, ValueError):
+        try:
+            return float(path.get("weight") if path.get("weight") is not None else 0.0)
+        except (TypeError, ValueError):
+            return 0.0
+
+
+def _reason(path: dict[str, Any], kind: str) -> dict[str, Any]:
+    notice = path.get("notice") or {}
+    hops = path.get("hops_evidence") or []
+    last = hops[-1] if hops else path
+    reason = {
+        "code": kind,
+        "root_doi": (path.get("root") or {}).get("doi"),
+        "root_title": (path.get("root") or {}).get("title"),
+        "notice_doi": notice.get("doi"),
+        "notice_type": notice.get("type"),
+        "notice_label": notice.get("label"),
+        "notice_date": notice.get("date"),
+        "notice_source": notice.get("source"),
+        "hops": path.get("hops"),
+        "path_score": path_score(path),
+        "steps": path.get("steps") or [],
+        "hops_evidence": hops,
+        "source_url": path.get("source_url"),
+        "reliance": last.get("reliance") if isinstance(last, dict) else path.get("reliance"),
+        "weight": last.get("weight") if isinstance(last, dict) else path.get("weight"),
+        "sentence": ((last.get("sentence") if isinstance(last, dict) else path.get("sentence")) or "").strip()
+        or None,
+        "evidence_from": (last.get("evidence_from") if isinstance(last, dict) else path.get("evidence_from"))
+        or None,
+    }
+    if kind == "unverified":
+        reason["label"] = UNVERIFIED_LABEL
+    return reason
+
+
+def _reason_rank(reason: dict[str, Any]) -> tuple[int, int, int]:
+    kind_rank = {"retraction": 0, "withdrawal": 1, "expression_of_concern": 2}.get(
+        reason.get("code") or "", 3
+    )
+    source = (reason.get("notice_source") or "").lower()
+    source_rank = 0 if "retraction-watch" in source else 1
+    hops = reason.get("hops")
+    return (kind_rank, source_rank, hops if isinstance(hops, int) else 99)
+
+
+def independent_sources(paths: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Distinct citers on counted paths. The citer is the node before the flagged study."""
+    found: dict[str, dict[str, Any]] = {}
+    for path in paths:
+        if path_status(path) != "count":
+            continue
+        steps = path.get("steps") or []
+        if len(steps) < 2:
+            continue
+        citer = steps[-2]
+        key = citer.get("doi") or citer.get("url")
+        if not key:
+            continue
+        weight = path_score(path)
+        current = found.get(key)
+        if current and float(current.get("weight") or 0) >= weight:
+            continue
+        last = (path.get("hops_evidence") or [path])[-1]
+        found[key] = {
+            "id": key,
+            "title": citer.get("title"),
+            "reliance": last.get("reliance") if isinstance(last, dict) else path.get("reliance"),
+            "weight": last.get("weight") if isinstance(last, dict) else path.get("weight"),
+            "path_score": weight,
+            "sentence": ((last.get("sentence") if isinstance(last, dict) else path.get("sentence")) or "").strip()
+            or None,
+            "evidence_from": (last.get("evidence_from") if isinstance(last, dict) else path.get("evidence_from"))
+            or None,
+            "root_doi": (path.get("root") or {}).get("doi"),
+        }
+    return list(found.values())
+
+
+def decide(
+    paths: list[dict[str, Any]],
+    *,
+    incomplete: bool,
+    depth: int,
+    has_sources: bool = True,
+) -> dict[str, Any]:
+    """Turn traced paths into pass, warn, or block.
+
+    block — a counted path reaches a retraction, withdrawal, or removal.
+    warn  — a counted path reaches an Expression of Concern, a reachable
+            flagged path is unverified or unknown, the check stopped early,
+            or the draft named no verifiable source.
+    pass  — cited works were checked and no counted or unverified notice remains.
+
+    A counted path has every hop at weight >= 0.5 with a stored sentence.
+    A reachable unverified path never passes. A discounted short path does
+    not hide a counted longer path: every returned path is classified.
+    Plain prose with no DOI, PMID, PMCID, scholarly identifier, or public URL
+    is warn (`no_sources`), not pass.
+    """
+    counted: list[dict[str, Any]] = []
+    discounted: list[dict[str, Any]] = []
+    unverified: list[dict[str, Any]] = []
+    unknown: list[dict[str, Any]] = []
+    for path in paths:
+        status = path_status(path)
+        if status == "count":
+            counted.append(path)
+        elif status == "discount":
+            discounted.append(path)
+        elif status == "unverified":
+            unverified.append(path)
+        else:
+            unknown.append(path)
+
+    reasons = [
+        _reason(path, _kind((path.get("notice") or {}).get("type"))) for path in counted
+    ]
+    reasons.sort(key=_reason_rank)
+    kinds = {reason["code"] for reason in reasons}
+    discounted_reasons = [
+        _reason(path, _kind((path.get("notice") or {}).get("type"))) for path in discounted
+    ]
+
+    if "retraction" in kinds:
+        decision = "block"
+        summary = PRESHIP_RETRACTION
+    elif "withdrawal" in kinds:
+        decision = "block"
+        summary = PRESHIP_WITHDRAWAL
+    elif "expression_of_concern" in kinds:
+        decision = "warn"
+        summary = PRESHIP_EOC
+    elif kinds:
+        decision = "warn"
+        summary = (
+            "Before your bot ships this answer, MoolTrace flags that a cited "
+            "page or review reaches a study with a publisher notice."
+        )
+    elif unverified:
+        decision = "warn"
+        summary = UNVERIFIED_LABEL
+        reasons = [_reason(path, "unverified") for path in unverified]
+    elif unknown or incomplete:
+        decision = "warn"
+        summary = (
+            "MoolTrace could not finish this pre-ship check, so the draft "
+            f"is a warn rather than a pass. Depth requested: {depth}."
+        )
+        reasons.append(
+            {
+                "code": "incomplete",
+                "root_doi": None,
+                "notice_doi": None,
+                "hops": None,
+                "steps": [],
+                "sentence": None,
+            }
+        )
+    elif not has_sources:
+        decision = "warn"
+        summary = NO_SOURCES_SUMMARY
+        reasons.append(
+            {
+                "code": "no_sources",
+                "root_doi": None,
+                "notice_doi": None,
+                "hops": None,
+                "steps": [],
+                "sentence": None,
+            }
+        )
+    else:
+        decision = "pass"
+        if discounted:
+            summary = (
+                f"No counted reliance on a flagged study within {depth} hops. "
+                f"{len(discounted)} citation path"
+                f"{'s' if len(discounted) != 1 else ''} reach a notice only as "
+                "background or a dispute, so they do not change this check."
+            )
+        else:
+            summary = f"No flagged study within {depth} hops."
+
+    if decision in {"warn", "block"} and kinds and unverified:
+        reasons.extend(_reason(path, "unverified") for path in unverified)
+
+    exit_code = {"pass": EXIT_PASS, "warn": EXIT_WARN, "block": EXIT_BLOCK}[decision]
+    sources = independent_sources(counted)
+    payload = {
+        "decision": decision,
+        "exit_code": exit_code,
+        "summary": summary,
+        "reasons": reasons,
+        "discounted": discounted_reasons,
+        "unjudged_paths": len(unknown),
+        "unverified_paths": len(unverified),
+        "independent_sources": sources,
+        "independent_source_count": len(sources),
+        "weight_floor": WEIGHT_FLOOR,
+    }
+    if any(reason.get("code") == "no_sources" for reason in reasons):
+        payload["error_code"] = "no_sources"
+    return payload
