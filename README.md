@@ -32,7 +32,7 @@ The sample workflow `.github/workflows/mooltrace-fixtures.yml` installs a venv a
 docker compose up --build
 ```
 
-Open [http://127.0.0.1:4318](http://127.0.0.1:4318). API health is [http://127.0.0.1:4317/health](http://127.0.0.1:4317/health). Click Everyday Health (warn: Expression of Concern, not a retraction) then Lancet 2020 (block: retraction). First boot seeds those two live fixtures into `/data/demo.db` (a Compose volume, not `data/mooltrace.db`). No copyrighted full text. This does not say cinnamon works or does not. Private, loopback, and credentialed URLs stay refused. There is no public host URL in this checkout: Railway, Fly, and Render were not logged in. Later: `railway login && railway init && railway up` or `fly auth login && fly launch` or `render login`.
+Open [http://127.0.0.1:4318](http://127.0.0.1:4318). API health is [http://127.0.0.1:4317/health](http://127.0.0.1:4317/health). Click Everyday Health (1-hop, warn: Expression of Concern, not a retraction). Then click **Healthline cinnamon** for the URL-only counted 2-hop (page → Silva 2022 → Khan Expression of Concern). Then Lancet 2020 (block: retraction). An Expression of Concern is not a retraction. First boot seeds Everyday Health and Lancet into `/data/demo.db` (a Compose volume, not `data/mooltrace.db`). No copyrighted full text. This does not say cinnamon works or does not. Private, loopback, and credentialed URLs stay refused. There is no public host URL in this checkout: Railway, Fly, and Render were not logged in. Later: `railway login && railway init && railway up` or `fly auth login && fly launch` or `render login`.
 
 ## Use from an AI agent
 
@@ -226,7 +226,7 @@ MoolTrace code in this repository was written with Cursor agents (including Grok
 2. `python -m mooltrace batch examples/answers.jsonl --fail-on block` (exit 0; warns are annotated).
 3. URL-only Everyday Health check twice; second call should make 0 API calls while notices are fresh.
 4. `python -m mooltrace batch examples/lancet.jsonl --fail-on block` (exit 1) → block on the retraction notice, not the earlier EoC.
-5. UI preset Everyday Health shows path, hop sentence, and the PATHS_TO_NOTICE Cypher (not an unused query).
+5. UI preset Everyday Health is the 1-hop. Click **Healthline cinnamon** for the URL-only counted 2-hop. Both show path, hop sentence, and the PATHS_TO_NOTICE Cypher (not an unused query).
 6. `ro_cypher` with `CONTAINS 'set'` is allowed; `CREATE` is rejected; GRAPH.RO_QUERY is the write barrier.
 7. Public repo, 2:50 video, Track 1, AWS/FalkorDB shown, AI tools listed.
 8. `python -m pytest tests/test_labelled.py` (schema). Optional live: `python -m mooltrace labelled --limit 2`.
