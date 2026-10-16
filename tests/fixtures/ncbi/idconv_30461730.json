@@ -1,0 +1,26 @@
+{
+  "fetched_at": "2026-10-16T15:11:08Z",
+  "url": "https://www.ncbi.nlm.nih.gov/pmc/utils/idconv/v1.0/?ids=30461730&format=json",
+  "body": {
+    "status": "ok",
+    "response-date": "2026-10-16 15:11:08",
+    "request": {
+      "warnings": [],
+      "format": "json",
+      "ids": ["30461730"],
+      "email": "siddhant.m.vishnu@gmail.com",
+      "tool": "mooltrace",
+      "echo": "ids=30461730&format=json&tool=mooltrace&email=siddhant.m.vishnu%40gmail.com",
+      "versions": "no",
+      "showaiid": "no",
+      "idtype": "pmid"
+    },
+    "records": [
+      {
+        "pmcid": "PMC11587248",
+        "pmid": 30461730,
+        "requested-id": "30461730"
+      }
+    ]
+  }
+}

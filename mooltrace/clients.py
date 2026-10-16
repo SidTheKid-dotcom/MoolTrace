@@ -44,6 +44,7 @@ CROSSREF = "https://api.crossref.org"
 DATACITE = "https://api.datacite.org"
 DOI_ORG = "https://doi.org"
 IDCONV = "https://www.ncbi.nlm.nih.gov/pmc/utils/idconv/v1.0/"
+EUTILS_ESUMMARY = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
 _NOTICE_HOSTS = {
     "api.crossref.org",
     "api.datacite.org",
@@ -111,6 +112,8 @@ _HOST_RPS = {
     "api.openalex.org": OPENALEX_MAX_RPS,
     "api.crossref.org": CROSSREF_MAX_RPS,
     "www.ncbi.nlm.nih.gov": NCBI_MAX_RPS,
+    "pmc.ncbi.nlm.nih.gov": NCBI_MAX_RPS,
+    "eutils.ncbi.nlm.nih.gov": NCBI_MAX_RPS,
 }
 
 _limiters: dict[str, _Limiter] = {}
@@ -687,6 +690,121 @@ def doi_org_csl(doi: str, stats: CallStats) -> dict[str, Any] | None:
         "container": data.get("container-title"),
         "source": "doi.org",
     }
+
+
+def _ncbi_year(value: Any) -> int | None:
+    for token in str(value or "").replace("/", " ").replace("-", " ").split():
+        if token.isdigit() and len(token) == 4 and token[:2] in {"19", "20"}:
+            return int(token)
+    return None
+
+
+def _ncbi_family(value: Any) -> str | None:
+    token = str(value or "").strip().split()[0] if str(value or "").strip() else ""
+    token = token.strip(".,;:")
+    return token or None
+
+
+def _idconv_pmid(pmid: str, stats: CallStats) -> dict[str, Any] | None:
+    url = (
+        f"{IDCONV}?ids={quote(pmid)}&format=json&tool=mooltrace&email={quote(MAILTO)}"
+    )
+    data = _get_json(url, stats)
+    if not isinstance(data, dict):
+        return None
+    for record in data.get("records") or []:
+        if not isinstance(record, dict):
+            continue
+        if str(record.get("status") or "").lower() == "error":
+            continue
+        doi = clean_doi(record.get("doi") or "")
+        pmcid = str(record.get("pmcid") or "").strip()
+        rec_pmid = str(record.get("pmid") or record.get("requested-id") or pmid)
+        if not (valid_doi(doi) or pmcid or rec_pmid):
+            continue
+        return {
+            "pmid": rec_pmid or pmid,
+            "doi": doi if valid_doi(doi) else "",
+            "pmcid": pmcid,
+            "title": None,
+            "year": None,
+            "first_author": None,
+            "source": "idconv",
+        }
+    return None
+
+
+def _esummary_pmid(pmid: str, stats: CallStats) -> dict[str, Any] | None:
+    url = (
+        f"{EUTILS_ESUMMARY}?db=pubmed&id={quote(pmid)}"
+        f"&retmode=json&tool=mooltrace&email={quote(MAILTO)}"
+    )
+    data = _get_json(url, stats)
+    if not isinstance(data, dict):
+        return None
+    row = (data.get("result") or {}).get(str(pmid))
+    if not isinstance(row, dict):
+        return None
+    doi = ""
+    pmcid = ""
+    for item in row.get("articleids") or []:
+        if not isinstance(item, dict):
+            continue
+        kind = str(item.get("idtype") or "").lower()
+        value = str(item.get("value") or "").strip()
+        if kind == "doi":
+            cleaned = clean_doi(value)
+            if valid_doi(cleaned):
+                doi = cleaned
+        elif kind == "pmc" and value.upper().startswith("PMC"):
+            pmcid = value.upper()
+    return {
+        "pmid": pmid,
+        "doi": doi,
+        "pmcid": pmcid,
+        "title": str(row.get("title") or "").strip() or None,
+        "year": _ncbi_year(row.get("pubdate") or row.get("sortpubdate")),
+        "first_author": _ncbi_family(row.get("sortfirstauthor")),
+        "source": "esummary",
+    }
+
+
+def pmid_record(pmid: str, stats: CallStats) -> dict[str, Any] | None:
+    """Identify a PMID via NCBI idconv, then esummary if the DOI is still missing.
+
+    Returns a record even when NCBI knows the paper and it has no DOI. None
+    means NCBI did not identify the identifier.
+    """
+    raw = str(pmid or "").strip()
+    if raw.lower().startswith("pmid:"):
+        raw = raw.split(":", 1)[-1].strip()
+    if not raw.isdigit():
+        return None
+    converted = _idconv_pmid(raw, stats)
+    need_summary = converted is None or not valid_doi(converted.get("doi") or "") or not (
+        converted.get("title") or converted.get("year")
+    )
+    summary = None
+    if need_summary:
+        summary = _esummary_pmid(raw, stats)
+    if converted is None and summary is None:
+        return None
+    out = dict(converted or {})
+    if summary:
+        for key in ("doi", "pmcid", "title", "year", "first_author"):
+            if not out.get(key) and summary.get(key):
+                out[key] = summary[key]
+        if not valid_doi(out.get("doi") or "") or not converted:
+            out["source"] = "esummary"
+    out["pmid"] = raw
+    if not (
+        valid_doi(out.get("doi") or "")
+        or out.get("pmcid")
+        or out.get("title")
+        or out.get("pmid")
+    ):
+        return None
+    return out
 
 
 def pmc_to_doi(pmcids: list[str], stats: CallStats) -> dict[str, str]:

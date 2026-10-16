@@ -1,0 +1,30 @@
+{
+  "fetched_at": "2026-10-17T00:00:00Z",
+  "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=30461730&retmode=json",
+  "body": {
+    "header": {"type": "esummary", "version": "0.3"},
+    "result": {
+      "uids": ["30461730"],
+      "30461730": {
+        "uid": "30461730",
+        "pubdate": "2018 Nov 21",
+        "epubdate": "2018 Nov 21",
+        "source": "Rev Esp Salud Publica",
+        "lastauthor": "Delgado Rodríguez M",
+        "title": "[Olive Oil and Body Weight. Systematic Review and Meta-Analysis of Randomized Controlled Trials].",
+        "volume": "92",
+        "pages": "",
+        "articleids": [
+          {"idtype": "pubmed", "idtypen": 1, "value": "30461730"},
+          {"idtype": "pmc", "idtypen": 8, "value": "PMC11587248"},
+          {"idtype": "pmcid", "idtypen": 5, "value": "pmc-id: PMC11587248;"},
+          {"idtype": "pii", "idtypen": 4, "value": "e201811083"}
+        ],
+        "fulljournalname": "Revista espanola de salud publica",
+        "elocationid": "pii: e201811083",
+        "sortpubdate": "2018/11/21 00:00",
+        "sortfirstauthor": "Zamora Zamora F"
+      }
+    }
+  }
+}

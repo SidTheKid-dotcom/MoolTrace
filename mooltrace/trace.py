@@ -27,6 +27,7 @@ from mooltrace.clients import (
     openalex_id,
     openalex_work_doi,
     openalex_work_pmid,
+    pmid_record,
     pmc_to_doi,
     reference_dois,
 )
@@ -458,15 +459,42 @@ def _resolve_loose(
             else:
                 errors.append(f"unresolved {pmcid}")
     for pmid in found.pmids:
+        doi = ""
+        identified = False
+        meta: dict[str, Any] | None = None
         try:
             record = openalex_work_pmid(pmid, stats)
-        except MoolTraceError as exc:
-            errors.append(str(exc))
-            continue
-        doi = openalex_doi(record) if record else ""
+        except InfraError:
+            raise
+        except MoolTraceError:
+            record = None
+        if record and record.get("id"):
+            identified = True
+            doi = openalex_doi(record)
+        if not valid_doi(doi):
+            try:
+                meta = pmid_record(pmid, stats)
+            except InfraError:
+                raise
+            except MoolTraceError:
+                meta = None
+            if meta:
+                identified = True
+                ncbi_doi = clean_doi(str(meta.get("doi") or ""))
+                if valid_doi(ncbi_doi):
+                    doi = ncbi_doi
         if valid_doi(doi):
+            if meta and (
+                meta.get("title") or meta.get("year") or meta.get("first_author")
+            ):
+                graph.merge_work(
+                    doi,
+                    title=meta.get("title"),
+                    year=meta.get("year"),
+                    first_author=meta.get("first_author"),
+                )
             dois.append(doi)
-        else:
+        elif not identified:
             errors.append(f"unresolved PMID:{pmid}")
     for volume, issue, page in found.diabetes_care:
         try:
@@ -1161,6 +1189,9 @@ def check_study(identifier: str, graph: Graph | None = None) -> dict[str, Any]:
         pmid = raw.split(":")[-1]
         record = openalex_work_pmid(pmid, stats)
         doi = openalex_doi(record) if record else ""
+        if not valid_doi(doi):
+            meta = pmid_record(pmid, stats)
+            doi = clean_doi(str((meta or {}).get("doi") or ""))
     if not valid_doi(doi):
         raise MoolTraceError(f"could not resolve a DOI from {identifier!r}")
     row = graph.work_row(doi)

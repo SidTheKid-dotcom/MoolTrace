@@ -1,0 +1,21 @@
+{
+  "fetched_at": "2026-10-17T00:00:00Z",
+  "note": "Same esummary schema as the live 30461730 record; articleids include doi.",
+  "body": {
+    "header": {"type": "esummary", "version": "0.3"},
+    "result": {
+      "uids": ["14633847"],
+      "14633847": {
+        "uid": "14633847",
+        "pubdate": "2003 Dec",
+        "source": "Diabetes Care",
+        "title": "Cinnamon improves glucose and lipids of people with type 2 diabetes",
+        "sortfirstauthor": "Khan A",
+        "articleids": [
+          {"idtype": "pubmed", "idtypen": 1, "value": "14633847"},
+          {"idtype": "doi", "idtypen": 3, "value": "10.2337/diacare.26.12.3215"}
+        ]
+      }
+    }
+  }
+}

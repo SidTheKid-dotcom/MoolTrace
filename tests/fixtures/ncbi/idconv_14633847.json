@@ -1,0 +1,14 @@
+{
+  "fetched_at": "2026-10-17T00:00:00Z",
+  "note": "Khan 2003 Diabetes Care. Same idconv schema as the live 30461730 record; doi present.",
+  "body": {
+    "status": "ok",
+    "records": [
+      {
+        "pmid": "14633847",
+        "doi": "10.2337/diacare.26.12.3215",
+        "requested-id": "14633847"
+      }
+    ]
+  }
+}
