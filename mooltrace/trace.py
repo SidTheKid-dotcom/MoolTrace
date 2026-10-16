@@ -975,10 +975,11 @@ def check_answer(
         except (TypeError, ValueError):
             pass
         sp_paths.append(path)
-    # Verdict is classified from algo.SPpaths rows only. PATHS_TO_NOTICE
-    # is kept on the payload for brute-force equality tests, not decide().
+    # algo.SPpaths must succeed (else exit 3). Classify every stored path
+    # so a hop-shortest weak route cannot hide a stronger counted path to
+    # the same flagged Work. Strength is the product of RESTS_ON weights.
     verdict = decide(
-        sp_paths,
+        list(sp_paths) + list(traced["paths"]),
         incomplete=traced["incomplete"],
         depth=traced["depth"],
         has_sources=True,
@@ -998,7 +999,12 @@ def check_answer(
         deciding_cypher = sp_run.cypher
         best = sp_run.rows[0] if sp_run.rows else None
         strength = None
-        if best is not None and best.get("path_score") is not None:
+        if verdict.get("reasons"):
+            try:
+                strength = float(verdict["reasons"][0].get("path_score"))
+            except (TypeError, ValueError):
+                strength = None
+        if strength is None and best is not None and best.get("path_score") is not None:
             try:
                 strength = float(best.get("path_score"))
             except (TypeError, ValueError):

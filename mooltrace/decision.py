@@ -287,7 +287,7 @@ def decide(
     discounted: list[dict[str, Any]] = []
     unverified: list[dict[str, Any]] = []
     unknown: list[dict[str, Any]] = []
-    for path in strongest_per_flagged_work(paths):
+    for path in paths:
         status = path_status(path)
         if status == "count":
             counted.append(path)
