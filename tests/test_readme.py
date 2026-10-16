@@ -108,7 +108,14 @@ def test_readme_top_follows_p3_13():
 
 
 def test_docs_name_the_connected_data_track():
-    for name in ("README.md", "SUBMISSION.md", "JUDGES.md", "CLAIMS.md"):
+    for name in (
+        "README.md",
+        "SUBMISSION.md",
+        "JUDGES.md",
+        "CLAIMS.md",
+        "VIDEO_SCRIPT.md",
+        "SHIP_CHECKLIST.md",
+    ):
         body = (ROOT / name).read_text()
         assert TRACK in body, name
     submission = (ROOT / "SUBMISSION.md").read_text()

@@ -1,71 +1,101 @@
-# MoolTrace demo video script (≤3:00)
+# MoolTrace demo video script (≤90 s)
 
-Record on 17 Oct 2026. Do not say a number that was not measured on 16 Oct 2026 in this checkout. Voice: one person, screen recording, signed-out browser for any public URL.
+Record signed-out. Track 01: **Agents That Act on Connected Data**.
+Live demo: https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/
+Say only numbers cited at the bottom. Do not give medical advice. An Expression of Concern is not a retraction. Never say the review relies on the trial. Do not say olive oil or the Mediterranean diet works or does not.
 
-**Hook (0:00–0:25).** On screen: a nutrition-coach draft and the Healthline URL only.
+Voice is the `>` lines. Everything else is on-screen or a director note.
 
-> Your health bot cites Healthline. Looks safe. No DOI in the draft. Looks like a normal web page.
+## Problem (5 s)
 
-Paste into the UI (or CLI):
+On-screen title: Track 01 — Agents That Act on Connected Data.
 
-```bash
-.venv/bin/python -m mooltrace check --url https://www.healthline.com/nutrition/cinnamon-and-diabetes --summary
-```
+> Your health bot cites Healthline. No DOI in the draft. Looks safe.
 
-**Path (0:25–1:20).** Click preset **Healthline cinnamon (warn)** if using the UI (`http://127.0.0.1:4318/?preset=healthline`).
+## Paste AI answer (10 s)
 
-Say:
+Open `/?preset=olive-oil`. The URL is the whole answer:
 
-> The page cites Silva 2022, a review. The review relies on Khan 2003, a trial. Diabetes Care posted an Expression of Concern on that trial in 2025. That is not a retraction. MoolTrace warns.
+`https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil`
 
-Point at the red EoC badge. Point at the path: Healthline → Silva 2022 → Khan 2003.
+> A nutrition coach pastes only this Healthline olive oil URL. That is the whole answer.
 
-**Algorithm (1:20–1:45).** Open the Cypher panel.
+## No-graph check (5 s)
 
-> The verdict is not a Python if-statement. FalkorDB `algo.SPpaths` walks this answer's subgraph with cost minus ln of the hop weight. Path strength is the product of those weights. Strength 0.55, counted, Expression of Concern, so WARN. The review→trial hop is `relies`. If that algorithm errors, we return exit 3. We do not invent a verdict.
+On-screen: `mooltrace baseline` / Direct-DOI checker. Decision **pass**, exit 0, `dois []`.
 
-On-screen text must include: `Decided by: algo.SPpaths, path strength 0.55`.
+> A Direct-DOI check (no graph) finds no DOI. Pages are not fetched. It says pass.
 
-**Retraction + CI (1:45–2:15).** Click preset **Healthline olive oil (block)** (`/?preset=olive-oil`). Path strength 0.30, both hops `mention`, Estruch 2013 retracted and republished in 2018. Then terminal:
+## MoolTrace BLOCK and path (20 s)
+
+Keep the live BLOCK result in frame. Point at the two hops, then `Decided by: algo.SPpaths, path strength 0.30`.
+
+> Healthline olive oil goes to Schwingshackl 2014, then Estruch 2013. Both hops are mention, 0.55 times 0.55. Path strength 0.30. The 2013 trial was retracted and republished in 2018. BLOCK (exit 1).
+
+On-screen must show: **BLOCK (exit 1)**; hops `mention` 0.55 → `mention` 0.55; retraction `10.1056/nejmc1806491` (2018-06-13); notice title as stored. Do not read those mention hops as the review depending on the trial.
+
+## Rewrite (10 s)
+
+Click **Rewrite and recheck** (deterministic template, not a language-model edit). Paste this two-sentence draft if the preset is URL-only:
+
+Before: `Vitamin D status is discussed separately. A nutrition coach cites https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil.`
+
+After: `Vitamin D status is discussed separately. A nutrition coach cites: the study this relied on (Estruch 2013) was retracted on 2018-06-13. This claim has been removed.`
+
+> Rewrite names Estruch 2013 and drops only that claim. Vitamin D status is discussed separately. stays byte-identical.
+
+## CI fails the PR (10 s)
+
+Terminal:
 
 ```bash
 .venv/bin/python -m mooltrace batch examples/lancet.jsonl --fail-on block
 echo $?
 ```
 
-Say:
+> Same gate in CI. Lancet 2020 retraction. Fail-on block. Exit 1. The PR fails.
 
-> Same gate on a retracted 2020 Lancet paper. BLOCK. CI fails. An Expression of Concern is not this. A retraction is.
+## Agent calls what_rests_on over MCP (15 s)
 
-**Rewrite + reverse (2:15–2:45).** On the olive-oil (or cinnamon) result, click **Rewrite and recheck**. Then:
+Remote MCP: `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/mcp`
+Tool `what_rests_on` on `10.1056/nejmc1806491` (after the olive-oil check is in the graph).
 
-```bash
-.venv/bin/python -m mooltrace what-rests-on 10.2337/dc25-ec09
-```
+> An agent calls what_rests_on over MCP. This retraction affects 1 stored answer.
 
-Say only a counted-answer number you measured that day. Placeholder until the recording run: _do not say a stale N from an old README_. After the recording run, replace this line with the printed `affects N stored answers`.
+Do not run reverse-recheck on camera (hosted recheck is not this beat).
 
-> Rewrite removes the affected claim. Recheck passes if nothing flagged remains. Reverse lookup: this notice affects N stored answers.
+## Baseline result (10 s)
 
-**Close (2:45–2:55).**
+On-screen table from `results/baseline_2026-10-16.json`:
+
+> On 52 labelled cases, no-graph recall is 0.4286. MoolTrace recall is 1.0. 15 cases only the graph catches.
+
+## Close (5 s)
 
 > MoolTrace. Check the roots before you ship.
 
-Stop before 3:00. Do not claim medical correctness. Do not call an Expression of Concern a retraction. Do not say “SPpaths flips the verdict” as a slogan; show the strength and the Cypher instead.
+Stop at or before 90 s.
 
 ## Click order
 
-1. UI `?preset=healthline` (or the CLI `--summary` command above)
-2. Cypher / algorithm panel
-3. UI `?preset=olive-oil`
-4. Terminal `batch examples/lancet.jsonl --fail-on block`
-5. Rewrite and recheck
-6. `what-rests-on 10.2337/dc25-ec09`
+1. Signed-out demo `/?preset=olive-oil`
+2. Direct-DOI / baseline pass (terminal or slide)
+3. BLOCK path + `algo.SPpaths` 0.30
+4. Rewrite
+5. `batch examples/lancet.jsonl --fail-on block`
+6. MCP `what_rests_on`
+7. Baseline slide
+8. Close line
 
-## Numbers allowed on 16 Oct 2026 (this checkout)
+## Numbers (cited)
 
-- Recorded Healthline path strength: 0.55 (`mention` × `relies`)
-- Cold Healthline `--summary`: 47.09 s / 49.18 s / 49.10 s, all WARN, EoC `10.2337/dc25-ec09`
-- Warm Healthline: 23.16 s
-- Flip test: weight 0.85 → warn, 0.2 → pass; algorithm disabled → exit 3
-- Do not quote labelled precision until the 52-case cold run is in the README table
+| Number / line | Source |
+| --- | --- |
+| BLOCK, path strength 0.30, hops `mention` 0.55 × `mention` 0.55, retraction `10.1056/nejmc1806491` (2018-06-13), Schwingshackl 2014, Estruch 2013 | `examples/presets_recorded.json` (`nutrition-olive-oil`); live signed-out POST 16 Oct 2026 (CLAIMS.md / T08); throwaway replay this file (`MOOLTRACE_DB=/tmp/mt-t13-ship`, `data/mooltrace.db` unused) |
+| Raw strength `0.30250000000000005` (UI prints 0.30) | same preset run |
+| Direct-DOI on the olive-oil URL: **pass**, exit 0, `dois []`, summary starts `Direct-DOI check (no graph)` | `mooltrace.baseline.check_direct_doi("", [olive-oil URL])` this session, recorded Crossref catalog, no HTTP |
+| Rewrite keeps `Vitamin D status is discussed separately.` and names Estruch 2013, date 2018-06-13; never `RETRACTED:`; never notice DOI | `template_rewrite` on the recorded olive-oil payload this session (`/tmp/mt-t13-ship2`) |
+| `This retraction affects 1 stored answer.` | `what_rests_on("10.1056/nejmc1806491")` after seeding that preset, this session; live remote MCP 16 Oct 2026 (T09 / CLAIMS.md) counted 1 |
+| Lancet CI exit 1 | `mooltrace batch examples/lancet.jsonl --fail-on block`, 16 Oct 2026 18:09 UTC, CLAIMS.md, throwaway DB, 14.06 s |
+| Direct-DOI recall 0.4286; MoolTrace recall 1.0; 15 only-multi-hop; n=52 | `results/baseline_2026-10-16.json` (`baseline.metrics.recall`, `mooltrace.metrics.recall`, `only_multihop_ids`) |
+| Olive-oil URL is not one of those 15 labelled rows. The no-graph miss on this URL is the separate Direct-DOI pass above. | labelled ids in that JSON; Direct-DOI run this session |

@@ -1,18 +1,26 @@
-# Ship checklist — Sun 18 Oct 2026, 11:59 PM IST
+# Ship checklist — human only
 
-Do these in order after the video is uploaded. Do **not** rewrite git history unless you explicitly choose option B below.
+Deadline: Sun 18 Oct 2026, 11:59 PM IST. Track 01: **Agents That Act on Connected Data**.
 
-## 1. Tests (this machine)
+The pipeline already ran the offline tests, wrote the Cypher and algorithms into `SUBMISSION.md`, and deployed the signed-out demo. You do four things. Do not rewrite git history. Do not invent a number, URL, or rival claim.
+
+## 1. Record the video
+
+Follow [VIDEO_SCRIPT.md](VIDEO_SCRIPT.md). Duration must be **≤90 s**.
 
 ```bash
-unshare --net --map-root-user .venv/bin/python -m pytest -q
-.venv/bin/python examples/agent_loop.py
-.venv/bin/python -m mooltrace.gate
+ffprobe -v error -show_entries format=duration -of csv=p=0 <video-file>
 ```
 
-Do not push if pytest is red.
+The printed number must be ≤ 90. Upload to YouTube. Open the link signed-out.
 
-## 2. Flip the GitHub repo public
+Record against the live demo (no sign-up):
+
+https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/?preset=olive-oil
+
+Say only numbers the script cites. Both olive-oil hops are `mention`. Never say the review relies on the trial. Do not call `recheck_affected` on camera. Do not say olive oil works or does not. An Expression of Concern is not a retraction.
+
+## 2. Make the GitHub repo public
 
 Repo is `SidTheKid-dotcom/MoolTrace`, currently private.
 
@@ -21,102 +29,34 @@ gh repo edit SidTheKid-dotcom/MoolTrace --visibility public --accept-visibility-
 gh repo view SidTheKid-dotcom/MoolTrace --json isPrivate,url
 ```
 
-Confirm Origin mirror (if you keep one) has the same HEAD:
+Expect `isPrivate: false` and `https://github.com/SidTheKid-dotcom/MoolTrace`. Do not rewrite history. Older commits still show a personal Gmail; leave them.
 
-```bash
-git fetch origin
-git rev-parse HEAD origin/main
-```
+## 3. Paste links
 
-## 3. README render
+Paste into [SUBMISSION.md](SUBMISSION.md) (replace the placeholders) and into the hackathon form. Do not invent a URL.
 
-Open the public GitHub README signed-out. Check: screenshot PNG, mermaid diagram, CI snippet, MCP JSON, Honest results table.
+| Field | Value |
+| --- | --- |
+| Public GitHub repo | https://github.com/SidTheKid-dotcom/MoolTrace (after step 2) |
+| Demo video (YouTube, ≤90 s) | the URL from step 1 |
+| Hosted demo | https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/ |
+| Track | Agents That Act on Connected Data |
 
-## 4. Hosted demo (AWS Lightsail, ap-south-1)
+If the Lightsail demo is down, do not paste a substitute. Note it and stop.
 
-`aws sts get-caller-identity` worked on 16 Oct 2026 (account `533267274451`). The public HTTPS URL is:
+## 4. Final check
 
-https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/
+Signed-out, in this order:
 
-Read-only demo: `MOOLTRACE_PUBLIC_DEMO=1`, no `MOOLTRACE_PUBLIC_LIVE`, no Azure env vars. Power **micro** (1 GB, at most micro), scale 1, tag `project=mooltrace`. No other paid resources.
+1. Public GitHub README: tagline, live demo URL, olive-oil BLOCK screenshot, track name **Agents That Act on Connected Data**.
+2. Live demo: click **Healthline olive oil (block)**. BLOCK, path strength 0.30, both hops `mention`, retraction `10.1056/nejmc1806491`.
+3. YouTube: duration ≤90 s, close line "MoolTrace. Check the roots before you ship."
+4. Hackathon form track is **Agents That Act on Connected Data**. `SUBMISSION.md` has the three links filled (repo, video, demo). Video placeholder `_paste after upload_` is gone.
 
-Exact commands used:
+Stop. No pushes after Sun 18 Oct 2026, 11:59 PM IST. Keep the live link, public repo, and video up through judging.
 
-```bash
-aws sts get-caller-identity
-# lightsailctl must be on PATH (AWS CLI plugin for push-container-image)
-# curl -fsSL https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl -o ~/.local/bin/lightsailctl && chmod +x ~/.local/bin/lightsailctl
-
-aws lightsail create-container-service \
-  --region ap-south-1 \
-  --service-name mooltrace \
-  --power micro \
-  --scale 1 \
-  --tags key=project,value=mooltrace
-
-docker build --target api -t mooltrace-api:latest .
-docker build --target web -t mooltrace-web:latest \
-  --build-arg MOOLTRACE_API_ORIGIN=http://localhost:4317 .
-
-aws lightsail push-container-image --region ap-south-1 \
-  --service-name mooltrace --label api --image mooltrace-api:latest
-aws lightsail push-container-image --region ap-south-1 \
-  --service-name mooltrace --label web --image mooltrace-web:latest
-
-aws lightsail create-container-service-deployment \
-  --region ap-south-1 \
-  --cli-input-json file://deploy/lightsail-deployment.json
-```
-
-Signed-out check (web is the public endpoint; API is localhost inside the service). MCP is `/mcp` on the same host (Next rewrites to the API):
-
-```bash
-curl -sI https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/
-curl -sS -X POST https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/nw/check-answer \
-  -H 'content-type: application/json' \
-  -d '{"text":"","urls":["https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil"],"engine":"nutrition-coach","depth":3}'
-# MCP: official client against https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/mcp
-```
-
-### Teardown (stops billing)
+## After judging (stops Lightsail billing)
 
 ```bash
 aws lightsail delete-container-service --region ap-south-1 --service-name mooltrace
 ```
-
-Paste the URL into README **outside** the `## Demo` compose section, and into `SUBMISSION.md`.
-
-## 5. Video link
-
-Paste the YouTube URL into README and `SUBMISSION.md`. Duration must be under 180 s:
-
-```bash
-ffprobe -v error -show_entries format=duration -of csv=p=0 <video-file>
-```
-
-Open the YouTube link signed-out.
-
-## 6. Older commits carry a personal Gmail
-
-Newer commits use `Siddhant Vishnu <SidTheKid-dotcom@users.noreply.github.com>`. Older commits on `main` still show a personal Gmail. **Do not rewrite history in this session.**
-
-Choose on 18 Oct, before flipping public:
-
-| Option | What happens |
-| --- | --- |
-| A. Leave as is | Public GitHub shows the Gmail on old commits. Simplest. No force-push. |
-| B. `git filter-repo` + mailmap | Rewrites author emails on already-pushed commits. Requires a force-push. Do this **before** the repo is public, and only if you accept rewriting Origin. |
-
-This file does not run option B.
-
-## 7. Secrets scan
-
-```bash
-git ls-files AGENTS.md CLAUDE.md .agents .claude docs design
-# must print nothing
-git grep -I -E 'AZURE_INFERENCE_API_KEY=|sk-|BEGIN PRIVATE' -- ':!.github' || true
-```
-
-## 8. Stop
-
-No pushes after Sun 18 Oct 2026, 11:59 PM IST. Keep the live link, repo, and video up through judging.
