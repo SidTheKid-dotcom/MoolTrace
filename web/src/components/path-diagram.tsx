@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
 import {
   buildPathGraph,
+  hopTrailLine,
   type PathEdge,
   type PathNode,
   type PathReason,
@@ -173,6 +174,11 @@ export function PathDiagram({ reason }: { reason: PathReason }) {
           {selected.doi ? <p className="break-all text-xs text-muted-foreground">{selected.doi}</p> : null}
           {selected.url && !selected.doi ? (
             <p className="break-all text-xs text-muted-foreground">{selected.url}</p>
+          ) : null}
+          {inbound && hopTrailLine(inbound) ? (
+            <p className="mt-1 break-all font-mono text-[11px] leading-5 text-muted-foreground">
+              {hopTrailLine(inbound)}
+            </p>
           ) : null}
           {inbound?.sentence ? <p className="mt-2 leading-6">{inbound.sentence}</p> : null}
         </div>

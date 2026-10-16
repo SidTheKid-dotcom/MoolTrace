@@ -32,6 +32,7 @@ from mooltrace.clients import (
 )
 from mooltrace import cypher as C
 from mooltrace.decision import EXIT_INFRA, EXIT_PASS, EXIT_WARN, decide, path_score
+from mooltrace.evidence import attach_hop_trail
 from mooltrace.reliance import WEIGHT_FLOOR
 from mooltrace.graph import Graph, get_graph
 from mooltrace.reliance import PATH_RULE
@@ -696,7 +697,7 @@ def _public_path(row: dict[str, Any]) -> dict[str, Any]:
                 "year": step.get("year"),
             }
         )
-    hops = list(row.get("hops_evidence") or [])
+    hops = [attach_hop_trail(hop) for hop in (row.get("hops_evidence") or [])]
     last = hops[-1] if hops else row
     return {
         "hops": row.get("hops"),

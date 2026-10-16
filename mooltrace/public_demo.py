@@ -142,6 +142,9 @@ def seed_offline_presets(graph: Any) -> list[dict[str, str]]:
                     weight=float(hop["weight"]),
                     sentence=str(hop.get("sentence") or ""),
                     evidence_from=str(hop.get("evidence_from") or ""),
+                    evidence_url=str(hop.get("source_url") or ""),
+                    evidence_fetched_at=str(hop.get("fetched_at") or hop.get("recorded_at") or ""),
+                    evidence_sha256=str(hop.get("content_hash") or ""),
                 )
                 continue
             url = _source_url({"url": hop.get("from_url")}, answer_id)
@@ -154,6 +157,9 @@ def seed_offline_presets(graph: Any) -> list[dict[str, str]]:
                 weight=float(hop["weight"]),
                 sentence=str(hop.get("sentence") or ""),
                 evidence_from=str(hop.get("evidence_from") or ""),
+                evidence_url=str(hop.get("source_url") or hop.get("from_url") or url),
+                evidence_fetched_at=str(hop.get("fetched_at") or hop.get("recorded_at") or ""),
+                evidence_sha256=str(hop.get("content_hash") or ""),
             )
         for notice in spec.get("notices") or []:
             graph.merge_notice(

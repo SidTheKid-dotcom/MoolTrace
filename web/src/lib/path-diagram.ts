@@ -11,6 +11,9 @@ export type PathHop = {
   reliance?: string | null
   sentence?: string | null
   evidence_from?: string | null
+  source_url?: string | null
+  fetched_at?: string | null
+  content_hash?: string | null
 }
 
 export type PathReason = {
@@ -40,6 +43,9 @@ export type PathEdge = {
   weight?: number | null
   sentence?: string | null
   evidence_from?: string | null
+  source_url?: string | null
+  fetched_at?: string | null
+  content_hash?: string | null
 }
 
 export type PathGraph = {
@@ -54,6 +60,18 @@ export function noticeLabel(noticeType: string | null | undefined, fallback?: st
   if (raw === "withdrawal") return "Withdrawal"
   if (raw === "removal") return "Removal"
   return raw.replaceAll("_", " ")
+}
+
+export function hopTrailLine(hop: {
+  source_url?: string | null
+  fetched_at?: string | null
+  content_hash?: string | null
+}): string {
+  const url = (hop.source_url || "").trim()
+  const fetched = (hop.fetched_at || "").trim()
+  const hash = (hop.content_hash || "").trim()
+  const parts = [url, fetched, hash ? `sha256 ${hash}` : ""].filter(Boolean)
+  return parts.join(" · ")
 }
 
 export function hostLabel(url: string | null | undefined): string {
@@ -113,6 +131,9 @@ export function buildPathGraph(reason: PathReason): PathGraph {
       weight: hop.weight,
       sentence: hop.sentence,
       evidence_from: hop.evidence_from,
+      source_url: hop.source_url,
+      fetched_at: hop.fetched_at,
+      content_hash: hop.content_hash,
     })
   }
   if (reason.notice_doi || reason.notice_type) {

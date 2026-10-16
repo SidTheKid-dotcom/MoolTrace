@@ -189,7 +189,7 @@ def _ttl_for(url: str) -> float | None:
     return float(HTTP_CACHE_TTL_S)
 
 
-def _disk_get(url: str) -> tuple[int, Any] | None:
+def _disk_entry(url: str) -> dict[str, Any] | None:
     ttl = _ttl_for(url)
     if ttl is None:
         return None
@@ -211,21 +211,50 @@ def _disk_get(url: str) -> tuple[int, Any] | None:
     stamp = float(cached_at) if cached_at is not None else 0.0
     if _now_ts() - stamp > ttl:
         return None
-    return status, payload.get("body")
+    return payload
 
 
-def _disk_set(url: str, status: int, body: Any) -> None:
+def _disk_get(url: str) -> tuple[int, Any] | None:
+    payload = _disk_entry(url)
+    if payload is None:
+        return None
+    return int(payload["status"]), payload.get("body")
+
+
+def _record_cached_trail(url: str, payload: dict[str, Any]) -> None:
+    from mooltrace.evidence import record_fetch_trail, utc_iso
+
+    body = payload.get("body")
+    if body is None:
+        return
+    stamp = payload.get("cached_at")
+    fetched_at = utc_iso(float(stamp)) if stamp is not None else None
+    record_fetch_trail(
+        url,
+        body,
+        fetched_at,
+        content_hash=payload.get("sha256") if isinstance(payload.get("sha256"), str) else None,
+    )
+
+
+def _disk_set(url: str, status: int, body: Any, sha256: str | None = None) -> None:
+    from mooltrace.evidence import content_sha256, hashable_body, record_fetch_trail, utc_iso
+
     directory = _cache_dir()
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / _cache_key(url)
     tmp = path.with_suffix(".tmp")
+    stamp = _now_ts()
+    digest = sha256 or (content_sha256(hashable_body(body)) if body is not None else "")
     blob = json.dumps(
-        {"status": int(status), "body": body, "cached_at": _now_ts()},
+        {"status": int(status), "body": body, "cached_at": stamp, "sha256": digest},
         ensure_ascii=True,
     )
     with _json_lock:
         tmp.write_text(blob, encoding="utf-8")
         tmp.replace(path)
+    if body is not None and digest:
+        record_fetch_trail(url, body, utc_iso(stamp), content_hash=digest)
 
 
 def _retry_after_s(response: httpx.Response) -> float | None:
@@ -254,6 +283,8 @@ def _backoff(attempt: int, retry_after: float | None) -> float:
 def reset_http_state() -> None:
     """Drop in-memory HTTP state. Tests use this between cases."""
     global _client
+    from mooltrace.evidence import clear_fetch_trails
+
     with _client_lock:
         if _client is not None:
             _client.close()
@@ -264,6 +295,7 @@ def reset_http_state() -> None:
         _resources.clear()
     with _limiters_lock:
         _limiters.clear()
+    clear_fetch_trails()
 
 
 def _lru_get(cache: OrderedDict, lock: threading.Lock, key: str):
@@ -310,10 +342,11 @@ def request_json(
     as_text: bool = False,
 ) -> tuple[int, Any]:
     """GET a URL. 429 returns immediately (Semantic Scholar). 404 returns ``(404, None)``."""
-    cached = _disk_get(url)
+    cached = _disk_entry(url)
     if cached is not None:
         stats.hit()
-        status, body = cached
+        _record_cached_trail(url, cached)
+        status, body = int(cached["status"]), cached.get("body")
         if as_text and not isinstance(body, str):
             return status, json.dumps(body) if body is not None else ""
         return status, body
@@ -344,24 +377,28 @@ def request_json(
             raise MoolTraceError(
                 f"{code} from {urlparse(url).netloc}: {response.text[:180]}"
             )
+        from mooltrace.evidence import content_sha256
+
+        raw_hash = content_sha256(response.content)
         if as_text:
             text = response.text
-            _disk_set(url, code, text)
+            _disk_set(url, code, text, sha256=raw_hash)
             return code, text
         try:
             payload = response.json()
         except ValueError:
             payload = response.text
-        _disk_set(url, code, payload)
+        _disk_set(url, code, payload, sha256=raw_hash)
         return code, payload
     raise MoolTraceError(f"giving up on {urlparse(url).netloc}: {last_error}")
 
 
 def _get_json(url: str, stats: CallStats, headers: dict[str, str] | None = None) -> Any:
-    cached = _disk_get(url)
+    cached = _disk_entry(url)
     if cached is not None:
         stats.hit()
-        status, body = cached
+        _record_cached_trail(url, cached)
+        status, body = int(cached["status"]), cached.get("body")
         if status == 404:
             return None
         return body
@@ -726,7 +763,14 @@ def fetch_page(url: str, stats: CallStats) -> tuple[str, str]:
     cached = _lru_get(_pages, _pages_lock, url)
     if cached is not None:
         stats.hit()
-        return cached
+        final, text = cached[0], cached[1]
+        fetched_at = cached[2] if len(cached) > 2 else None
+        from mooltrace.evidence import record_fetch_trail
+
+        record_fetch_trail(url, text, fetched_at)
+        if final != url:
+            record_fetch_trail(final, text, fetched_at)
+        return final, text
     try:
         final, status, _ctype, body = _public_get(
             url,
@@ -737,11 +781,16 @@ def fetch_page(url: str, stats: CallStats) -> tuple[str, str]:
         raise MoolTraceError(f"refused {url}: {exc}") from exc
     if status >= 400:
         raise MoolTraceError(f"could not fetch {url}: HTTP {status}")
+    from mooltrace.evidence import record_fetch_trail, utc_iso
+
     text = body.decode("utf-8", "replace")
-    stored = (final, text)
+    fetched_at = utc_iso()
+    record_fetch_trail(url, text, fetched_at)
+    record_fetch_trail(final, text, fetched_at)
+    stored = (final, text, fetched_at)
     _lru_set(_pages, _pages_lock, url, stored)
     _lru_set(_pages, _pages_lock, final, stored)
-    return stored
+    return final, text
 
 
 def fetch_resource(url: str, stats: CallStats) -> tuple[int, str, bytes]:
@@ -753,7 +802,13 @@ def fetch_resource(url: str, stats: CallStats) -> tuple[int, str, bytes]:
     cached = _lru_get(_resources, _resources_lock, url)
     if cached is not None:
         stats.hit()
-        return cached
+        status, ctype, body = cached[0], cached[1], cached[2]
+        if body:
+            from mooltrace.evidence import record_fetch_trail
+
+            fetched_at = cached[3] if len(cached) > 3 else None
+            record_fetch_trail(url, body, fetched_at)
+        return status, ctype, body
     try:
         final, status, ctype, body = _public_get(
             url,
@@ -768,11 +823,18 @@ def fetch_resource(url: str, stats: CallStats) -> tuple[int, str, bytes]:
         stored = (0, "", b"")
         _lru_set(_resources, _resources_lock, url, stored)
         return stored
-    stored = (status, ctype, body)
+    from mooltrace.evidence import record_fetch_trail, utc_iso
+
+    fetched_at = utc_iso()
+    if body:
+        record_fetch_trail(url, body, fetched_at)
+        if final != url:
+            record_fetch_trail(final, body, fetched_at)
+    stored = (status, ctype, body, fetched_at)
     _lru_set(_resources, _resources_lock, url, stored)
     if final != url:
         _lru_set(_resources, _resources_lock, final, stored)
-    return stored
+    return status, ctype, body
 
 
 def reference_dois(message: dict[str, Any] | None) -> list[str]:

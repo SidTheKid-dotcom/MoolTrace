@@ -34,7 +34,7 @@ RETURN s.url AS source_url,
        length(p) AS hops,
        path_score,
        [x IN nodes(p) | {doi: x.doi, title: x.title, url: x.url, year: x.year}] AS steps,
-       [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged}] AS hops_evidence
+       [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, source_url: r.evidence_url, fetched_at: r.evidence_fetched_at, content_hash: r.evidence_sha256}] AS hops_evidence
 ORDER BY path_score DESC, hops ASC
 LIMIT 80
 """.strip()
@@ -65,7 +65,7 @@ RETURN s.url AS source_url,
        reduce(score = 0.0, r IN rels | score + coalesce(r.cost, 20.0)) AS sp_cost,
        reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) AS path_score,
        [x IN nodes(path) | {doi: x.doi, title: x.title, url: x.url, year: x.year}] AS steps,
-       [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, cost: r.cost}] AS hops_evidence
+       [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, cost: r.cost, source_url: r.evidence_url, fetched_at: r.evidence_fetched_at, content_hash: r.evidence_sha256}] AS hops_evidence
 ORDER BY sp_cost ASC, hops ASC
 LIMIT 40
 """.strip()

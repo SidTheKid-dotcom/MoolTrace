@@ -350,6 +350,9 @@ class Graph:
         weight: float,
         sentence: str,
         evidence_from: str,
+        evidence_url: str = "",
+        evidence_fetched_at: str = "",
+        evidence_sha256: str = "",
     ) -> None:
         """Store one judgment on a RESTS_ON edge. Later calls overwrite; callers skip judged edges."""
         params = {
@@ -359,23 +362,32 @@ class Graph:
             "cost": hop_cost(weight),
             "sentence": (sentence or "")[:800],
             "evidence_from": evidence_from or "",
+            "evidence_url": evidence_url or "",
+            "evidence_fetched_at": evidence_fetched_at or "",
+            "evidence_sha256": evidence_sha256 or "",
         }
         from datetime import datetime, timezone
 
         params["judged_at"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+        trail_set = (
+            "r.evidence_url = $evidence_url, r.evidence_fetched_at = $evidence_fetched_at, "
+            "r.evidence_sha256 = $evidence_sha256"
+        )
         if source_doi:
             params["source"] = source_doi
-            statement = """
-            MATCH (a:Work {doi: $source})-[r:RESTS_ON]->(b:Work {doi: $target})
+            statement = f"""
+            MATCH (a:Work {{doi: $source}})-[r:RESTS_ON]->(b:Work {{doi: $target}})
             SET r.reliance = $reliance, r.weight = $weight, r.cost = $cost, r.sentence = $sentence,
-                r.evidence_from = $evidence_from, r.judged = true, r.judged_at = $judged_at
+                r.evidence_from = $evidence_from, r.judged = true, r.judged_at = $judged_at,
+                {trail_set}
             """
         else:
             params["url"] = source_url or ""
-            statement = """
-            MATCH (a:Source {url: $url})-[r:RESTS_ON]->(b:Work {doi: $target})
+            statement = f"""
+            MATCH (a:Source {{url: $url}})-[r:RESTS_ON]->(b:Work {{doi: $target}})
             SET r.reliance = $reliance, r.weight = $weight, r.cost = $cost, r.sentence = $sentence,
-                r.evidence_from = $evidence_from, r.judged = true, r.judged_at = $judged_at
+                r.evidence_from = $evidence_from, r.judged = true, r.judged_at = $judged_at,
+                {trail_set}
             """
         self.run("set_reliance", statement, params)
 

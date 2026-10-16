@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { PathDiagram } from "@/components/path-diagram"
-import { decidingReason } from "@/lib/path-diagram"
+import { decidingReason, hopTrailLine } from "@/lib/path-diagram"
 import { stepLabel } from "@/lib/step-label"
 
 type Step = { kind?: string; doi?: string | null; title?: string | null; url?: string | null; year?: number | null }
@@ -34,6 +34,9 @@ type Reason = {
     reliance?: string | null
     sentence?: string | null
     evidence_from?: string | null
+    source_url?: string | null
+    fetched_at?: string | null
+    content_hash?: string | null
   }[]
   label?: string | null
 }
@@ -236,6 +239,11 @@ function ResultCard({
                       {hop.weight != null ? ` · weight ${hop.weight}` : ""}
                       {hop.evidence_from ? ` · ${hop.evidence_from}` : ""}
                     </p>
+                    {hopTrailLine(hop) ? (
+                      <p className="mt-1 break-all font-mono text-[11px] leading-5 text-muted-foreground">
+                        {hopTrailLine(hop)}
+                      </p>
+                    ) : null}
                     {hop.sentence ? (
                       <p className="mt-1 leading-6">{hop.sentence}</p>
                     ) : (

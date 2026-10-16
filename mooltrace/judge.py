@@ -8,9 +8,13 @@ A judged edge is never sent back to Semantic Scholar or the full text.
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import quote
 
 from mooltrace.clients import CallStats, MoolTraceError, openalex_context_record
 from mooltrace.contexts import (
+    EUROPE_PMC,
+    PMC_OA,
+    S2,
     abstract_candidates,
     draft_candidates,
     europepmc_pmcid,
@@ -21,6 +25,7 @@ from mooltrace.contexts import (
     legally_open_links,
     open_access_candidates,
     page_candidates,
+    pmc_article_url,
     pmc_author,
     pmc_html_sentences,
     pmc_included_studies,
@@ -29,6 +34,7 @@ from mooltrace.contexts import (
     semantic_scholar_contexts,
     s2_disabled,
 )
+from mooltrace.evidence import fetch_trail, record_fetch_trail
 from mooltrace.graph import Graph
 from mooltrace.reliance import (
     WEIGHT_FLOOR,
@@ -49,7 +55,57 @@ def _priority(row: dict[str, Any]) -> tuple[int, int]:
     return page, 0
 
 
-def _store(graph: Graph, row: dict[str, Any], item: Reliance) -> None:
+def _evidence_url(evidence_from: str, row: dict[str, Any]) -> str:
+    if (evidence_from or "").startswith("http"):
+        return evidence_from
+    citer_url = row.get("citer_url") or ""
+    citer_doi = row.get("citer_doi") or ""
+    pmcid = (row.get("citer_pmcid") or "").upper()
+    if evidence_from in {"page", "page_list", "draft"}:
+        return citer_url
+    if evidence_from == "semantic_scholar" and citer_doi:
+        return (
+            f"{S2}/paper/DOI:{quote(citer_doi, safe='')}/references"
+            f"?fields=contexts,citedPaper.externalIds&limit=200&offset=0"
+        )
+    if evidence_from in {"europepmc_xml", "pmc_full_text", "pmc"} and pmcid:
+        return f"{EUROPE_PMC}/{quote(pmcid)}/fullTextXML"
+    if evidence_from in {"pmc_html", "pmc_included"} and pmcid:
+        return pmc_article_url(pmcid)
+    if evidence_from == "pmc_oa" and pmcid:
+        return f"{PMC_OA}?id={quote(pmcid)}"
+    if evidence_from == "europepmc_references" and citer_doi:
+        return (
+            f"{EUROPE_PMC}/search?query=DOI:{quote(citer_doi, safe='')}"
+            "&format=json&resultType=core&pageSize=1"
+        )
+    if evidence_from == "openalex_abstract" and citer_doi:
+        return f"https://api.openalex.org/works/doi:{quote(citer_doi, safe='')}"
+    return citer_url
+
+
+def _trail_for(
+    row: dict[str, Any],
+    evidence_from: str,
+    body: str | bytes | None = None,
+    url: str | None = None,
+) -> dict[str, str]:
+    source = url or _evidence_url(evidence_from, row)
+    if body is not None and source:
+        return record_fetch_trail(source, body)
+    found = fetch_trail(source) if source else None
+    if found:
+        return found
+    return {"source_url": source or "", "fetched_at": "", "content_hash": ""}
+
+
+def _store(
+    graph: Graph,
+    row: dict[str, Any],
+    item: Reliance,
+    trail: dict[str, str] | None = None,
+) -> None:
+    meta = trail or _trail_for(row, item.evidence_from)
     graph.set_reliance(
         row.get("citer_doi") or None,
         row.get("citer_url") or None,
@@ -58,6 +114,9 @@ def _store(graph: Graph, row: dict[str, Any], item: Reliance) -> None:
         weight=item.weight,
         sentence=item.sentence,
         evidence_from=item.evidence_from,
+        evidence_url=meta.get("source_url") or "",
+        evidence_fetched_at=meta.get("fetched_at") or "",
+        evidence_sha256=meta.get("content_hash") or "",
     )
 
 
@@ -66,8 +125,10 @@ def _store_unverified(
     row: dict[str, Any],
     sentence: str = "",
     evidence_from: str = "",
+    trail: dict[str, str] | None = None,
 ) -> None:
     """A path was found and no in-text sentence qualified. This cannot pass."""
+    meta = trail or _trail_for(row, evidence_from)
     graph.set_reliance(
         row.get("citer_doi") or None,
         row.get("citer_url") or None,
@@ -76,6 +137,9 @@ def _store_unverified(
         weight=0.0,
         sentence=sentence,
         evidence_from=evidence_from,
+        evidence_url=meta.get("source_url") or "",
+        evidence_fetched_at=meta.get("fetched_at") or "",
+        evidence_sha256=meta.get("content_hash") or "",
     )
 
 
@@ -114,23 +178,25 @@ def _judge_page(
     doi = row.get("root_doi") or ""
     if url.startswith("urn:mooltrace:paste:"):
         candidates = draft_candidates(draft, cited_doi=doi, cited_author=author, cited_title=title)
+        trail = record_fetch_trail(url, draft or "")
         picked = _finish(candidates, row)
         if picked:
-            _store(graph, row, picked)
+            _store(graph, row, picked, trail)
         else:
-            _store_unverified(graph, row)
+            _store_unverified(graph, row, trail=trail)
         return True
     try:
         html_text = fetch_page_html(url, stats)
     except MoolTraceError as exc:
         notes.append(f"page context unavailable for {url}: {exc}")
         return False
+    trail = record_fetch_trail(url, html_text)
     candidates = page_candidates(html_text, cited_doi=doi, cited_author=author, cited_title=title)
     picked = _finish(candidates, row)
     if picked:
-        _store(graph, row, picked)
+        _store(graph, row, picked, trail)
     else:
-        _store_unverified(graph, row)
+        _store_unverified(graph, row, trail=trail)
     return True
 
 
@@ -180,6 +246,9 @@ def _judge_work_group(
         pmcid = found or ""
         if pmcid:
             graph.merge_work(citer, pmcid=pmcid)
+    if pmcid:
+        for row in rows:
+            row["citer_pmcid"] = pmcid
 
     targets = [
         {

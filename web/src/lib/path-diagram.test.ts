@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import { buildPathGraph, decidingReason, hostLabel, noticeLabel } from "./path-diagram.ts"
+import { buildPathGraph, decidingReason, hopTrailLine, hostLabel, noticeLabel } from "./path-diagram.ts"
 
 const HEALTHLINE = {
   notice_doi: "10.2337/dc25-ec09",
@@ -26,8 +26,24 @@ const HEALTHLINE = {
     },
   ],
   hops_evidence: [
-    { weight: 0.55, reliance: "mention", sentence: "A review.", evidence_from: "page" },
-    { weight: 1.0, reliance: "relies", sentence: "cassia decreased triglycerides.", evidence_from: "semantic_scholar" },
+    {
+      weight: 0.55,
+      reliance: "mention",
+      sentence: "A review.",
+      evidence_from: "page",
+      source_url: "https://www.healthline.com/nutrition/cinnamon-and-diabetes",
+      fetched_at: "2026-10-16T13:43:11+00:00",
+      content_hash: "a".repeat(64),
+    },
+    {
+      weight: 1.0,
+      reliance: "relies",
+      sentence: "cassia decreased triglycerides.",
+      evidence_from: "semantic_scholar",
+      source_url: "https://api.semanticscholar.org/graph/v1/paper/DOI:10.3390/nu14132773/references",
+      fetched_at: "2026-10-15T15:27:28+00:00",
+      content_hash: "b".repeat(64),
+    },
   ],
 }
 
@@ -51,6 +67,13 @@ test("Healthline path is Source → Work → Work → Notice", () => {
     ["mention", "relies", "FLAGS"],
   )
   assert.equal(graph.edges[1].weight, 1)
+  assert.equal(graph.edges[0].source_url, "https://www.healthline.com/nutrition/cinnamon-and-diabetes")
+  assert.equal(graph.edges[0].fetched_at, "2026-10-16T13:43:11+00:00")
+  assert.equal(graph.edges[0].content_hash, "a".repeat(64))
+  assert.match(
+    hopTrailLine(graph.edges[0]),
+    /healthline.com\/nutrition\/cinnamon-and-diabetes · 2026-10-16T13:43:11\+00:00 · sha256 a{64}/,
+  )
 })
 
 test("Everyday Health one-hop still adds FLAGS", () => {
