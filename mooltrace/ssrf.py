@@ -63,12 +63,14 @@ def _host_ips(host: str, port: int) -> list[str]:
     return addresses
 
 
-def public_http_url(url: str, *, reason: str = "url") -> str:
+def public_http_url(url: str, *, reason: str = "url", resolve_dns: bool = True) -> str:
     """Return the URL if it is public http(s). Raise UnsafeURL otherwise.
 
     Re-check this after every redirect and immediately before connect.
-    DNS answers are inspected; loopback, private, link-local, multicast,
-    reserved, IPv4-mapped, decimal, and credentialed URLs are rejected.
+    DNS answers are inspected when resolve_dns is true; loopback, private,
+    link-local, multicast, reserved, IPv4-mapped, decimal, and credentialed
+    URLs are rejected. Listing a cited URL as a graph candidate may skip
+    DNS; fetch still resolves before connect.
     """
     raw = (url or "").strip()
     if not raw or raw.lower().startswith("urn:"):
@@ -93,7 +95,7 @@ def public_http_url(url: str, *, reason: str = "url") -> str:
     if literal is not None and not _ip_allowed(literal):
         raise UnsafeURL(f"{reason} address {host} is not public")
     port = port or (443 if parsed.scheme == "https" else 80)
-    if literal is None:
+    if literal is None and resolve_dns:
         for address in _host_ips(host, port):
             ip = ipaddress.ip_address(address)
             if not _ip_allowed(ip):

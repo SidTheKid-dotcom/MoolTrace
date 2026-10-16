@@ -165,10 +165,21 @@ def _reason(path: dict[str, Any], kind: str) -> dict[str, Any]:
     }
     if kind == "unverified":
         reason["label"] = UNVERIFIED_LABEL
+        reason["status"] = "unverified"
+    else:
+        reason["status"] = path_status(path)
     return reason
 
 
-def _reason_rank(reason: dict[str, Any]) -> tuple[int, int, float, int]:
+_STATUS_RANK = {"count": 0, "unverified": 1, "discount": 2, "unknown": 3}
+
+
+def _reason_rank(reason: dict[str, Any]) -> tuple[int, int, int, float, int]:
+    """Counted (verified reliance) before unverified before discounted."""
+    status = reason.get("status")
+    if not status:
+        status = "unverified" if reason.get("code") == "unverified" else "count"
+    status_rank = _STATUS_RANK.get(str(status), 3)
     kind_rank = {"retraction": 0, "withdrawal": 1, "expression_of_concern": 2}.get(
         reason.get("code") or "", 3
     )
@@ -182,7 +193,13 @@ def _reason_rank(reason: dict[str, Any]) -> tuple[int, int, float, int]:
             rank = -float(reason.get("path_score") or 0.0)
     except (TypeError, ValueError):
         rank = 99.0
-    return (kind_rank, source_rank, rank, hops if isinstance(hops, int) else 99)
+    return (
+        status_rank,
+        kind_rank,
+        source_rank,
+        rank,
+        hops if isinstance(hops, int) else 99,
+    )
 
 
 def independent_sources(paths: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -266,11 +283,14 @@ def decide(
         doi = (reason.get("root_doi") or "").lower()
         if doi in costs:
             reason["sp_cost"] = costs[doi]
+        reason["status"] = "count"
     reasons.sort(key=_reason_rank)
     kinds = {reason["code"] for reason in reasons}
     discounted_reasons = [
         _reason(path, _kind((path.get("notice") or {}).get("type"))) for path in discounted
     ]
+    for item in discounted_reasons:
+        item["status"] = "discount"
 
     if "retraction" in kinds:
         decision = "block"
@@ -291,6 +311,7 @@ def decide(
         decision = "warn"
         summary = UNVERIFIED_LABEL
         reasons = [_reason(path, "unverified") for path in unverified]
+        reasons.sort(key=_reason_rank)
     elif unknown or incomplete:
         decision = "warn"
         summary = (
@@ -337,7 +358,9 @@ def decide(
             )
 
     if decision in {"warn", "block"} and kinds and unverified:
-        reasons.extend(_reason(path, "unverified") for path in unverified)
+        extra = [_reason(path, "unverified") for path in unverified]
+        reasons.extend(extra)
+        reasons.sort(key=_reason_rank)
 
     exit_code = {"pass": EXIT_PASS, "warn": EXIT_WARN, "block": EXIT_BLOCK}[decision]
     sources = independent_sources(counted)

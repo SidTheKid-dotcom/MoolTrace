@@ -99,8 +99,8 @@ def test_rewrite_drops_flagged_citations(tmp_path, monkeypatch):
     monkeypatch.setattr("mooltrace.trace.get_graph", lambda: graph)
 
     def fake_check(text, urls=None, engine="draft", depth=2, graph=None):
-        if "10.1016/j.jsps.2015.03.013" in (text or ""):
-            return {"decision": "pass", "exit_code": 0, "reasons": []}
+        if "under review" in (text or ""):
+            return {"decision": "warn", "exit_code": 2, "reasons": [{"code": "no_sources"}]}
         return {
             "decision": "warn",
             "exit_code": 2,
@@ -108,6 +108,7 @@ def test_rewrite_drops_flagged_citations(tmp_path, monkeypatch):
                 {
                     "code": "expression_of_concern",
                     "notice_doi": "10.2337/dc25-ec09",
+                    "notice_date": "2025-08-20",
                     "root_doi": "10.2337/diacare.26.12.3215",
                     "source_url": "https://www.healthline.com/nutrition/cinnamon-and-diabetes",
                     "steps": [{"url": "https://www.healthline.com/nutrition/cinnamon-and-diabetes"}],
@@ -130,8 +131,9 @@ def test_rewrite_drops_flagged_citations(tmp_path, monkeypatch):
         assert response.status_code == 200
         body = response.json()
         assert body["rewritten"] is True
-        assert body["recheck"]["decision"] == "pass"
-        assert "10.1016/j.jsps.2015.03.013" in body["text"]
+        assert "10.1016/j.jsps.2015.03.013" not in body["text"]
+        assert "under review" in body["text"]
+        assert body["exit_code"] == body["recheck"]["exit_code"]
     finally:
         graph.close()
 

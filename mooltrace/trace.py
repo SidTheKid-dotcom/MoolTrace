@@ -15,6 +15,8 @@ from mooltrace.clients import (
     MoolTraceError,
     crossref_work,
     crossref_works,
+    datacite_work,
+    doi_org_csl,
     fetch_page,
     html_title,
     openalex_by_ids,
@@ -52,6 +54,46 @@ _LIMITS = (
 
 def _now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def _ago(iso: str | None) -> str | None:
+    then = _parse_iso(iso)
+    if then is None:
+        return None
+    seconds = int((datetime.now(timezone.utc) - then).total_seconds())
+    if seconds < 0:
+        seconds = 0
+    if seconds < 90:
+        return f"{seconds} s ago"
+    if seconds < 90 * 60:
+        return f"{seconds // 60} min ago"
+    if seconds < 36 * 3600:
+        return f"{seconds // 3600} h ago"
+    return f"{seconds // 86400} d ago"
+
+
+def _notice_stamp(graph: Graph, answer_id: str) -> dict[str, Any]:
+    try:
+        run = graph.run(
+            "notice_stamp",
+            """
+            MATCH (a:Answer {id: $id})-[:CITES]->(:Source)-[:RESTS_ON*1..3]->(w:Work)
+            WHERE w.notice_checked_at IS NOT NULL
+            RETURN min(w.notice_checked_at) AS oldest, max(w.notice_checked_at) AS newest
+            """,
+            {"id": answer_id},
+            read_only=True,
+        )
+    except Exception:
+        return {}
+    row = run.rows[0] if run.rows else {}
+    oldest = row.get("oldest")
+    if not oldest:
+        return {}
+    return {
+        "notices_checked_at": oldest,
+        "notices_checked_ago": _ago(str(oldest)),
+    }
 
 
 def _parse_iso(value: Any) -> datetime | None:
@@ -277,23 +319,48 @@ def expand_work(graph: Graph, doi: str, stats: CallStats) -> None:
     except MoolTraceError:
         crossref = None
         cr_failed = True
-    if oa_failed and cr_failed:
-        raise MoolTraceError(f"could not expand {doi}: OpenAlex and Crossref both failed")
+    datacite = None
+    csl = None
     if not openalex and not crossref:
+        try:
+            datacite = datacite_work(doi, stats)
+        except InfraError:
+            raise
+        except MoolTraceError:
+            datacite = None
+        if not datacite:
+            try:
+                csl = doi_org_csl(doi, stats)
+            except InfraError:
+                raise
+            except MoolTraceError:
+                csl = None
+    if not openalex and not crossref and not datacite and not csl:
+        if oa_failed and cr_failed:
+            raise MoolTraceError(f"could not expand {doi}: OpenAlex and Crossref both failed")
         raise MoolTraceError(f"could not resolve {doi}")
     family = _family_name(crossref) or (_openalex_family(openalex) if openalex else None)
     if openalex:
         _store_openalex(graph, openalex, first_author=family)
-    else:
-        title = None
-        if crossref:
-            titles = crossref.get("title") or []
-            title = titles[0] if titles else None
+    elif crossref:
+        titles = crossref.get("title") or []
         graph.merge_work(
             doi,
-            title=title,
+            title=titles[0] if titles else None,
             first_author=family,
             year=_issued_year(crossref),
+        )
+    elif datacite:
+        graph.merge_work(
+            doi,
+            title=datacite.get("title"),
+            year=datacite.get("year"),
+        )
+    else:
+        graph.merge_work(
+            doi,
+            title=(csl or {}).get("title"),
+            year=(csl or {}).get("year"),
         )
     _apply_notices(graph, doi, crossref)
 
@@ -382,7 +449,7 @@ def _page_urls(urls: list[str], text: str, errors: list[str]) -> list[str]:
         if "doi.org/" in lower or "pubmed" in lower or "/pmc" in lower:
             continue
         try:
-            public_http_url(url, reason="cited url")
+            public_http_url(url, reason="cited url", resolve_dns=False)
         except UnsafeURL as exc:
             errors.append(str(exc))
             continue
@@ -848,14 +915,15 @@ def check_answer(
                 "engines": reverse.get("engines") or [],
                 "cypher": reverse.get("cypher"),
                 "summary": (
-                    f"This {label} affects {n} checked "
-                    f"{'answer' if n == 1 else 'answers'} in this graph."
+                    f"This {label} affects {n} stored "
+                    f"{'answer' if n == 1 else 'answers'}."
                 ),
             }
             if reverse.get("queries"):
                 queries.extend(reverse["queries"])
         except Exception:
             impact = None
+    stamp = _notice_stamp(graph, traced["answer_id"])
     payload = {
         "product": "MoolTrace",
         "tagline": TAGLINE,
@@ -890,6 +958,7 @@ def check_answer(
         "cypher": deciding_cypher,
         "elapsed_ms": traced["elapsed_ms"],
         "limits": traced["limits"],
+        **stamp,
     }
     if verdict.get("error_code"):
         payload["error_code"] = verdict["error_code"]

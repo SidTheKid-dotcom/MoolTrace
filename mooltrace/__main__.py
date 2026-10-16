@@ -120,8 +120,11 @@ def main(argv: list[str] | None = None) -> int:
                 args.depth,
             )
             _print(payload)
-            recheck = payload.get("recheck") or {}
-            return int(recheck.get("exit_code") or 2)
+            code = payload.get("exit_code")
+            if code is None:
+                recheck = payload.get("recheck") or {}
+                code = recheck.get("exit_code")
+            return int(code) if code is not None else 2
         if args.cmd == "trace":
             _print(
                 trace_answer(

@@ -33,6 +33,33 @@ def test_doi_cleanup():
     assert clean_doi("10.2337/diacare.26.12.3215\u200b") == "10.2337/diacare.26.12.3215"
     assert clean_doi("10.2337/diacare.26.12.3215।") == "10.2337/diacare.26.12.3215"
     assert clean_doi("10.3389/fendo.2019.00640/full") == "10.3389/fendo.2019.00640"
+    assert (
+        clean_doi("https://www.frontiersin.org/articles/10.3389/fendo.2019.00640/full")
+        == "10.3389/fendo.2019.00640"
+    )
+    assert (
+        clean_doi("https://onlinelibrary.wiley.com/doi/10.1002/ptr.8026/abstract")
+        == "10.1002/ptr.8026"
+    )
+    assert (
+        clean_doi("https://link.springer.com/article/10.1007/s00125-003-1116-6/full.pdf")
+        == "10.1007/s00125-003-1116-6"
+    )
+    assert (
+        clean_doi("https://www.tandfonline.com/doi/pdf/10.1080/07315724.2006.10719518")
+        == "10.1080/07315724.2006.10719518"
+    )
+    assert (
+        clean_doi("https://www.nejm.org/doi/full/10.1056/NEJMoa012512")
+        == "10.1056/nejmoa012512"
+    )
+    assert (
+        clean_doi("https://www.nejm.org/doi/pdf/10.1056/NEJMoa012512")
+        == "10.1056/nejmoa012512"
+    )
+    assert clean_doi("10.1016/s0140-6736(20)31180-6/fulltext") == "10.1016/s0140-6736(20)31180-6"
+    assert clean_doi("10.1056/nejmoa012512/full.pdf") == "10.1056/nejmoa012512"
+    assert clean_doi("10.1002/ptr.8026/abstract?utm=1") == "10.1002/ptr.8026"
 
 
 def test_extract_encoded_and_noisy_dois():
@@ -42,6 +69,12 @@ def test_extract_encoded_and_noisy_dois():
     assert zwsp.dois == ["10.2337/diacare.26.12.3215"]
     danda = extract_identifiers("DOI 10.2337/diacare.26.12.3215।")
     assert danda.dois == ["10.2337/diacare.26.12.3215"]
+    encoded = extract_identifiers("cite doi%3A10.2337%2Fdiacare.26.12.3215")
+    assert "10.2337/diacare.26.12.3215" in encoded.dois
+    broken = extract_identifiers("DOI 10.2337/diacare.\n26.12.3215 is the trial.")
+    assert "10.2337/diacare.26.12.3215" in broken.dois
+    wide = extract_identifiers("DOI １０．２３３７／diacare.26.12.3215")
+    assert "10.2337/diacare.26.12.3215" in wide.dois
 
 
 def test_extract_page_identifiers():

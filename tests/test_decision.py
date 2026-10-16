@@ -5,6 +5,7 @@ from mooltrace.decision import (
     NO_SOURCES_SUMMARY,
     PRESHIP_EOC,
     UNVERIFIED_LABEL,
+    _reason_rank,
     decide,
 )
 from mooltrace.reliance import PATH_RULE, WEIGHTS
@@ -401,6 +402,56 @@ def test_sp_cost_picks_the_deciding_notice():
     assert verdict["decision"] == "warn"
     assert verdict["reasons"][0]["root_doi"] == "10.1/high"
     assert verdict["reasons"][0]["sp_cost"] == 0.01
+
+
+def test_rank_is_counted_then_unverified_then_discounted():
+    counted = _path("retraction")
+    counted.update(
+        weight=0.9,
+        judged=True,
+        reliance="included",
+        sentence="the trial is included in this review",
+        hops=2,
+    )
+    unverified = _path("expression_of_concern", "10.2/u")
+    unverified.update(
+        weight=0.0,
+        judged=True,
+        reliance="unverified",
+        sentence="",
+        hops=1,
+    )
+    discounted = _path("retraction", "10.3/d")
+    discounted.update(
+        weight=0.2,
+        judged=True,
+        reliance="background",
+        sentence="Khan A, Safdar M. Diabetes Care. 2003;26(12):3215.",
+        hops=1,
+    )
+    verdict = decide(
+        [discounted, unverified, counted],
+        incomplete=False,
+        depth=2,
+    )
+    assert verdict["decision"] == "block"
+    assert verdict["reasons"][0]["status"] == "count"
+    assert verdict["reasons"][0]["code"] == "retraction"
+    assert any(reason.get("status") == "unverified" for reason in verdict["reasons"])
+    counted_pos = next(
+        i for i, reason in enumerate(verdict["reasons"]) if reason.get("status") == "count"
+    )
+    unverified_pos = next(
+        i for i, reason in enumerate(verdict["reasons"]) if reason.get("status") == "unverified"
+    )
+    assert counted_pos < unverified_pos
+    combined = list(verdict["reasons"]) + list(verdict["discounted"])
+    combined.sort(key=_reason_rank)
+    statuses = [item.get("status") for item in combined]
+    assert statuses == sorted(statuses, key=lambda s: {"count": 0, "unverified": 1, "discount": 2}.get(s, 9))
+    assert statuses[0] == "count"
+    assert "unverified" in statuses
+    assert statuses[-1] == "discount"
 
 
 def test_new_version_is_not_a_path_kind_here():

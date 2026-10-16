@@ -24,12 +24,14 @@ from mooltrace.config import (
     CACHE_MAX,
     CROSSREF_MAX_RPS,
     DIABETES_CARE_ISSNS,
+    HTTP_CACHE_TTL_S,
     HTTP_MAX_BYTES,
     HTTP_RETRY_AFTER_CAP_S,
     HTTP_RETRY_ATTEMPTS,
     MAILTO,
     MAX_REDIRECTS,
     NCBI_MAX_RPS,
+    NOTICE_REFRESH_TTL_S,
     OPENALEX_MAX_RPS,
     PAGE_USER_AGENT,
     USER_AGENT,
@@ -39,7 +41,17 @@ from mooltrace.ssrf import UnsafeURL, public_http_url, redirect_target
 
 OPENALEX = "https://api.openalex.org"
 CROSSREF = "https://api.crossref.org"
+DATACITE = "https://api.datacite.org"
+DOI_ORG = "https://doi.org"
 IDCONV = "https://www.ncbi.nlm.nih.gov/pmc/utils/idconv/v1.0/"
+_NOTICE_HOSTS = {
+    "api.crossref.org",
+    "api.datacite.org",
+    "doi.org",
+    "dx.doi.org",
+    "api.retractionwatch.com",
+    "www.ebi.ac.uk",
+}
 
 
 class MoolTraceError(Exception):
@@ -149,7 +161,35 @@ def _cache_key(url: str) -> str:
     return hashlib.sha256(normalized.encode()).hexdigest()
 
 
+def _now_ts() -> float:
+    return time.time()
+
+
+def _is_notice_url(url: str) -> bool:
+    parsed = urlparse(url)
+    host = parsed.netloc.lower()
+    path = parsed.path.lower()
+    if host in _NOTICE_HOSTS:
+        return True
+    if host == "api.openalex.org" and "/works/doi:" in path:
+        return True
+    return False
+
+
+def _ttl_for(url: str) -> float | None:
+    """Seconds the cached body stays valid. None means do not use the cache."""
+    if _is_notice_url(url):
+        ttl = NOTICE_REFRESH_TTL_S
+        if ttl <= 0:
+            return None
+        return float(ttl)
+    return float(HTTP_CACHE_TTL_S)
+
+
 def _disk_get(url: str) -> tuple[int, Any] | None:
+    ttl = _ttl_for(url)
+    if ttl is None:
+        return None
     path = _cache_dir() / _cache_key(url)
     if not path.is_file():
         return None
@@ -162,6 +202,12 @@ def _disk_get(url: str) -> tuple[int, Any] | None:
     status = int(payload["status"])
     if status == 429 or status >= 500:
         return None
+    cached_at = payload.get("cached_at")
+    if cached_at is None and _is_notice_url(url):
+        return None
+    stamp = float(cached_at) if cached_at is not None else 0.0
+    if _now_ts() - stamp > ttl:
+        return None
     return status, payload.get("body")
 
 
@@ -170,7 +216,10 @@ def _disk_set(url: str, status: int, body: Any) -> None:
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / _cache_key(url)
     tmp = path.with_suffix(".tmp")
-    blob = json.dumps({"status": int(status), "body": body}, ensure_ascii=True)
+    blob = json.dumps(
+        {"status": int(status), "body": body, "cached_at": _now_ts()},
+        ensure_ascii=True,
+    )
     with _json_lock:
         tmp.write_text(blob, encoding="utf-8")
         tmp.replace(path)
@@ -511,6 +560,71 @@ def crossref_work(doi: str, stats: CallStats) -> dict[str, Any] | None:
     if not isinstance(data, dict):
         return None
     return data.get("message")
+
+
+def datacite_work(doi: str, stats: CallStats) -> dict[str, Any] | None:
+    """Resolve a DOI that Crossref and OpenAlex miss (arXiv, Zenodo, DataCite)."""
+    url = f"{DATACITE}/dois/{quote(doi, safe='')}"
+    data = _get_json(url, stats, headers={"Accept": "application/vnd.api+json"})
+    if not isinstance(data, dict):
+        return None
+    attrs = ((data.get("data") or {}).get("attributes") or {})
+    if not isinstance(attrs, dict) or not attrs:
+        return None
+    titles = attrs.get("titles") or []
+    title = None
+    if titles and isinstance(titles[0], dict):
+        title = titles[0].get("title")
+    elif titles:
+        title = str(titles[0])
+    year = attrs.get("publicationYear")
+    try:
+        year = int(year) if year is not None else None
+    except (TypeError, ValueError):
+        year = None
+    resolved = clean_doi(str(attrs.get("doi") or doi))
+    if not valid_doi(resolved):
+        return None
+    return {
+        "doi": resolved,
+        "title": title,
+        "year": year,
+        "publisher": attrs.get("publisher"),
+        "source": "datacite",
+    }
+
+
+def doi_org_csl(doi: str, stats: CallStats) -> dict[str, Any] | None:
+    """doi.org content negotiation. Last resolver after DataCite."""
+    url = f"{DOI_ORG}/{quote(doi, safe='/')}"
+    data = _get_json(
+        url,
+        stats,
+        headers={"Accept": "application/vnd.citationstyles.csl+json"},
+    )
+    if not isinstance(data, dict):
+        return None
+    title = data.get("title")
+    if isinstance(title, list):
+        title = title[0] if title else None
+    year = None
+    issued = data.get("issued") or data.get("published") or {}
+    parts = (issued.get("date-parts") or [[]])[0] if isinstance(issued, dict) else []
+    if parts:
+        try:
+            year = int(parts[0])
+        except (TypeError, ValueError):
+            year = None
+    resolved = clean_doi(str(data.get("DOI") or data.get("doi") or doi))
+    if not valid_doi(resolved):
+        return None
+    return {
+        "doi": resolved,
+        "title": title,
+        "year": year,
+        "container": data.get("container-title"),
+        "source": "doi.org",
+    }
 
 
 def pmc_to_doi(pmcids: list[str], stats: CallStats) -> dict[str, str]:

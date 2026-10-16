@@ -8,7 +8,8 @@ import unicodedata
 from dataclasses import dataclass, field
 from urllib.parse import unquote
 
-DOI_RE = re.compile(r"\b(10\.\d{4,9}/[^\s\"'<>\\]+)", re.I)
+DOI_RE = re.compile(r"\b(?:doi:\s*)?(10\.\d{4,9}/[^\s\"'<>\\]+)", re.I)
+DOI_IN_URL_RE = re.compile(r"(10\.\d{4,9}/[^\s\"'<>?#]+)", re.I)
 PMID_URL_RE = re.compile(
     r"(?:pubmed\.ncbi\.nlm\.nih\.gov|ncbi\.nlm\.nih\.gov/pubmed)/(\d{5,9})",
     re.I,
@@ -22,6 +23,16 @@ DIABETES_CARE_RE = re.compile(
 )
 URL_RE = re.compile(r"https?://[^\s\"'<>]+", re.I)
 DOI_FULL_RE = re.compile(r"10\.\d{4,9}/\S+")
+_PUBLISHER_SUFFIXES = (
+    "/full.pdf",
+    "/full.html",
+    "/fulltext",
+    "/abstract",
+    "/epdf",
+    "/pdf",
+    "/html",
+    "/full",
+)
 
 # Crossref update types that are not a publisher flag on the study.
 # new_version is how Cochrane points at an earlier review; a correction
@@ -52,16 +63,26 @@ def _strip_invisible(text: str) -> str:
 
 
 def clean_doi(raw: str) -> str:
-    text = _strip_invisible(html.unescape(raw or "")).strip()
+    text = unicodedata.normalize("NFKC", _strip_invisible(html.unescape(raw or ""))).strip()
+    text = unquote(text)
     text = unquote(text)
     text = re.sub(r"^https?://(?:dx\.)?doi\.org/", "", text, flags=re.I)
+    text = re.sub(r"^doi:\s*", "", text, flags=re.I)
+    embedded = DOI_IN_URL_RE.search(text)
+    if embedded and ("/" in text[: embedded.start()] or text.startswith("http")):
+        text = embedded.group(1)
     text = text.split("?")[0].split("#")[0]
     text = text.rstrip(".,;:)]}>\"'\u0964\u0965")
-    # HTML pages often append &amp; to a DOI inside an href.
     text = re.sub(r"&(?:amp;)?$", "", text, flags=re.I)
     text = text.lower()
-    if text.endswith("/full"):
-        text = text[: -len("/full")]
+    changed = True
+    while changed:
+        changed = False
+        for suffix in _PUBLISHER_SUFFIXES:
+            if text.endswith(suffix):
+                text = text[: -len(suffix)]
+                changed = True
+                break
     return text
 
 
@@ -104,7 +125,13 @@ def diabetes_care_doi(volume: str, issue: str, page: str) -> str:
 def extract_identifiers(text: str) -> Identifiers:
     if not text:
         return Identifiers()
-    raw = html.unescape(text)
+    raw = unicodedata.normalize("NFKC", html.unescape(text))
+    raw = unquote(unquote(raw))
+    raw = re.sub(
+        r"(10\.\d{4,9}/[^\s]*?[./\-(])\n+\s*([A-Za-z0-9])",
+        r"\1\2",
+        raw,
+    )
     dois = [
         doi for match in DOI_RE.findall(raw) if valid_doi(doi := clean_doi(match))
     ]
@@ -122,6 +149,10 @@ def extract_identifiers(text: str) -> Identifiers:
         doi = clean_doi(url)
         if valid_doi(doi):
             dois.append(doi)
+        for match in DOI_IN_URL_RE.findall(url):
+            nested = clean_doi(match)
+            if valid_doi(nested):
+                dois.append(nested)
     return Identifiers(_dedupe(dois), pmids, pmcids, diabetes_care, urls)
 
 

@@ -455,6 +455,8 @@ def test_expand_work_rejects_unresolved_doi(tmp_path: Path, monkeypatch):
     graph = Graph(tmp_path / "mooltrace.db")
     monkeypatch.setattr("mooltrace.trace.openalex_work_doi", lambda *a, **k: None)
     monkeypatch.setattr("mooltrace.trace.crossref_work", lambda *a, **k: None)
+    monkeypatch.setattr("mooltrace.trace.datacite_work", lambda *a, **k: None)
+    monkeypatch.setattr("mooltrace.trace.doi_org_csl", lambda *a, **k: None)
     try:
         try:
             expand_work(graph, "10.9999/does-not-exist", CallStats())
@@ -472,6 +474,8 @@ def test_unresolved_doi_is_warn_not_pass(tmp_path: Path, monkeypatch):
     graph = Graph(tmp_path / "mooltrace.db")
     monkeypatch.setattr("mooltrace.trace.openalex_work_doi", lambda *a, **k: None)
     monkeypatch.setattr("mooltrace.trace.crossref_work", lambda *a, **k: None)
+    monkeypatch.setattr("mooltrace.trace.datacite_work", lambda *a, **k: None)
+    monkeypatch.setattr("mooltrace.trace.doi_org_csl", lambda *a, **k: None)
     monkeypatch.setattr("mooltrace.trace.crossref_works", lambda dois, stats: [])
     monkeypatch.setattr("mooltrace.trace.openalex_work_pmid", lambda *a, **k: None)
     monkeypatch.setattr("mooltrace.trace.pmc_to_doi", lambda *a, **k: {})
@@ -553,5 +557,55 @@ def test_empty_checked_work_does_not_pass(tmp_path: Path, monkeypatch):
         )
         assert payload["decision"] == "warn"
         assert payload["exit_code"] == 2
+    finally:
+        graph.close()
+
+
+def test_expand_work_resolves_arxiv_via_datacite(tmp_path: Path, monkeypatch):
+    graph = Graph(tmp_path / "mooltrace.db")
+    monkeypatch.setattr("mooltrace.trace.openalex_work_doi", lambda *a, **k: None)
+    monkeypatch.setattr("mooltrace.trace.crossref_work", lambda *a, **k: None)
+    monkeypatch.setattr(
+        "mooltrace.trace.datacite_work",
+        lambda doi, stats: {
+            "doi": doi,
+            "title": "Attention Is All You Need",
+            "year": 2017,
+            "source": "datacite",
+        },
+    )
+    monkeypatch.setattr("mooltrace.trace.notice_check", lambda *a, **k: None)
+    try:
+        expand_work(graph, "10.48550/arxiv.1706.03762", CallStats())
+        row = graph.work_row("10.48550/arxiv.1706.03762")
+        assert row is not None
+        assert row.get("title") == "Attention Is All You Need"
+        assert row.get("year") == 2017
+        assert row.get("expanded")
+    finally:
+        graph.close()
+
+
+def test_expand_work_resolves_zenodo_via_doi_org(tmp_path: Path, monkeypatch):
+    graph = Graph(tmp_path / "mooltrace.db")
+    monkeypatch.setattr("mooltrace.trace.openalex_work_doi", lambda *a, **k: None)
+    monkeypatch.setattr("mooltrace.trace.crossref_work", lambda *a, **k: None)
+    monkeypatch.setattr("mooltrace.trace.datacite_work", lambda *a, **k: None)
+    monkeypatch.setattr(
+        "mooltrace.trace.doi_org_csl",
+        lambda doi, stats: {
+            "doi": doi,
+            "title": "Zenodo dataset",
+            "year": 2019,
+            "source": "doi.org",
+        },
+    )
+    monkeypatch.setattr("mooltrace.trace.notice_check", lambda *a, **k: None)
+    try:
+        expand_work(graph, "10.5281/zenodo.3242074", CallStats())
+        row = graph.work_row("10.5281/zenodo.3242074")
+        assert row is not None
+        assert row.get("title") == "Zenodo dataset"
+        assert row.get("expanded")
     finally:
         graph.close()

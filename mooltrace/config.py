@@ -64,6 +64,7 @@ NCBI_MAX_RPS = float(os.environ.get("MOOLTRACE_NCBI_RPS", "5"))
 HTTP_RETRY_ATTEMPTS = int(os.environ.get("MOOLTRACE_HTTP_RETRIES", "4"))
 HTTP_RETRY_AFTER_CAP_S = float(os.environ.get("MOOLTRACE_RETRY_AFTER_CAP_S", "60"))
 NOTICE_REFRESH_TTL_S = int(os.environ.get("MOOLTRACE_NOTICE_TTL_S", str(24 * 60 * 60)))
+HTTP_CACHE_TTL_S = int(os.environ.get("MOOLTRACE_HTTP_CACHE_TTL_S", str(7 * 24 * 60 * 60)))
 MAX_REDIRECTS = 5
 
 

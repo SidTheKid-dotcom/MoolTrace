@@ -18,6 +18,7 @@ from mooltrace.clients import (
     reset_http_state,
     resolve_diabetes_care,
 )
+from mooltrace import config as mooltrace_config
 from mooltrace.config import OPENALEX_MAX_RPS
 from mooltrace.graph import Graph
 from mooltrace.trace import check_answer
@@ -288,3 +289,47 @@ def test_crossref_404_is_cached_not_infra(monkeypatch):
     assert crossref_work("10.1/missing", CallStats()) is None
     assert crossref_work("10.1/missing", CallStats()) is None
     assert hits["n"] == 1
+
+
+def test_notice_cache_expires_after_ttl(monkeypatch, tmp_path: Path):
+    hits = {"n": 0}
+    clock = {"t": 1_000_000.0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        hits["n"] += 1
+        return httpx.Response(200, json={"status": "ok", "n": hits["n"]})
+
+    monkeypatch.setattr("mooltrace.clients._now_ts", lambda: clock["t"])
+    monkeypatch.setattr(mooltrace_config, "NOTICE_REFRESH_TTL_S", 60)
+    monkeypatch.setattr("mooltrace.clients.NOTICE_REFRESH_TTL_S", 60)
+    monkeypatch.setattr(
+        "mooltrace.clients._http",
+        lambda: httpx.Client(transport=_transport(handler)),
+    )
+    first = _get_json("https://api.crossref.org/works/10.1/ttl", CallStats())
+    assert first["n"] == 1
+    second = _get_json("https://api.crossref.org/works/10.1/ttl", CallStats())
+    assert second["n"] == 1
+    assert hits["n"] == 1
+    clock["t"] = 1_000_000.0 + 61
+    third = _get_json("https://api.crossref.org/works/10.1/ttl", CallStats())
+    assert third["n"] == 2
+    assert hits["n"] == 2
+
+
+def test_notice_ttl_zero_bypasses_cache(monkeypatch, tmp_path: Path):
+    hits = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        hits["n"] += 1
+        return httpx.Response(200, json={"n": hits["n"]})
+
+    monkeypatch.setattr(mooltrace_config, "NOTICE_REFRESH_TTL_S", 0)
+    monkeypatch.setattr("mooltrace.clients.NOTICE_REFRESH_TTL_S", 0)
+    monkeypatch.setattr(
+        "mooltrace.clients._http",
+        lambda: httpx.Client(transport=_transport(handler)),
+    )
+    _get_json("https://api.crossref.org/works/10.1/bypass", CallStats())
+    _get_json("https://api.crossref.org/works/10.1/bypass", CallStats())
+    assert hits["n"] == 2
