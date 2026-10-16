@@ -93,16 +93,19 @@ Confirmed 16 Oct 2026 18:09 UTC, throwaway `/tmp/mt-t12-lancet/mooltrace.db`, 14
 
 ## MCP
 
-Remote (official Python `Client`, 16 Oct 2026 18:09 UTC):
+Remote (official Python `Client`, 16 Oct 2026 18:41 UTC, signed-out):
 
 ```
 tools ['check_answer', 'what_rests_on', 'recheck_affected']
 check_answer block exit 1
 notice retraction 10.1056/nejmc1806491 score 0.30250000000000005
 decided_by algo.SPpaths
+what_rests_on This retraction affects 1 stored answer. counted 1
 ```
 
-Local one-command (after the venv above): `.venv/bin/python -m mooltrace mcp`. Point Cursor/Claude at `mcp.example.json` (`args` `["-m", "mooltrace.mcp_server"]`). Stdio has the full tool list. Confirmed by `tests/test_mcp.py` / `tests/test_mcp_http.py` (not re-listed this session).
+Hosted `recheck_affected` on the same olive-oil notice still returns **warn exit 2 incomplete** (`MoolTrace could not finish this pre-ship check`) on the live `api.5` image. Cause: recheck stuffed first-hop work DOIs into draft text, minting a new answer id. Local main after `dc032d0` replays URL-only inputs and blocks (`test_public_demo_recheck_affected_replays_olive_oil_block`). Keep `recheck_affected` off camera until Lightsail is rebuilt from that commit.
+
+Local one-command (after the venv above): `.venv/bin/python -m mooltrace mcp`. Point Cursor/Claude at `mcp.example.json` (`args` `["-m", "mooltrace.mcp_server"]`). Stdio has the full tool list. Confirmed this session: `TOOLS` 9 names including `rewrite_answer`; empty draft → warn exit 2 `no_sources`.
 
 ## Baseline (no-graph vs MoolTrace)
 
@@ -173,7 +176,7 @@ docker compose up --build
 unshare --net --map-root-user .venv/bin/python -m pytest -q
 ```
 
-16 Oct 2026 this checkout: 253 passed, 0 failed, 384.47 s, network namespace unshared.
+16 Oct 2026 this checkout: 258 passed, 0 failed, 399.92 s, network namespace unshared.
 
 ## Limits quoted in README (spot-checks)
 
@@ -187,16 +190,35 @@ unshare --net --map-root-user .venv/bin/python -m pytest -q
 | Hosted free-text is presets-only | oversize POST | 413 |
 | `assets/healthline-warn.png` still prints 0.72 | open the PNG / README caption | labeled **synthetic example**; not this run |
 
-## Prior art (docs, not a live re-read)
+## Seeded gate (T14, three runs)
 
-`pytest tests/test_readme.py::test_readme_prior_art_links_verified_repos` — shaky-ground, scite, GhostCite, Bedrock links. T11 signed-out HEAD of shaky-ground's documented Railway URL was HTTP 501. Not re-fetched this session.
+```bash
+MOOLTRACE_MAILTO=siddhant.m.vishnu@gmail.com MOOLTRACE_OPENALEX_RPS=3 \
+MOOLTRACE_HTTP_CACHE=/tmp/mt-t14-gate-cache MOOLTRACE_DB=/tmp/mt-t14-unused/mooltrace.db \
+.venv/bin/python -m mooltrace.gate
+```
+
+`data/mooltrace.db` mtime stayed `1792153156`. Shared HTTP cache; run 1 is the cold HTTP walk.
+
+| Run | caught | alarms | wall_s | ran_at | Allen 2013 |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 7/7 | 0/6 | 150.4 | 2026-10-16T18:43:02+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
+| 2 | 7/7 | 0/6 | 97.0 | 2026-10-16T18:45:03+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
+| 3 | 7/7 | 0/6 | 98.5 | 2026-10-16T18:51:18+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
+
+Files: `results/gate_2026-10-16_t14_run1.json`, `run2`, `run3`.
+
+## Prior art (re-fetched 16 Oct 2026 18:43 UTC)
+
+`pytest tests/test_readme.py::test_readme_prior_art_links_verified_repos` — shaky-ground, scite, GhostCite, Bedrock links. Signed-out HEAD of https://shaky-ground-production.up.railway.app/ returned **HTTP 501**. GitHub repos `aryangorde6/shaky-ground`, `musharna/ghostcite`, `ibnweb3/bedrock` returned HTTP 200. `scite.ai/features` returned HTTP 403 from this host (CloudFront). Raw `shaky/retractionwatch.py` line 61 still keeps only `RetractionNature == "Retraction"`.
 
 ## Not re-run this session
 
 | Claim | Why |
 | --- | --- |
-| Cold Healthline 47.09 s / 49.18 s / 49.10 s | Replaced by this fresh-clone 52.37 s check (RPS=3) |
+| Cold Healthline 47.09 s / 49.18 s / 49.10 s | Replaced by the T12 fresh-clone 52.37 s check (RPS=3); not re-timed in T14 |
 | Warm Healthline 23.16 s | Not repeated |
-| `python -m mooltrace.gate` | T02 dated files under `results/gate_2026-10-16*` |
+| Fresh-clone quickstart 65.06 s | T12 `/tmp` timing; not re-cloned in T14 |
 | `docker compose up --build` | Config confirmed; public demo already live |
 | Live `mooltrace labelled` (52 cases) | Offline baseline reproduce + schema test |
+| Lightsail rebuild after `dc032d0` | Hosted `recheck_affected` still warn/incomplete on `api.5` |
