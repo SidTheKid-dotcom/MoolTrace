@@ -55,7 +55,7 @@ Signed-out, in this order:
 
 Stop. No pushes after Sun 18 Oct 2026, 11:59 PM IST. Keep the live link, public repo, and video up through judging.
 
-Live container images (17 Oct 2026 rebuild from current main, not-in-graph preset): `:mooltrace.api.10` (digest `sha256:e1e7be5c09f8d6f5b272dae2c946f2b1c26e61019052d7e2abe92dc78cc804c3`) and `:mooltrace.web.12` (digest `sha256:c4cb2f1f7061c8c75877a3b5436b343344502997cf579fbb6cfd2c5e5932506d`, built with `MOOLTRACE_API_ORIGIN=http://localhost:4317`). Power micro, scale 1, `MOOLTRACE_PUBLIC_DEMO=1`, no Azure env vars. Pinned in `deploy/lightsail-deployment.json`. Toggle depth 1 then 3 on the olive-oil preset: PASS (0 notice paths) then BLOCK. Click **Not in the graph** for the NHS how-to: WARN, expanded 0 of 0 cited works.
+Live container images (17 Oct 2026 rebuild from current main, allow-listed live URL): `:mooltrace.api.13` (digest `sha256:b4c7b0d3bc165f56a7ce91b703083c190a7944241602c81a598af2b701ba57d8`) and `:mooltrace.web.14` (digest `sha256:1e2d7805c36954e73b2962f556356533916304831817b3ef2cc31beb84711f31`, built with `MOOLTRACE_API_ORIGIN=http://localhost:4317`). Power micro, scale 1, `MOOLTRACE_PUBLIC_DEMO=1`, `MOOLTRACE_PUBLIC_LIVE=1`, no Azure env vars. Pinned in `deploy/lightsail-deployment.json`. Toggle depth 1 then 3 on the olive-oil preset: PASS (0 notice paths) then BLOCK. Click **Not in the graph** for the NHS how-to: WARN, expanded 0 of 0 cited works. Paste a non-preset healthline.com URL for a live check (about 60 s; one at a time).
 
 ## After judging (stops Lightsail billing)
 
