@@ -472,17 +472,64 @@ def run_vitality_eval(
     ctrl_429 = sum(1 for row in ctrl_mt if row.get("miss_reason") == "openalex_429")
     pos_base = [row for row in base_rows if row["kind"] == "positive"]
     ctrl_base = [row for row in base_rows if row["kind"] == "control"]
-    misses = [
-        {
-            "id": row["id"],
-            "doi": row["doi"],
-            "reason": row.get("miss_reason"),
-            "decision": row.get("decision"),
-            "errors": (row.get("errors") or [])[:3],
-        }
-        for row in pos_mt
-        if row.get("miss_reason")
-    ]
+    by_frozen = {str(row["id"]): row for row in positives + controls}
+    misses = []
+    for row in pos_mt:
+        if not row.get("miss_reason"):
+            continue
+        frozen_row = by_frozen.get(str(row["id"])) or {}
+        want = trial_dois(frozen_row)
+        found_roots = []
+        found_notices = []
+        for reason in row.get("reasons") or []:
+            if not isinstance(reason, dict):
+                continue
+            if reason.get("root_doi"):
+                found_roots.append(reason["root_doi"])
+            if reason.get("notice_doi"):
+                found_notices.append(reason["notice_doi"])
+        note = row.get("miss_reason")
+        summary = str(row.get("summary") or "")
+        if row.get("miss_reason") == "no_vitality_trial_doi":
+            note = (
+                "OSF All-sheet stored no retracted-trial DOI for this review, "
+                "so same-trial recall is undefined."
+            )
+            if row.get("counted_notice"):
+                note += f" MoolTrace still reached a retraction ({found_roots[:3]})."
+        elif row.get("miss_reason") == "trial_not_reached" and row.get("counted_notice"):
+            note = (
+                "MoolTrace reached a retraction, but not the VITALITY-named "
+                f"trial DOI {want}. Found roots {found_roots[:4]}."
+            )
+        elif "below the 0.5 weight floor" in summary:
+            note = (
+                "A notice path existed but a hop was below the 0.5 counted "
+                f"floor, so algo.SPpaths did not decide a flag. VITALITY named {want}."
+            )
+        elif row.get("decision") == "pass":
+            note = (
+                "No notice path within 2 hops. VITALITY named "
+                f"{want}."
+            )
+        misses.append(
+            {
+                "id": row["id"],
+                "doi": row["doi"],
+                "reason": row.get("miss_reason"),
+                "note": note,
+                "decision": row.get("decision"),
+                "vitality_trial_dois": want,
+                "found_roots": found_roots[:6],
+                "found_notices": found_notices[:6],
+                "errors": (row.get("errors") or [])[:3],
+            }
+        )
+    sampled_ids = {str(row["id"]) for row in positives if row.get("sampled")}
+    sampled_mt = [row for row in pos_mt if row["id"] in sampled_ids]
+    sampled_finished = [row for row in sampled_mt if row.get("finished_expansion")]
+    sampled_same = sum(1 for row in sampled_finished if row.get("same_trial"))
+    walls = [float(row["wall_ms"]) for row in mt_rows if row.get("wall_ms") is not None]
     return {
         "product": "MoolTrace",
         "kind": "vitality_eval",
@@ -502,6 +549,13 @@ def run_vitality_eval(
         "crossref_fetched_at": (catalog or {}).get("fetched_at") if catalog else None,
         "mooltrace_snapshot": str(snapshot_path or DEFAULT_SNAPSHOT),
         "depth": snapshot.get("depth") or 2,
+        "live": {
+            "snapshot_updated_at": snapshot.get("updated_at"),
+            "http_cache": snapshot.get("cache"),
+            "openalex_rps": 3,
+            "throwaway_graphs": True,
+            "configured_db": str(config.DB_PATH),
+        },
         "baseline": {
             "checker": "direct_doi_crossref",
             "graph": False,
@@ -532,15 +586,27 @@ def run_vitality_eval(
                 "openalex_429_positives": pos_429,
                 "openalex_429_controls": ctrl_429,
                 "pending": sum(1 for row in mt_rows if row.get("pending")),
+                "sum_case_wall_s": round(sum(walls) / 1000, 1) if walls else None,
+                "mean_case_wall_ms": round(sum(walls) / len(walls), 1) if walls else None,
+                "sampled_15_same_trial_finished": _frac(sampled_same, len(sampled_finished))
+                if sampled_finished
+                else "unevaluable",
                 "note": (
                     "Recall is same VITALITY trial on a finished depth-2 path. "
-                    "Product warn/block from OpenAlex 429 is not recall."
+                    "Product warn/block from OpenAlex 429 is not recall. "
+                    "A counted retraction on a different paper than VITALITY named "
+                    "is a same-trial miss, not a relabel."
                 ),
             },
             "results": mt_rows,
         },
         "misses": misses,
         "false_alarms": [{"id": row["id"], "doi": row["doi"], "decision": row.get("decision")} for row in false_alarms],
+        "example_paths": [
+            row
+            for row in mt_rows
+            if row["id"] in {"pos-ref-35", "pos-ref-87", "pos-ref-56"}
+        ],
     }
 
 
@@ -575,8 +641,13 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"| OpenAlex 429 positives | {mt['openalex_429_positives']} |",
         f"| OpenAlex 429 controls | {mt['openalex_429_controls']} |",
         f"| Pending live checks | {mt['pending']} |",
+        f"| Sampled-15 same-trial (finished) | {mt.get('sampled_15_same_trial_finished')} |",
+        f"| Sum of case walls | {mt.get('sum_case_wall_s')} s |",
         "",
         mt["note"],
+        "",
+        "n_controls is 10, not 40: five sampled positives and the 25 extra frozen "
+        "reviews have no journal-year control. Do not invent matches after seeing verdicts.",
         "",
         "## Misses",
         "",
@@ -585,11 +656,22 @@ def render_markdown(report: dict[str, Any]) -> str:
     if not misses:
         lines.append("None recorded.")
     else:
-        lines.append("| id | DOI | reason | decision |")
-        lines.append("| --- | --- | --- | --- |")
+        lines.append("| id | DOI | reason | decision | note |")
+        lines.append("| --- | --- | --- | --- | --- |")
         for row in misses:
+            note = (row.get("note") or row.get("reason") or "").replace("|", "/")
             lines.append(
-                f"| {row['id']} | `{row['doi']}` | {row.get('reason')} | {row.get('decision') or ''} |"
+                f"| {row['id']} | `{row['doi']}` | {row.get('reason')} | {row.get('decision') or ''} | {note} |"
+            )
+    examples = report.get("example_paths") or []
+    if examples:
+        lines.extend(["", "## Example paths", ""])
+        for row in examples:
+            lead = (row.get("reasons") or [{}])[0] if row.get("reasons") else {}
+            lines.append(
+                f"- `{row['id']}` {row.get('decision')}: same_trial={row.get('same_trial')} "
+                f"root `{lead.get('root_doi')}` notice `{lead.get('notice_doi')}` "
+                f"score {lead.get('path_score')}."
             )
     lines.extend(["", "This is not a medical accuracy score.", ""])
     return "\n".join(lines)

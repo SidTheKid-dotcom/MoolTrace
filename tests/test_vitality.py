@@ -208,3 +208,48 @@ def test_offline_vitality_scores_recorded_fixtures(tmp_path, capsys):
     assert mt["false_alarms_finished"] == "0/1"
     assert mt["openalex_429_positives"] == 0
     assert report["never_relabelled"] is True
+
+
+def test_vitality_results_md_quotes_recorded_metrics():
+    import json
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    report = json.loads((root / "results" / "vitality_2026-10-17.json").read_text(encoding="utf-8"))
+    md = (root / "results" / "vitality_2026-10-17.md").read_text(encoding="utf-8")
+    mt = report["mooltrace"]["metrics"]
+    base = report["baseline"]["metrics"]
+    for value in (
+        str(mt["same_trial_recall_finished"]),
+        str(mt["false_alarms_finished"]),
+        str(base["positives_flagged"]),
+        str(base["controls_flagged"]),
+        ".venv/bin/python -m mooltrace vitality --out results/vitality_2026-10-17.json",
+        "not a medical accuracy score",
+    ):
+        assert value in md, value
+    assert report["never_relabelled"] is True
+    assert mt["openalex_429_positives"] == 0
+    assert mt["pending"] == 0
+
+
+def test_readme_and_claims_quote_vitality_results():
+    from pathlib import Path
+    import json
+
+    root = Path(__file__).resolve().parents[1]
+    report = json.loads((root / "results" / "vitality_2026-10-17.json").read_text(encoding="utf-8"))
+    mt = report["mooltrace"]["metrics"]
+    readme = (root / "README.md").read_text(encoding="utf-8")
+    claims = (root / "CLAIMS.md").read_text(encoding="utf-8")
+    honest = readme.split("## Honest results", 1)[1]
+    for value in (
+        "VITALITY",
+        "results/vitality_2026-10-17.json",
+        ".venv/bin/python -m mooltrace vitality --out results/vitality_2026-10-17.json",
+        str(mt["same_trial_recall_finished"]),
+        str(mt["false_alarms_finished"]),
+    ):
+        assert value in honest, value
+        assert value in claims, value
+    assert "never relabel" in honest.lower() or "not relabel" in honest.lower()

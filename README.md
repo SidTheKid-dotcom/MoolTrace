@@ -360,6 +360,17 @@ Numbers below are from this checkout on 16 Oct 2026. Re-run the command next to 
 | Warm Healthline (same DB+cache) | same command again | 23.16 s, 26 API calls, still warn / same EoC |
 | Gate (cold cache) | `.venv/bin/python -m mooltrace.gate` | T14 16 Oct 2026, throwaway graphs, shared `/tmp/mt-t14-gate-cache`, `MOOLTRACE_OPENALEX_RPS=3`, `data/mooltrace.db` mtime `1792153156` unused. Three runs: **7/7 caught, 0/6 alarms**, wall_s=150.4 / 97.0 / 98.5. Allen 2013 warn hops=2 `uses_data_or_method` 0.85 on all three. Files: `results/gate_2026-10-16_t14_run{1,2,3}.json`. |
 | Labelled vs no-graph baseline (52 cases) | `.venv/bin/python -m mooltrace baseline --out results/baseline_2026-10-16.json` | See **Baseline**: MoolTrace precision 0.8974 recall 1.0 exact 48/52; direct-DOI precision 1.0 recall 0.4286 exact 32/52; 15 only-multi-hop catches. |
+| VITALITY Study I sealed (40 distorted reviews + 10 controls) | `.venv/bin/python -m mooltrace vitality --out results/vitality_2026-10-17.json` | 17 Oct 2026: Direct-DOI **0/40** and **0/10** flagged; MoolTrace same-trial recall **31/40** finished; counted notice 26/40; false alarms **0/10**; OpenAlex 429 0. Sampled-15 same-trial 12/15. Labels frozen 16 Oct, not relabelled. n_ctrl=10 not 40. |
+
+### VITALITY Study I (17 Oct 2026)
+
+Xu et al., *BMJ* 2025 ([PMC12015725](https://pmc.ncbi.nlm.nih.gov/articles/PMC12015725/); OSF [osf.io/7eazq](https://osf.io/7eazq/)) is an answer key we did not write: reviews whose results were distorted by retracted trials. Frozen set: **40** non-retracted reviews (15 sampled 16 Oct, then paper-ref order to the cap) plus **10** journal-year controls. A draft cites only that review DOI. Depth 2, isolated throwaway graphs, OpenAlex RPS=3, shared HTTP cache, one at a time. `data/mooltrace.db` mtime `1792153156` unused. Live process 725.7 s; all 50 finished (0 OpenAlex 429). Did not relabel after seeing verdicts. Control n is 10, not 40.
+
+```bash
+.venv/bin/python -m mooltrace vitality --out results/vitality_2026-10-17.json
+```
+
+Same-trial recall means a path reached the **same** retracted trial DOI VITALITY names (or the notice DOI when OSF stored the notice). Direct-DOI never leaves the review DOI, so 0/40 is coverage, not a hop failure. A counted retraction on a *different* paper is a miss. Full misses: `results/vitality_2026-10-17.md`.
 
 ## AI-use disclosure
 

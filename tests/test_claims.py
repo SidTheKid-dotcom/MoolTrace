@@ -61,6 +61,8 @@ def test_claims_records_confirmed_outputs_and_quickstart_time():
         "examples/answers.jsonl",
         "examples/agent_loop.py",
         "mooltrace baseline",
+        "mooltrace vitality",
+        "31/40",
         "unshare --net --map-root-user",
         "fresh clone",
         "/tmp",

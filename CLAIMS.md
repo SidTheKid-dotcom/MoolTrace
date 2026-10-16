@@ -137,6 +137,30 @@ Live labelled (52 isolated graphs) was **not** re-run this session (486.0 s on 1
 
 `pytest tests/test_labelled.py` — schema, no live catalogs. Dated scores stay in `results/baseline_2026-10-16.md`.
 
+## VITALITY Study I (17 Oct 2026)
+
+```bash
+.venv/bin/python -m mooltrace vitality --out results/vitality_2026-10-17.json
+```
+
+Confirmed offline 17 Oct 2026 from recorded Crossref (`examples/vitality_crossref.json`, fetched 2026-10-16T21:08:11Z) plus the recorded MoolTrace snapshot (`examples/vitality_mooltrace.json`, live depth 2, throwaway graphs, `MOOLTRACE_OPENALEX_RPS=3`, shared `/tmp/mt-t19-cache`, `data/mooltrace.db` mtime `1792153156` unused, process 725.7 s):
+
+```
+VITALITY baseline pos=0/40 ctrl=0/10
+VITALITY mooltrace same_trial=31/40 false_alarms=0/10 oa429=0+0 pending=0
+```
+
+| Slice | Result |
+| --- | --- |
+| Direct-DOI positives flagged | 0/40 |
+| Direct-DOI controls flagged | 0/10 |
+| MoolTrace same-trial recall (finished) | 31/40 |
+| Counted notice (finished) | 26/40 |
+| False alarms (finished controls) | 0/10 |
+| Sampled-15 same-trial | 12/15 |
+
+Labels frozen 16 Oct 2026 from Xu et al. BMJ 2025 / OSF osf.io/7eazq. Not relabelled after seeing verdicts. n_ctrl=10, not 40. Control check is in `examples/vitality.json`. This is not a medical accuracy score.
+
 ## Agent loop (offline)
 
 ```bash
