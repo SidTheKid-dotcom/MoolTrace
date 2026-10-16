@@ -1,17 +1,17 @@
 {
-  "note": "Hops recorded from live MoolTrace runs on throwaway graphs. data/mooltrace.db was not opened.",
+  "note": "Hero hops recorded from live MoolTrace runs on throwaway graphs (2026-10-16 UTC). data/mooltrace.db was not opened. Hosted demo replays these hops. Live olive-oil depth 2/3 also reached other notices after expanding more cites; the demo seeds only the deciding Estruch 2013 path. Live cinnamon depth 3 likewise reached extra notices; the demo seeds only Silva 2022 -> Khan 2003.",
   "presets": [
     {
       "id": "nutrition-olive-oil",
       "decision": "block",
       "fetch_date": "2026-10-16",
-      "label": "recorded live run on 2026-10-16, content hash 6bf731b68f3b0f2781322d21de0e9702c972fb16cc7fdd8ba73237cfa257f570",
+      "label": "recorded live run on 2026-10-16, content hash 350900e56d6746bf4acc01572808a9beebf01627bfde6878d0cbd59a7f7992d6",
       "sources": [
         {
           "url": "https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil",
           "title": "11 Proven Benefits of Olive Oil",
           "site": "healthline.com",
-          "fetched_at": "2026-10-16T15:52:36+00:00"
+          "fetched_at": "2026-10-16T19:51:41+00:00"
         }
       ],
       "works": [
@@ -22,7 +22,7 @@
           "first_author": "Schwingshackl",
           "expanded": true,
           "notice_checked": true,
-          "notice_checked_at": "2026-10-16T15:52:41+00:00"
+          "notice_checked_at": "2026-10-16T19:52:41+00:00"
         },
         {
           "doi": "10.1056/nejmoa1200303",
@@ -31,7 +31,7 @@
           "first_author": "Estruch",
           "expanded": false,
           "notice_checked": true,
-          "notice_checked_at": "2026-10-16T15:52:39+00:00"
+          "notice_checked_at": "2026-10-16T19:52:41+00:00"
         }
       ],
       "hops": [
@@ -43,21 +43,21 @@
           "sentence": "Monounsaturated fatty acids, olive oil and health status: A systematic review and meta-analysis of cohort studies.",
           "evidence_from": "page",
           "source_url": "https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil",
-          "fetched_at": "2026-10-16T15:52:44+00:00",
-          "content_hash": "6bf731b68f3b0f2781322d21de0e9702c972fb16cc7fdd8ba73237cfa257f570",
-          "recorded_at": "2026-10-16T15:52:44+00:00"
+          "fetched_at": "2026-10-16T19:52:12+00:00",
+          "content_hash": "350900e56d6746bf4acc01572808a9beebf01627bfde6878d0cbd59a7f7992d6",
+          "recorded_at": "2026-10-16T19:52:12+00:00"
         },
         {
           "from_doi": "10.1186/1476-511x-13-154",
           "to_doi": "10.1056/nejmoa1200303",
           "reliance": "mention",
           "weight": 0.55,
-          "sentence": "Estruch R, Ros E, Salas-Salvado J, Covas MI, Corella D, Aros F, Gomez-Gracia E, Ruiz-Gutierrez V, Fiol M, Lapetra J, Lamuela-Raventos RM, Serra-Majem L, Pintó X, Basora J, Muñoz MA, Sorlí JV, Martínez JA, Martínez-González MA.",
+          "sentence": "Estruch R, Ros E, Salas-Salvado J, Covas MI, Corella D, Aros F, Gomez-Gracia E, Ruiz-Gutierrez V, Fiol M, Lapetra J, Lamuela-Raventos RM, Serra-Majem L, Pint\u00f3 X, Basora J, Mu\u00f1oz MA, Sorl\u00ed JV, Mart\u00ednez JA, Mart\u00ednez-Gonz\u00e1lez MA.",
           "evidence_from": "pmc_html",
           "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4198773/",
-          "fetched_at": "2026-10-16T15:52:47+00:00",
-          "content_hash": "ad5e550cd77f254da6608bcc81c974d2b104a75b750d4335c588469f85cefa67",
-          "recorded_at": "2026-10-16T15:52:47+00:00"
+          "fetched_at": "2026-10-16T19:52:21+00:00",
+          "content_hash": "583d26dbc79b673bc6d906d4a14af5e8b96e8cfed75d04cccd03d281111dda9c",
+          "recorded_at": "2026-10-16T19:52:21+00:00"
         }
       ],
       "notices": [
@@ -69,19 +69,58 @@
           "source": "retraction-watch",
           "date": "2018-06-13"
         }
-      ]
+      ],
+      "by_depth": {
+        "1": {
+          "decision": "pass",
+          "exit_code": 0,
+          "notice_paths": 0,
+          "strength": null,
+          "recorded_at": "2026-10-16T19:51:38+00:00",
+          "fetch_date": "2026-10-16",
+          "live_wall_s": 13.6,
+          "live_incomplete": false,
+          "live_api_calls": 22
+        },
+        "2": {
+          "decision": "block",
+          "exit_code": 1,
+          "notice_paths": 1,
+          "notice_type": "retraction",
+          "notice_doi": "10.1056/nejmc1806491",
+          "strength": 0.30250000000000005,
+          "recorded_at": "2026-10-16T19:52:41+00:00",
+          "fetch_date": "2026-10-16",
+          "live_wall_s": 59.8,
+          "live_incomplete": true,
+          "live_api_calls": 126
+        },
+        "3": {
+          "decision": "block",
+          "exit_code": 1,
+          "notice_paths": 1,
+          "notice_type": "retraction",
+          "notice_doi": "10.1056/nejmc1806491",
+          "strength": 0.30250000000000005,
+          "recorded_at": "2026-10-16T19:53:09+00:00",
+          "fetch_date": "2026-10-16",
+          "live_wall_s": 24.9,
+          "live_incomplete": true,
+          "live_api_calls": 34
+        }
+      }
     },
     {
       "id": "nutrition-healthline",
       "decision": "warn",
       "fetch_date": "2026-10-16",
-      "label": "recorded live run on 2026-10-16, content hash 011e322c612b01c503d463a07e6979ffffc1c37c64c92d21dc3f1694c640d8c8",
+      "label": "recorded live run on 2026-10-16, content hash 952c26b58afe81e5ae15bc6bae9f25d1cc54ca802968ef474a8fb579e461e7fe",
       "sources": [
         {
           "url": "https://www.healthline.com/nutrition/cinnamon-and-diabetes",
           "title": "How Cinnamon Lowers Blood Sugar and Fights Diabetes",
           "site": "healthline.com",
-          "fetched_at": "2026-10-16T15:54:18+00:00"
+          "fetched_at": "2026-10-16T19:53:23+00:00"
         }
       ],
       "works": [
@@ -92,7 +131,7 @@
           "first_author": "Silva",
           "expanded": true,
           "notice_checked": true,
-          "notice_checked_at": "2026-10-16T15:54:31+00:00"
+          "notice_checked_at": "2026-10-16T19:54:05+00:00"
         },
         {
           "doi": "10.2337/diacare.26.12.3215",
@@ -101,7 +140,7 @@
           "first_author": "Khan",
           "expanded": false,
           "notice_checked": true,
-          "notice_checked_at": "2026-10-16T15:54:31+00:00"
+          "notice_checked_at": "2026-10-16T19:54:05+00:00"
         }
       ],
       "hops": [
@@ -113,9 +152,9 @@
           "sentence": "Cinnamon as a complementary therapeutic approach for dysglycemia and dyslipidemia control in type 2 diabetes mellitus and its molecular mechanism of action: A review.",
           "evidence_from": "page",
           "source_url": "https://www.healthline.com/nutrition/cinnamon-and-diabetes",
-          "fetched_at": "2026-10-16T15:55:25+00:00",
-          "content_hash": "011e322c612b01c503d463a07e6979ffffc1c37c64c92d21dc3f1694c640d8c8",
-          "recorded_at": "2026-10-16T15:55:25+00:00"
+          "fetched_at": "2026-10-16T19:53:47+00:00",
+          "content_hash": "952c26b58afe81e5ae15bc6bae9f25d1cc54ca802968ef474a8fb579e461e7fe",
+          "recorded_at": "2026-10-16T19:53:47+00:00"
         },
         {
           "from_doi": "10.3390/nu14132773",
@@ -125,9 +164,9 @@
           "sentence": "cassia decreased triglycerides (TG) levels and total cholesterol (TC) levels [15].",
           "evidence_from": "semantic_scholar",
           "source_url": "https://api.semanticscholar.org/graph/v1/paper/DOI:10.3390%2Fnu14132773/references?fields=contexts,citedPaper.externalIds&limit=200&offset=0",
-          "fetched_at": "2026-10-16T15:55:59+00:00",
+          "fetched_at": "2026-10-16T19:53:59+00:00",
           "content_hash": "470abf43c6876897121f4463577799c46f8fa5e47d3fa74afceb28d1d4563f36",
-          "recorded_at": "2026-10-16T15:55:59+00:00"
+          "recorded_at": "2026-10-16T19:53:59+00:00"
         }
       ],
       "notices": [
@@ -139,7 +178,46 @@
           "source": "publisher",
           "date": "2025-08-20"
         }
-      ]
+      ],
+      "by_depth": {
+        "1": {
+          "decision": "pass",
+          "exit_code": 0,
+          "notice_paths": 0,
+          "strength": null,
+          "recorded_at": "2026-10-16T19:53:19+00:00",
+          "fetch_date": "2026-10-16",
+          "live_wall_s": 5.3,
+          "live_incomplete": false,
+          "live_api_calls": 8
+        },
+        "2": {
+          "decision": "warn",
+          "exit_code": 2,
+          "notice_paths": 1,
+          "notice_type": "expression_of_concern",
+          "notice_doi": "10.2337/dc25-ec09",
+          "strength": 0.55,
+          "recorded_at": "2026-10-16T19:54:05+00:00",
+          "fetch_date": "2026-10-16",
+          "live_wall_s": 42.4,
+          "live_incomplete": true,
+          "live_api_calls": 109
+        },
+        "3": {
+          "decision": "warn",
+          "exit_code": 2,
+          "notice_paths": 1,
+          "notice_type": "expression_of_concern",
+          "notice_doi": "10.2337/dc25-ec09",
+          "strength": 0.55,
+          "recorded_at": "2026-10-16T19:55:15+00:00",
+          "fetch_date": "2026-10-16",
+          "live_wall_s": 66.2,
+          "live_incomplete": true,
+          "live_api_calls": 137
+        }
+      }
     },
     {
       "id": "clean-jsps",
@@ -151,18 +229,18 @@
           "url": "paste",
           "title": "Pasted draft",
           "site": "paste",
-          "fetched_at": "2026-10-16T15:56:44+00:00"
+          "fetched_at": "2026-10-16T19:55:25+00:00"
         }
       ],
       "works": [
         {
           "doi": "10.1016/j.jsps.2015.03.013",
-          "title": "Diabetes mellitus and oxidative stress—A concise review",
+          "title": "Diabetes mellitus and oxidative stress\u2014A concise review",
           "year": 2016,
           "first_author": "Asmat",
           "expanded": true,
           "notice_checked": true,
-          "notice_checked_at": "2026-10-16T15:56:44+00:00"
+          "notice_checked_at": "2026-10-16T19:55:25+00:00"
         }
       ],
       "hops": [
@@ -174,12 +252,47 @@
           "sentence": "10.1016/j.jsps.2015.03.013",
           "evidence_from": "draft",
           "source_url": "urn:mooltrace:paste:clean-jsps",
-          "fetched_at": "2026-10-16T15:56:44+00:00",
+          "fetched_at": "2026-10-16T19:55:25+00:00",
           "content_hash": "630d9acb0c7d306a71209000acb1d7c7c514d3b2f8d4646cb7ec186913e53636",
-          "recorded_at": "2026-10-16T15:56:44+00:00"
+          "recorded_at": "2026-10-16T19:55:25+00:00"
         }
       ],
-      "notices": []
+      "notices": [],
+      "by_depth": {
+        "1": {
+          "decision": "pass",
+          "exit_code": 0,
+          "notice_paths": 0,
+          "strength": null,
+          "recorded_at": "2026-10-16T19:55:20+00:00",
+          "fetch_date": "2026-10-16",
+          "live_wall_s": 0.8,
+          "live_incomplete": false,
+          "live_api_calls": 1
+        },
+        "2": {
+          "decision": "pass",
+          "exit_code": 0,
+          "notice_paths": 0,
+          "strength": null,
+          "recorded_at": "2026-10-16T19:55:25+00:00",
+          "fetch_date": "2026-10-16",
+          "live_wall_s": 1.5,
+          "live_incomplete": false,
+          "live_api_calls": 4
+        },
+        "3": {
+          "decision": "pass",
+          "exit_code": 0,
+          "notice_paths": 0,
+          "strength": null,
+          "recorded_at": "2026-10-16T19:55:30+00:00",
+          "fetch_date": "2026-10-16",
+          "live_wall_s": 0.1,
+          "live_incomplete": false,
+          "live_api_calls": 0
+        }
+      }
     }
   ]
 }

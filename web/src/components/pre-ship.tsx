@@ -92,7 +92,7 @@ const PRESETS = [
   {
     id: "olive-oil",
     label: "Healthline olive oil (block)",
-    hint: "URL-only page → Schwingshackl 2014 review → Estruch 2013 retraction (mention × mention)",
+    hint: "Same question: depth 1 PASS (0 notice paths), depth 3 BLOCK (mention × mention to Estruch 2013)",
     engine: "nutrition-coach",
     depth: 3,
     text: "",
@@ -117,6 +117,8 @@ const PRESETS = [
     urls: [] as string[],
   },
 ]
+
+const DEPTHS = [1, 2, 3] as const
 
 function decisionVariant(decision: string): "default" | "secondary" | "destructive" {
   if (decision === "block") return "destructive"
@@ -306,35 +308,56 @@ export function PreShip() {
   const [urls, setUrls] = useState(PRESETS[0].urls.join("\n"))
   const [engine, setEngine] = useState(PRESETS[0].engine)
   const [depth, setDepth] = useState(PRESETS[0].depth)
+  const [presetId, setPresetId] = useState(PRESETS[0].id)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [result, setResult] = useState<Check | null>(null)
+  const [byDepth, setByDepth] = useState<Partial<Record<number, Check>>>({})
   const [rewrite, setRewrite] = useState<Rewrite | null>(null)
   const [rewriting, setRewriting] = useState(false)
 
   useEffect(() => {
     if (typeof window === "undefined") return
-    const id = new URLSearchParams(window.location.search).get("preset")
+    const params = new URLSearchParams(window.location.search)
+    const id = params.get("preset")
+    const requested = Number(params.get("depth"))
+    const startDepth = DEPTHS.includes(requested as (typeof DEPTHS)[number])
+      ? requested
+      : undefined
     if (id === "olive-oil" || id === "healthline" || id === "clean") {
-      applyPreset(id)
+      applyPreset(id, startDepth)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  function syncQuery(id: string, nextDepth: number) {
+    if (typeof window === "undefined") return
+    const url = new URL(window.location.href)
+    url.searchParams.set("preset", id)
+    url.searchParams.set("depth", String(nextDepth))
+    window.history.replaceState({}, "", url)
+  }
+
+  async function fetchCheck(body: { text: string; urls: string[]; engine: string; depth: number }) {
+    const response = await fetch("/nw/check-answer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+    if (!response.ok) {
+      throw new Error(`The check returned HTTP ${response.status}.`)
+    }
+    return (await response.json()) as Check
+  }
 
   async function runCheck(body: { text: string; urls: string[]; engine: string; depth: number }) {
     setLoading(true)
     setError("")
     setRewrite(null)
     try {
-      const response = await fetch("/nw/check-answer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      })
-      if (!response.ok) {
-        throw new Error(`The check returned HTTP ${response.status}.`)
-      }
-      setResult((await response.json()) as Check)
+      const payload = await fetchCheck(body)
+      setResult(payload)
+      setByDepth((current) => ({ ...current, [body.depth]: payload }))
     } catch (exc) {
       setResult(null)
       setError(exc instanceof Error ? exc.message : "The pre-ship check did not finish.")
@@ -371,14 +394,64 @@ export function PreShip() {
     }
   }
 
-  function applyPreset(id: string) {
+  async function applyPreset(id: string, startDepth?: number) {
     const preset = PRESETS.find((item) => item.id === id)
     if (!preset) return
+    const nextDepth = startDepth ?? preset.depth
     setText(preset.text)
     setUrls(preset.urls.join("\n"))
     setEngine(preset.engine)
-    setDepth(preset.depth)
-    void runCheck({ text: preset.text, urls: preset.urls, engine: preset.engine, depth: preset.depth })
+    setDepth(nextDepth)
+    setPresetId(preset.id)
+    setByDepth({})
+    setRewrite(null)
+    setLoading(true)
+    setError("")
+    syncQuery(preset.id, nextDepth)
+    const body = {
+      text: preset.text,
+      urls: preset.urls,
+      engine: preset.engine,
+    }
+    try {
+      const first = await fetchCheck({ ...body, depth: nextDepth })
+      setByDepth({ [nextDepth]: first })
+      setResult(first)
+      setLoading(false)
+      const rest = DEPTHS.filter((item) => item !== nextDepth)
+      const payloads = await Promise.all(
+        rest.map((item) => fetchCheck({ ...body, depth: item })),
+      )
+      setByDepth(() => {
+        const cached: Partial<Record<number, Check>> = { [nextDepth]: first }
+        rest.forEach((item, index) => {
+          cached[item] = payloads[index]
+        })
+        return cached
+      })
+    } catch (exc) {
+      setResult(null)
+      setError(exc instanceof Error ? exc.message : "The pre-ship check did not finish.")
+      setLoading(false)
+    }
+  }
+
+  function selectDepth(nextDepth: number) {
+    const bound = Math.min(3, Math.max(1, nextDepth))
+    setDepth(bound)
+    setRewrite(null)
+    syncQuery(presetId, bound)
+    const cached = byDepth[bound]
+    if (cached) {
+      setResult(cached)
+      return
+    }
+    void runCheck({
+      text,
+      urls: urls.split(/\s+/).map((item) => item.trim()).filter(Boolean),
+      engine,
+      depth: bound,
+    })
   }
 
   return (
@@ -437,17 +510,31 @@ export function PreShip() {
                 className="h-8 rounded-lg border border-input bg-card px-2 text-sm text-foreground"
               />
             </label>
-            <label className="flex items-center gap-2 text-sm text-muted-foreground">
-              Depth
-              <input
-                type="number"
-                min={1}
-                max={3}
-                value={depth}
-                onChange={(event) => setDepth(Number(event.target.value) || 1)}
-                className="h-8 w-16 rounded-lg border border-input bg-card px-2 text-sm text-foreground"
-              />
-            </label>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Depth</span>
+              <div
+                data-testid="depth-toggle"
+                role="radiogroup"
+                aria-label="Depth"
+                className="inline-flex rounded-lg border border-input bg-muted p-[3px]"
+              >
+                {DEPTHS.map((item) => (
+                  <Button
+                    key={item}
+                    type="button"
+                    size="sm"
+                    data-depth={item}
+                    role="radio"
+                    aria-checked={depth === item}
+                    variant={depth === item ? "default" : "ghost"}
+                    disabled={loading}
+                    onClick={() => selectDepth(item)}
+                  >
+                    {item}
+                  </Button>
+                ))}
+              </div>
+            </div>
             <Button
               type="button"
               disabled={loading || (!text.trim() && !urls.trim())}
@@ -481,8 +568,9 @@ export function PreShip() {
             <CardTitle>Nothing checked yet</CardTitle>
             <CardDescription>
               Three presets: Healthline olive oil (block), Healthline cinnamon (warn), Clean study
-              (pass). A warn or a block shows the deciding path, the sentence at each hop, and the
-              FalkorDB algo.SPpaths call.
+              (pass). Toggle depth 1 / 2 / 3 on the same question. Olive oil depth 1 is PASS (0 notice
+              paths); depth 3 is BLOCK with the path. A warn or a block shows the deciding path, the
+              sentence at each hop, and the FalkorDB algo.SPpaths call.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -491,6 +579,15 @@ export function PreShip() {
       {loading && !result ? (
         <p className="text-sm text-muted-foreground" role="status">
           Fetching the cited page, walking reviews, then checking publisher notices…
+        </p>
+      ) : null}
+
+      {presetId === "olive-oil" ? (
+        <p className="text-sm leading-6 text-muted-foreground" data-testid="depth-contrast">
+          Same olive-oil question. Depth 1: PASS (0 notice paths). Depth 3: BLOCK — page mention 0.55
+          → Schwingshackl 2014 mention 0.55 → Estruch 2013 retraction 10.1056/nejmc1806491. The path
+          explains why. Both hops are mention; the 2013 trial was retracted and republished in 2018
+          after re-analysis.
         </p>
       ) : null}
 

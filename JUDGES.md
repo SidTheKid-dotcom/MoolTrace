@@ -6,9 +6,9 @@ Track 01: **Agents That Act on Connected Data**. No sign-up.
 
 https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/
 
-Click **Healthline olive oil (block)**. You should see **BLOCK** (exit 1), path strength **0.30**, both hops `mention` 0.55, and Estruch 2013 retraction `10.1056/nejmc1806491` (2018-06-13). `Decided by: algo.SPpaths`. The 2013 trial was retracted and republished in 2018 after re-analysis. This does not say olive oil or the Mediterranean diet works or does not.
+Click **Healthline olive oil (block)**. You should see **BLOCK** (exit 1), path strength **0.30**, both hops `mention` 0.55, and Estruch 2013 retraction `10.1056/nejmc1806491` (2018-06-13). `Decided by: algo.SPpaths`. Toggle **depth 1**: **PASS** (0 notice paths). Toggle **depth 3**: **BLOCK** with the same path. The 2013 trial was retracted and republished in 2018 after re-analysis. This does not say olive oil or the Mediterranean diet works or does not.
 
-Click **Healthline cinnamon (warn)** for an Expression of Concern (`relies` 1.0, path strength **0.55**). An Expression of Concern is not a retraction.
+Click **Healthline cinnamon (warn)** for an Expression of Concern (`relies` 1.0, path strength **0.55**). Depth 1 is PASS; depth 2/3 is WARN. An Expression of Concern is not a retraction.
 
 ## 2. One CLI command (90 s)
 

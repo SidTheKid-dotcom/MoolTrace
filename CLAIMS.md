@@ -51,9 +51,11 @@ Same URL via the README `check-answer` form (not re-fetched; same cinnamon page)
 | Claim | Command | Confirmed |
 | --- | --- | --- |
 | Home is public, no sign-up | `curl -sI https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/` | HTTP 200 |
-| Click **Healthline olive oil (block)** | `curl -sS -X POST …/nw/check-answer -d '{"text":"","urls":["https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil"],"engine":"nutrition-coach","depth":3}'` | **BLOCK (exit 1)**. `decided_by algo.SPpaths`. Strength `0.30250000000000005` (docs print **0.30**). Both hops `mention` 0.55. Retraction `10.1056/nejmc1806491` (2018-06-13) on Estruch 2013. Hop trail hashes `6bf731b6…` / `ad5e550c…`. |
-| Click **Healthline cinnamon (warn)** | same POST, cinnamon URL, depth 2 | **WARN (exit 2)**. Strength `0.55`. Expression of Concern `10.2337/dc25-ec09`. |
-| Clean study (pass) | same POST, text `10.1016/j.jsps.2015.03.013`, engine `clean-check` | **pass** exit 0, no reasons |
+| Click **Healthline olive oil (block)** | `curl -sS -X POST …/nw/check-answer -d '{"text":"","urls":["https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil"],"engine":"nutrition-coach","depth":3}'` | **BLOCK (exit 1)**. `decided_by algo.SPpaths`. Strength `0.30250000000000005` (docs print **0.30**). Both hops `mention` 0.55. Retraction `10.1056/nejmc1806491` (2018-06-13) on Estruch 2013. Hop trail hashes `350900e5…` / `583d26db…` (recorded live 16 Oct 2026 19:52 UTC). |
+| Toggle olive-oil **depth 1** | same POST, `"depth":1` | **PASS (exit 0)**. 0 notice paths. Live throwaway DB 16 Oct 2026 19:51 UTC, wall 13.6 s. Seeded replay matches. |
+| Toggle olive-oil **depth 2** | same POST, `"depth":2` | **BLOCK (exit 1)**. Same Estruch path as depth 3. Strength `0.30250000000000005`. |
+| Click **Healthline cinnamon (warn)** | same POST, cinnamon URL, depth 2 | **WARN (exit 2)**. Strength `0.55`. Expression of Concern `10.2337/dc25-ec09`. Depth 1 is PASS (0 notice paths). |
+| Clean study (pass) | same POST, text `10.1016/j.jsps.2015.03.013`, engine `clean-check` | **pass** exit 0 at depths 1, 2, and 3 |
 | Oversized free-text | POST 40k-char draft | HTTP **413** `Draft or URL list is too large for the public demo.` |
 
 The 2013 PREDIMED trial was retracted and republished in 2018 after re-analysis. Both olive-oil hops are `mention`. This does not say olive oil or the Mediterranean diet works or does not.
