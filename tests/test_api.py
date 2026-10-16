@@ -94,6 +94,48 @@ def test_check_answer_credential_url_is_warn(tmp_path, monkeypatch):
         graph.close()
 
 
+def test_rewrite_drops_flagged_citations(tmp_path, monkeypatch):
+    graph = Graph(tmp_path / "mooltrace.db")
+    monkeypatch.setattr("mooltrace.trace.get_graph", lambda: graph)
+
+    def fake_check(text, urls=None, engine="draft", depth=2, graph=None):
+        if "10.1016/j.jsps.2015.03.013" in (text or ""):
+            return {"decision": "pass", "exit_code": 0, "reasons": []}
+        return {
+            "decision": "warn",
+            "exit_code": 2,
+            "reasons": [
+                {
+                    "code": "expression_of_concern",
+                    "notice_doi": "10.2337/dc25-ec09",
+                    "root_doi": "10.2337/diacare.26.12.3215",
+                    "source_url": "https://www.healthline.com/nutrition/cinnamon-and-diabetes",
+                    "steps": [{"url": "https://www.healthline.com/nutrition/cinnamon-and-diabetes"}],
+                }
+            ],
+        }
+
+    monkeypatch.setattr("mooltrace.rewrite.check_answer", fake_check)
+    try:
+        client = TestClient(app)
+        response = client.post(
+            "/rewrite",
+            json={
+                "text": "",
+                "urls": ["https://www.healthline.com/nutrition/cinnamon-and-diabetes"],
+                "engine": "nutrition-coach",
+                "depth": 2,
+            },
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["rewritten"] is True
+        assert body["recheck"]["decision"] == "pass"
+        assert "10.1016/j.jsps.2015.03.013" in body["text"]
+    finally:
+        graph.close()
+
+
 def test_check_answer_ssrf_is_warn_not_pass(tmp_path, monkeypatch):
     graph = Graph(tmp_path / "mooltrace.db")
     monkeypatch.setattr("mooltrace.trace.get_graph", lambda: graph)

@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { PathDiagram } from "@/components/path-diagram"
 import { decidingReason } from "@/lib/path-diagram"
@@ -29,14 +28,24 @@ type Reason = {
   evidence_from?: string | null
   cypher?: string
   path_score?: number | null
+  sp_cost?: number | null
   hops_evidence?: {
     weight?: number | null
     reliance?: string | null
     sentence?: string | null
     evidence_from?: string | null
   }[]
-  pagerank?: number | null
   label?: string | null
+}
+type Impact = {
+  notice_doi?: string | null
+  notice_type?: string | null
+  root_doi?: string | null
+  answer_count?: number
+  counted_answer_count?: number
+  engines?: string[]
+  cypher?: string
+  summary?: string
 }
 type Check = {
   decision: "pass" | "warn" | "block"
@@ -55,30 +64,17 @@ type Check = {
   limits?: string
   errors?: string[]
   context_notes?: string[]
-  remediation_clusters?: { clusters?: unknown[]; call?: string }
+  impact?: Impact | null
 }
-type Reverse = {
-  notice_doi?: string | null
-  notice_type?: string | null
-  root_doi?: string | null
-  root_title?: string | null
-  answer_count?: number
-  source_count?: number
-  engines?: string[]
-  cypher?: string
-  elapsed_ms?: number
+type Rewrite = {
+  rewritten?: boolean
+  method?: string | null
+  text?: string
+  urls?: string[]
+  recheck?: Check
 }
 
 const PRESETS = [
-  {
-    id: "everyday",
-    label: "Everyday Health",
-    hint: "URL-only nutrition-coach page",
-    engine: "nutrition-coach",
-    depth: 2,
-    text: "",
-    urls: ["https://www.everydayhealth.com/diabetes/cinnamon-for-diabetes/"],
-  },
   {
     id: "healthline",
     label: "Healthline cinnamon",
@@ -87,24 +83,6 @@ const PRESETS = [
     depth: 2,
     text: "",
     urls: ["https://www.healthline.com/nutrition/cinnamon-and-diabetes"],
-  },
-  {
-    id: "hedge",
-    label: "Hedged Khan",
-    hint: "Draft names the EoC and still cites the trial",
-    engine: "nutrition-coach",
-    depth: 1,
-    text: "Khan 2003 (doi 10.2337/diacare.26.12.3215) reported fasting glucose changes, although the paper now carries an expression of concern. This note is not medical advice.",
-    urls: [] as string[],
-  },
-  {
-    id: "allen",
-    label: "Allen 2013",
-    hint: "Expression of Concern path",
-    engine: "allen-2013",
-    depth: 2,
-    text: "10.1370/afm.1517",
-    urls: [] as string[],
   },
   {
     id: "lancet",
@@ -132,22 +110,150 @@ function decisionVariant(decision: string): "default" | "secondary" | "destructi
   return "default"
 }
 
+function ResultCard({
+  result,
+  onRewrite,
+  rewriting,
+}: {
+  result: Check
+  onRewrite?: () => void
+  rewriting?: boolean
+}) {
+  const counted = (result.reasons || []).filter((reason) => reason.code && reason.code !== "incomplete")
+  const deciding = decidingReason(counted)
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant={decisionVariant(result.decision)}>{result.decision}</Badge>
+          <span className="text-xs text-muted-foreground">
+            {result.independent_source_count ?? 0} independent source
+            {(result.independent_source_count ?? 0) === 1 ? "" : "s"} at weight ≥{" "}
+            {result.weight_floor ?? 0.5}
+            {result.path_rule ? ` · ${result.path_rule}` : ""}
+            {result.coverage ? ` · ${result.coverage.replace("_", " ")}` : ""}
+            {result.elapsed_ms != null ? ` · ${result.elapsed_ms} ms` : ""}
+          </span>
+        </div>
+        <CardTitle className="text-xl leading-snug">{result.summary}</CardTitle>
+        {result.pitch ? <CardDescription>{result.pitch}</CardDescription> : null}
+        {result.impact?.summary ? (
+          <CardDescription>{result.impact.summary}</CardDescription>
+        ) : null}
+      </CardHeader>
+      <CardContent className="flex flex-col gap-5">
+        {deciding ? (
+          <PathDiagram
+            key={`${deciding.notice_doi || ""}-${deciding.steps?.[0]?.url || deciding.steps?.[0]?.doi || ""}`}
+            reason={deciding}
+          />
+        ) : null}
+        {counted.length === 0 ? (
+          <p className="text-sm leading-6 text-muted-foreground">{result.limits}</p>
+        ) : null}
+        {counted.map((reason, index) => (
+          <article key={`${reason.notice_doi}-${reason.root_doi}-${index}`} className="flex flex-col gap-3">
+            {index > 0 ? <Separator /> : null}
+            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <span>{reason.label || reason.notice_type || reason.code}</span>
+              {reason.notice_doi ? <span>{reason.notice_doi}</span> : null}
+              {reason.notice_date ? <span>{reason.notice_date}</span> : null}
+              {reason.reliance ? (
+                <span>
+                  {reason.reliance} · weight {reason.weight}
+                </span>
+              ) : null}
+              {reason.evidence_from ? <span>{reason.evidence_from}</span> : null}
+            </div>
+            {reason.sentence ? (
+              <blockquote className="border-l-2 border-primary pl-3 text-sm leading-6">
+                {reason.sentence}
+              </blockquote>
+            ) : null}
+            <ol className="flex flex-col gap-1 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+              {(reason.steps || []).map((step, stepIndex) => (
+                <li key={`${stepLabel(step)}-${stepIndex}`} className="flex items-center gap-2">
+                  {stepIndex > 0 ? <span className="text-muted-foreground">→</span> : null}
+                  <span className="break-all rounded-md bg-muted px-2 py-1">{stepLabel(step)}</span>
+                </li>
+              ))}
+            </ol>
+            {reason.hops_evidence && reason.hops_evidence.length > 0 ? (
+              <ol className="flex flex-col gap-2 text-sm">
+                {reason.hops_evidence.map((hop, hopIndex) => (
+                  <li key={`${hop.reliance}-${hopIndex}`} className="rounded-md bg-muted px-3 py-2">
+                    <p className="text-xs text-muted-foreground">
+                      hop {hopIndex + 1}
+                      {hop.reliance ? ` · ${hop.reliance}` : ""}
+                      {hop.weight != null ? ` · weight ${hop.weight}` : ""}
+                      {hop.evidence_from ? ` · ${hop.evidence_from}` : ""}
+                    </p>
+                    {hop.sentence ? (
+                      <p className="mt-1 leading-6">{hop.sentence}</p>
+                    ) : (
+                      <p className="mt-1 text-muted-foreground">Reliance unverified on this hop.</p>
+                    )}
+                  </li>
+                ))}
+                <li className="text-xs text-muted-foreground">
+                  path score {reason.path_score ?? "—"}
+                  {reason.sp_cost != null ? ` · SPpaths cost ${reason.sp_cost}` : ""}
+                </li>
+              </ol>
+            ) : null}
+          </article>
+        ))}
+        {(result.discounted || []).length > 0 ? (
+          <p className="text-sm text-muted-foreground">
+            {result.discounted?.length} citation path
+            {result.discounted?.length === 1 ? "" : "s"} reached a notice only as background,
+            a scholarly dispute, or a path score below the floor, so{" "}
+            {result.discounted?.length === 1 ? "it does" : "they do"} not change this check.
+            Coverage is not shown beyond the requested depth.
+          </p>
+        ) : null}
+        {result.context_notes && result.context_notes.length > 0 ? (
+          <p className="text-xs text-muted-foreground">{result.context_notes.join(" ")}</p>
+        ) : null}
+        {onRewrite && result.decision !== "pass" ? (
+          <Button type="button" disabled={rewriting} onClick={onRewrite}>
+            {rewriting ? "Rewriting and rechecking…" : "Rewrite and recheck"}
+          </Button>
+        ) : null}
+        {result.cypher ? (
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-muted-foreground">
+              FalkorDB algo.SPpaths on this answer&apos;s graph. Lower cost is stronger reliance.
+            </p>
+            <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs leading-5">{result.cypher}</pre>
+          </div>
+        ) : null}
+        {result.impact?.cypher ? (
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-muted-foreground">Reverse impact Cypher (what rests on this notice).</p>
+            <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs leading-5">{result.impact.cypher}</pre>
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  )
+}
+
 export function PreShip() {
   const [text, setText] = useState(PRESETS[0].text)
   const [urls, setUrls] = useState(PRESETS[0].urls.join("\n"))
   const [engine, setEngine] = useState(PRESETS[0].engine)
-  const [depth, setDepth] = useState(2)
+  const [depth, setDepth] = useState(PRESETS[0].depth)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [result, setResult] = useState<Check | null>(null)
-  const [reverseDoi, setReverseDoi] = useState("10.2337/dc25-ec09")
-  const [reverseLoading, setReverseLoading] = useState(false)
-  const [reverseError, setReverseError] = useState("")
-  const [reverse, setReverse] = useState<Reverse | null>(null)
+  const [rewrite, setRewrite] = useState<Rewrite | null>(null)
+  const [rewriting, setRewriting] = useState(false)
 
   async function runCheck(body: { text: string; urls: string[]; engine: string; depth: number }) {
     setLoading(true)
     setError("")
+    setRewrite(null)
     try {
       const response = await fetch("/nw/check-answer", {
         method: "POST",
@@ -166,6 +272,34 @@ export function PreShip() {
     }
   }
 
+  async function runRewrite() {
+    setRewriting(true)
+    setError("")
+    try {
+      const response = await fetch("/nw/rewrite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text,
+          urls: urls.split(/\s+/).map((item) => item.trim()).filter(Boolean),
+          engine,
+          depth,
+        }),
+      })
+      if (!response.ok) {
+        throw new Error(`The rewrite returned HTTP ${response.status}.`)
+      }
+      const payload = (await response.json()) as Rewrite
+      setRewrite(payload)
+      if (payload.text) setText(payload.text)
+      if (payload.urls) setUrls(payload.urls.join("\n"))
+    } catch (exc) {
+      setError(exc instanceof Error ? exc.message : "The rewrite did not finish.")
+    } finally {
+      setRewriting(false)
+    }
+  }
+
   function applyPreset(id: string) {
     const preset = PRESETS.find((item) => item.id === id)
     if (!preset) return
@@ -175,24 +309,6 @@ export function PreShip() {
     setDepth(preset.depth)
     void runCheck({ text: preset.text, urls: preset.urls, engine: preset.engine, depth: preset.depth })
   }
-
-  async function runReverse() {
-    setReverseLoading(true)
-    setReverseError("")
-    try {
-      const response = await fetch(`/nw/rests-on?doi=${encodeURIComponent(reverseDoi.trim())}`)
-      if (!response.ok) throw new Error(`Reverse lookup returned HTTP ${response.status}.`)
-      setReverse((await response.json()) as Reverse)
-    } catch (exc) {
-      setReverse(null)
-      setReverseError(exc instanceof Error ? exc.message : "The reverse lookup did not finish.")
-    } finally {
-      setReverseLoading(false)
-    }
-  }
-
-  const counted = (result?.reasons || []).filter((reason) => reason.code && reason.code !== "incomplete")
-  const deciding = decidingReason(counted)
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
@@ -207,285 +323,124 @@ export function PreShip() {
         </p>
       </header>
 
-      <Tabs defaultValue="check">
-        <TabsList>
-          <TabsTrigger value="check">Pre-ship check</TabsTrigger>
-          <TabsTrigger value="reverse">What rests on this</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="check" className="flex flex-col gap-4 pt-4">
-          <div className="flex flex-wrap gap-2">
-            {PRESETS.map((preset) => (
-              <Button
-                key={preset.id}
-                type="button"
-                variant="outline"
-                disabled={loading}
-                onClick={() => applyPreset(preset.id)}
-              >
-                {preset.label}
-              </Button>
-            ))}
-          </div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Draft answer</CardTitle>
-              <CardDescription>
-                Paste the draft and the URLs or DOIs it cites. This does not give medical advice,
-                and it does not say the draft is wrong.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <Textarea
-                value={text}
-                onChange={(event) => setText(event.target.value)}
-                placeholder="Paste a draft answer, a DOI, or both."
-                className="min-h-36"
-              />
-              <Textarea
-                value={urls}
-                onChange={(event) => setUrls(event.target.value)}
-                placeholder="One cited URL or DOI per line"
-                className="min-h-20"
-              />
-              <div className="flex flex-wrap items-center gap-3">
-                <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                  Engine
-                  <input
-                    value={engine}
-                    onChange={(event) => setEngine(event.target.value)}
-                    className="h-8 rounded-lg border border-input bg-card px-2 text-sm text-foreground"
-                  />
-                </label>
-                <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                  Depth
-                  <input
-                    type="number"
-                    min={1}
-                    max={3}
-                    value={depth}
-                    onChange={(event) => setDepth(Number(event.target.value) || 1)}
-                    className="h-8 w-16 rounded-lg border border-input bg-card px-2 text-sm text-foreground"
-                  />
-                </label>
-                <Button
-                  type="button"
-                  disabled={loading || (!text.trim() && !urls.trim())}
-                  onClick={() =>
-                    void runCheck({
-                      text,
-                      urls: urls.split(/\s+/).map((item) => item.trim()).filter(Boolean),
-                      engine,
-                      depth,
-                    })
-                  }
-                >
-                  {loading ? "Checking citation paths…" : "Check before shipping"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {error ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>The check did not finish</CardTitle>
-                <CardDescription>{error}</CardDescription>
-              </CardHeader>
-            </Card>
-          ) : null}
-
-          {!result && !error && !loading ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Nothing checked yet</CardTitle>
-                <CardDescription>
-                  Choose a preset or paste a draft. A warn or a block shows the deciding sentence,
-                  the graph path, and the Cypher that produced them.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          ) : null}
-
-          {loading && !result ? (
-            <p className="text-sm text-muted-foreground">Checking citation paths…</p>
-          ) : null}
-
-          {result ? (
-            <Card>
-              <CardHeader>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={decisionVariant(result.decision)}>{result.decision}</Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {result.independent_source_count ?? 0} independent source
-                    {(result.independent_source_count ?? 0) === 1 ? "" : "s"} at weight ≥{" "}
-                    {result.weight_floor ?? 0.5}
-                    {result.path_rule ? ` · ${result.path_rule}` : result.path_score_floor != null ? ` · path score ≥ ${result.path_score_floor}` : ""}
-                    {result.coverage ? ` · ${result.coverage.replace("_", " ")}` : ""}
-                    {result.not_shown ? ` · ${result.not_shown}` : ""}
-                    {result.elapsed_ms != null ? ` · ${result.elapsed_ms} ms` : ""}
-                  </span>
-                </div>
-                <CardTitle className="text-xl leading-snug">{result.summary}</CardTitle>
-                {result.pitch ? <CardDescription>{result.pitch}</CardDescription> : null}
-              </CardHeader>
-              <CardContent className="flex flex-col gap-5">
-                {deciding ? (
-                  <PathDiagram
-                    key={`${deciding.notice_doi || ""}-${deciding.steps?.[0]?.url || deciding.steps?.[0]?.doi || ""}`}
-                    reason={deciding}
-                  />
-                ) : null}
-                {counted.length === 0 ? (
-                  <p className="text-sm leading-6 text-muted-foreground">{result.limits}</p>
-                ) : null}
-                {counted.map((reason, index) => (
-                  <article key={`${reason.notice_doi}-${reason.root_doi}-${index}`} className="flex flex-col gap-3">
-                    {index > 0 ? <Separator /> : null}
-                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      <span>{reason.label || reason.notice_type || reason.code}</span>
-                      {reason.notice_doi ? <span>{reason.notice_doi}</span> : null}
-                      {reason.notice_date ? <span>{reason.notice_date}</span> : null}
-                      {reason.reliance ? (
-                        <span>
-                          {reason.reliance} · weight {reason.weight}
-                        </span>
-                      ) : null}
-                      {reason.evidence_from ? <span>{reason.evidence_from}</span> : null}
-                    </div>
-                    {reason.sentence ? (
-                      <blockquote className="border-l-2 border-primary pl-3 text-sm leading-6">
-                        {reason.sentence}
-                      </blockquote>
-                    ) : null}
-                    <ol className="flex flex-col gap-1 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
-                      {(reason.steps || []).map((step, stepIndex) => (
-                        <li key={`${stepLabel(step)}-${stepIndex}`} className="flex items-center gap-2">
-                          {stepIndex > 0 ? <span className="text-muted-foreground">→</span> : null}
-                          <span className="break-all rounded-md bg-muted px-2 py-1">{stepLabel(step)}</span>
-                        </li>
-                      ))}
-                    </ol>
-                    {reason.hops_evidence && reason.hops_evidence.length > 0 ? (
-                      <ol className="flex flex-col gap-2 text-sm">
-                        {reason.hops_evidence.map((hop, hopIndex) => (
-                          <li key={`${hop.reliance}-${hopIndex}`} className="rounded-md bg-muted px-3 py-2">
-                            <p className="text-xs text-muted-foreground">
-                              hop {hopIndex + 1}
-                              {hop.reliance ? ` · ${hop.reliance}` : ""}
-                              {hop.weight != null ? ` · weight ${hop.weight}` : ""}
-                              {hop.evidence_from ? ` · ${hop.evidence_from}` : ""}
-                            </p>
-                            {hop.sentence ? (
-                              <p className="mt-1 leading-6">{hop.sentence}</p>
-                            ) : (
-                              <p className="mt-1 text-muted-foreground">Reliance unverified on this hop.</p>
-                            )}
-                          </li>
-                        ))}
-                        <li className="text-xs text-muted-foreground">
-                          path score {reason.path_score ?? "—"}
-                          {reason.pagerank != null ? ` · PageRank ${reason.pagerank.toFixed(3)}` : ""}
-                        </li>
-                      </ol>
-                    ) : null}
-                  </article>
-                ))}
-                {(result.discounted || []).length > 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    {result.discounted?.length} citation path
-                    {result.discounted?.length === 1 ? "" : "s"} reached a notice only as background,
-                    a scholarly dispute, or a path score below the floor, so{" "}
-                    {result.discounted?.length === 1 ? "it does" : "they do"} not change this check.
-                    Coverage is not shown beyond the requested depth.
-                  </p>
-                ) : null}
-                {result.context_notes && result.context_notes.length > 0 ? (
-                  <p className="text-xs text-muted-foreground">{result.context_notes.join(" ")}</p>
-                ) : null}
-                {(result.remediation_clusters?.clusters || []).length > 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    WCC remediation clusters: {result.remediation_clusters?.clusters?.length}. This
-                    groups review work. It is not the verdict.
-                  </p>
-                ) : null}
-                {result.cypher ? (
-                  <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs leading-5">{result.cypher}</pre>
-                ) : null}
-                {result.remediation_clusters?.call ? (
-                  <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs leading-5">
-                    {result.remediation_clusters.call}
-                  </pre>
-                ) : null}
-              </CardContent>
-            </Card>
-          ) : null}
-        </TabsContent>
-
-        <TabsContent value="reverse" className="flex flex-col gap-4 pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>What already rests on a flagged study</CardTitle>
-              <CardDescription>
-                Reverse lookup on the Expression of Concern for Khan 2003, or paste another DOI.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-wrap gap-2">
+        {PRESETS.map((preset) => (
+          <Button
+            key={preset.id}
+            type="button"
+            variant="outline"
+            disabled={loading}
+            onClick={() => applyPreset(preset.id)}
+          >
+            {preset.label}
+          </Button>
+        ))}
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Draft answer</CardTitle>
+          <CardDescription>
+            Paste the draft and the URLs or DOIs it cites. This does not give medical advice,
+            and it does not say the draft is wrong.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <Textarea
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            placeholder="Paste a draft answer, a DOI, or both."
+            className="min-h-36"
+          />
+          <Textarea
+            value={urls}
+            onChange={(event) => setUrls(event.target.value)}
+            placeholder="One cited URL or DOI per line"
+            className="min-h-20"
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              Engine
               <input
-                value={reverseDoi}
-                onChange={(event) => setReverseDoi(event.target.value)}
-                className="h-9 min-w-0 flex-1 rounded-lg border border-input bg-card px-3 text-sm"
+                value={engine}
+                onChange={(event) => setEngine(event.target.value)}
+                className="h-8 rounded-lg border border-input bg-card px-2 text-sm text-foreground"
               />
-              <Button type="button" disabled={reverseLoading || !reverseDoi.trim()} onClick={() => void runReverse()}>
-                {reverseLoading ? "Looking up…" : "Look up"}
-              </Button>
-            </CardContent>
-          </Card>
-          {reverseError ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>The lookup did not finish</CardTitle>
-                <CardDescription>{reverseError}</CardDescription>
-              </CardHeader>
-            </Card>
-          ) : null}
-          {!reverse && !reverseError && !reverseLoading ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>No reverse lookup yet</CardTitle>
-                <CardDescription>
-                  This asks the persistent graph which drafts already cite the flagged study.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          ) : null}
-          {reverse ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {reverse.answer_count ?? 0} draft{(reverse.answer_count ?? 0) === 1 ? "" : "s"},{" "}
-                  {reverse.source_count ?? 0} source{(reverse.source_count ?? 0) === 1 ? "" : "s"}
-                </CardTitle>
-                <CardDescription>
-                  {reverse.notice_type || "notice"} {reverse.notice_doi} on {reverse.root_doi}
-                  {reverse.elapsed_ms != null ? ` · ${reverse.elapsed_ms} ms` : ""}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-3">
-                {reverse.root_title ? <p className="text-sm">{reverse.root_title}</p> : null}
-                {(reverse.engines || []).length > 0 ? (
-                  <p className="text-sm text-muted-foreground">{reverse.engines?.join(", ")}</p>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No drafts in this graph cite it yet.</p>
-                )}
-                {reverse.cypher ? (
-                  <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs leading-5">{reverse.cypher}</pre>
-                ) : null}
-              </CardContent>
-            </Card>
-          ) : null}
-        </TabsContent>
-      </Tabs>
+            </label>
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              Depth
+              <input
+                type="number"
+                min={1}
+                max={3}
+                value={depth}
+                onChange={(event) => setDepth(Number(event.target.value) || 1)}
+                className="h-8 w-16 rounded-lg border border-input bg-card px-2 text-sm text-foreground"
+              />
+            </label>
+            <Button
+              type="button"
+              disabled={loading || (!text.trim() && !urls.trim())}
+              onClick={() =>
+                void runCheck({
+                  text,
+                  urls: urls.split(/\s+/).map((item) => item.trim()).filter(Boolean),
+                  engine,
+                  depth,
+                })
+              }
+            >
+              {loading ? "Checking citation paths…" : "Check before shipping"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {error ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>The check did not finish</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+        </Card>
+      ) : null}
+
+      {!result && !error && !loading ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Nothing checked yet</CardTitle>
+            <CardDescription>
+              Choose Healthline cinnamon, Lancet 2020, or the clean DOI. A warn or a block shows
+              the deciding path, hop weights, and the FalkorDB query.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      ) : null}
+
+      {loading && !result ? (
+        <p className="text-sm text-muted-foreground">Checking citation paths…</p>
+      ) : null}
+
+      {result ? (
+        <ResultCard result={result} onRewrite={() => void runRewrite()} rewriting={rewriting} />
+      ) : null}
+
+      {rewrite?.text ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Rewritten draft</CardTitle>
+            <CardDescription>
+              {rewrite.method === "azure-foundry"
+                ? "Azure AI Foundry drafted this. Code stripped flagged citations, then rechecked."
+                : "Template rewrite. Flagged citations were dropped, then the check ran again."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm leading-6">{rewrite.text}</p>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {rewrite?.recheck ? <ResultCard result={rewrite.recheck} /> : null}
 
       <footer className="text-xs leading-5 text-muted-foreground">
         An Expression of Concern is not a retraction. Khan 2003 carries an Expression of Concern;

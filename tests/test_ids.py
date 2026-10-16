@@ -32,6 +32,7 @@ def test_doi_cleanup():
     assert clean_doi("https://doi.org/10.2337%2Fdiacare.26.12.3215") == "10.2337/diacare.26.12.3215"
     assert clean_doi("10.2337/diacare.26.12.3215\u200b") == "10.2337/diacare.26.12.3215"
     assert clean_doi("10.2337/diacare.26.12.3215।") == "10.2337/diacare.26.12.3215"
+    assert clean_doi("10.3389/fendo.2019.00640/full") == "10.3389/fendo.2019.00640"
 
 
 def test_extract_encoded_and_noisy_dois():

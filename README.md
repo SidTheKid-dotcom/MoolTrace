@@ -1,12 +1,14 @@
 # MoolTrace
 
+Track 1 agent that acts on connected data. A health-AI engineer pastes a draft; MoolTrace walks citations in FalkorDB and pass / warn / blocks before the fixture ships.
+
 Trace a health-AI answer to its root, and see if that root is flagged.
 
 Mool means root. The user is an engineer or reviewer on a health-AI team, before merging an answer fixture or shipping a content draft. Health models cite web pages. Direct DOI or retraction checkers miss a cited page that rests on a flagged study, including when the path goes through a review. MoolTrace returns a deterministic **pass / warn / block** with the exact path, each hop's sentence and weight, the notice, and the Cypher that decided it.
 
 It reports a path to a publisher notice. It does not say the draft is medically correct or incorrect. An Expression of Concern is not a retraction.
 
-WeMakeDevs × FalkorDB Graph Hacks, **Track 1**. The verdict is computed from FalkorDB paths and `RESTS_ON` hop properties. Notices come from Crossref. Citation lists come from OpenAlex. Diabetes Care `care/article/{volume}/{issue}/{page}` URLs resolve through Crossref on the ADA DOI pattern, then OpenAlex. Citation sentences come from Semantic Scholar contexts, PMC, the citing page, or the pasted draft.
+WeMakeDevs × FalkorDB Graph Hacks, **Track 1**. The shown route is `algo.SPpaths` with cost `-ln(weight)` on that answer's subgraph. `PATH_RULE` still classifies every path so a weak short hop cannot hide a counted retraction. Notices come from Crossref. Citation lists come from OpenAlex. Diabetes Care `care/article/{volume}/{issue}/{page}` URLs resolve through Crossref on the ADA DOI pattern, then OpenAlex. Citation sentences come from Semantic Scholar contexts, PMC, the citing page, or the pasted draft.
 
 ## Primary workflow: CI over answer fixtures
 
@@ -32,11 +34,11 @@ The sample workflow `.github/workflows/mooltrace-fixtures.yml` installs a venv a
 docker compose up --build
 ```
 
-Open [http://127.0.0.1:4318](http://127.0.0.1:4318). API health is [http://127.0.0.1:4317/health](http://127.0.0.1:4317/health). Compose publishes those ports on loopback only. Click Everyday Health (1-hop, warn: Expression of Concern, not a retraction). Then click **Healthline cinnamon** for the URL-only counted 2-hop (page → Silva 2022 → Khan Expression of Concern). Then Lancet 2020 (block: retraction). An Expression of Concern is not a retraction. First boot seeds Everyday Health and Lancet into `/data/demo.db` (a Compose volume, not `data/mooltrace.db`). No copyrighted full text. This does not say cinnamon works or does not. Private, loopback, and credentialed URLs stay refused. There is no public host URL in this checkout: Railway, Fly, and Render were not logged in. Later: `railway login && railway init && railway up` or `fly auth login && fly launch` or `render login`.
+Open [http://127.0.0.1:4318](http://127.0.0.1:4318). API health is [http://127.0.0.1:4317/health](http://127.0.0.1:4317/health). Compose publishes those ports on loopback only. Three presets: **Healthline cinnamon** (URL-only counted 2-hop, page → Silva 2022 → Khan Expression of Concern, warn), Lancet 2020 (block: retraction), and a clean DOI (pass at depth 2). Expression of Concern, not a retraction. First boot seeds those three into `/data/demo.db` (a Compose volume, not `data/mooltrace.db`). After a warn or block, **Rewrite and recheck** drops the flagged citations. The Cypher panel shows `algo.SPpaths`. No copyrighted full text. This does not say cinnamon works or does not. Private, loopback, and credentialed URLs stay refused. There is no public host URL in this checkout: Railway, Fly, and Render were not logged in. Later: `railway login && railway init && railway up` or `fly auth login && fly launch` or `render login`.
 
 ## Use from an AI agent
 
-MoolTrace is a pre-ship check, not a medical model. The agent drafts. MoolTrace says whether a cited page or paper reaches a publisher notice. It does not rewrite the answer for you.
+MoolTrace is a pre-ship check, not a medical model. The agent drafts. MoolTrace says whether a cited page or paper reaches a publisher notice. On warn or block, `rewrite_answer` drops flagged citations and rechecks. Azure AI Foundry drafts the prose when `AZURE_INFERENCE_ENDPOINT`, `AZURE_INFERENCE_API_KEY`, and `AZURE_INFERENCE_MODEL` are set; otherwise a template cites a clean DOI. Code strips flagged URLs and DOIs either way.
 
 **CI (the usual team path).** Put each bot answer in JSONL (`id`, `engine`, `text`, `urls`). On every pull request:
 
@@ -51,6 +53,7 @@ Exit **1** fails the job (retraction path). Exit **2** with `--fail-on block` st
 | Tool | When the agent calls it |
 | --- | --- |
 | `check_answer` | After it drafts, before it shows the user or opens a PR. Pass `text`, `urls`, `engine`, `depth` (1–3). |
+| `rewrite_answer` | After warn or block. Drops flagged citations, rechecks. That is the graph-based action. |
 | `trace_answer` | When it needs the hop list, not only the verdict. |
 | `check_study` | When the user pasted one DOI. |
 | `what_rests_on` | After a new notice lands, on the team's saved graph: which shipped answers reach that DOI. |
@@ -62,18 +65,17 @@ A realistic loop:
 1. Collect the draft and every cited URL.
 2. Call `check_answer`.
 3. Exit 3: retry later. Do not ship. The catalogs or the graph timed out.
-4. `block`: drop that URL or DOI, rewrite, call `check_answer` again.
-5. `warn`: keep the citation only if the user-facing card names the notice and the hop sentence. Do not hide an Expression of Concern.
-6. `pass`: no counted notice within this depth. Still not a medical claim. Coverage is not shown beyond the depth cap.
-7. No DOI or URL: `no_sources` warn. The agent must ask for a source or refuse to ship.
+4. `block` or `warn`: call `rewrite_answer`, then read `recheck.decision`. Do not hide an Expression of Concern.
+5. `pass`: no counted notice within this depth. Still not a medical claim. Coverage is not shown beyond the depth cap.
+6. No DOI or URL: `no_sources` warn. The agent must ask for a source or refuse to ship.
 
 Do not put MoolTrace inside the model's system prompt as "the truth". Call it as a tool after generation. Keep `MOOLTRACE_DB` on disk so `what_rests_on` can see prior answers. The HTTP API binds `127.0.0.1` only.
 
-Hero fixture: Everyday Health URL only, no Khan DOI in the pasted text. See `examples/nutrition-draft.txt` and the first line of `examples/answers.jsonl`.
+Demo hero: Healthline URL only, no Khan DOI in the pasted text. See `examples/healthline.jsonl`. CI still uses Everyday Health in `examples/answers.jsonl`.
 
 ```bash
 .venv/bin/python -m mooltrace check-answer \
-  --urls-file <(printf '%s\n' 'https://www.everydayhealth.com/diabetes/cinnamon-for-diabetes/') \
+  --urls-file <(printf '%s\n' 'https://www.healthline.com/nutrition/cinnamon-and-diabetes') \
   --engine nutrition-coach \
   --depth 2
 ```
@@ -87,7 +89,7 @@ Hero fixture: Everyday Health URL only, no Khan DOI in the pasted text. See `exa
 | warn | A counted path reaches an Expression of Concern, a reachable path is unverified, a cited DOI could not be resolved, the check did not finish, or no verifiable citation or source was provided (`no_sources`) | 2 |
 | incomplete (infra) | Graph timeout or exhausted upstream. Not a silent pass and not a block | 3 |
 
-A **counted path** needs every `RESTS_ON` hop judged with a stored sentence and weight ≥ 0.5, and is either a **single hop** or has at least one `included` / `relies` / `uses_data_or_method` hop. Mention-only multi-hop paths do not count. A two-hop use (`uses` × `uses`) does. A draft that only names a review DOI is a mention; that path counts when the review→trial hop is `included` or another strong use. The old product-with-floor rule (`0.55³ ≈ 0.17 < 0.25`) is retired so hop count does not silently drop a strong 3-hop chain. `path_score` is still the product of hop weights and is used to rank paths, not to gate them. The output field `path_rule` states this. Unverified hops warn; they never silently pass. The draft cannot hedge-bypass: naming an Expression of Concern or writing "we excluded" in the pasted answer does not turn a cited flagged study into a pass. A scholarly review can still set a study aside. A weak background hop does not hide a counted longer path: the check classifies **every** path within the depth cap, not `shortestPath`. Depth is 1–3. Depth 4 is not implemented. `pass` means no counted or unverified notice was found within that depth. Coverage is **not shown** beyond it.
+A **counted path** needs every `RESTS_ON` hop judged with a stored sentence and weight ≥ 0.5, and is either a **single hop** or has at least one `included` / `relies` / `uses_data_or_method` hop. Mention-only multi-hop paths do not count. A two-hop use (`uses` × `uses`) does. A draft that only names a review DOI is a mention; that path counts when the review→trial hop is `included` or another strong use. The old product-with-floor rule (`0.55³ ≈ 0.17 < 0.25`) is retired so hop count does not silently drop a strong 3-hop chain. `algo.SPpaths` with cost `-ln(weight)` ranks which counted path is shown first. Unweighted `shortestPath` is not the verdict. `PATH_RULE` still classifies **every** path within the depth cap so a weak short hop cannot hide a counted retraction. Unverified hops warn; they never silently pass. The draft cannot hedge-bypass: naming an Expression of Concern or writing "we excluded" in the pasted answer does not turn a cited flagged study into a pass. A scholarly review can still set a study aside. Depth is 1–3. Depth 4 is not implemented. `pass` means no counted or unverified notice was found within that depth. Coverage is **not shown** beyond it. Seeds past the expand cap are still notice-checked.
 
 ## Graph model
 
@@ -95,7 +97,7 @@ Nodes: `Answer`, `Source`, `Work`, `Notice`.
 
 Edges: `(Answer)-[:CITES]->(Source)`, `(Source)-[:RESTS_ON]->(Work)`, `(Work)-[:RESTS_ON]->(Work)`, `(Notice)-[:FLAGS]->(Work)`.
 
-`RESTS_ON` stores `reliance`, `weight`, `sentence`, `evidence_from`, `judged`, `judged_at`.
+`RESTS_ON` stores `reliance`, `weight`, `cost`, `sentence`, `evidence_from`, `judged`, `judged_at`. `cost` is `-ln(weight)` for `algo.SPpaths`.
 
 The deciding query (bounds are literals; depth 2 shown). `FLAGS` is matched separately so FalkorDB does not bind the notice hop into `p`:
 
@@ -124,6 +126,19 @@ ORDER BY path_score DESC, hops ASC
 LIMIT 80
 ```
 
+The shown route (bounds are literals; depth 2 shown):
+
+```cypher
+MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)
+MATCH p0 = (s)-[:RESTS_ON*1..2]->(w)
+MATCH (n:Notice)-[:FLAGS]->(w:Work)
+WITH DISTINCT s, w, n
+CALL algo.SPpaths({sourceNode: s, targetNode: w, relTypes: ['RESTS_ON'], relDirection: 'outgoing', maxLen: 2, weightProp: 'cost'})
+YIELD path, pathCost
+```
+
+`cost` on `RESTS_ON` is `-ln(weight)`. Lower cost is stronger reliance.
+
 Remediation clusters (not the verdict) use FalkorDBLite 0.10.0:
 
 ```cypher
@@ -136,7 +151,7 @@ CALL algo.pageRank('Work', 'RESTS_ON')
 YIELD node, score
 ```
 
-That groups answers that share a Work component containing a publisher notice. The fixture batch report includes these clusters. `algo.pageRank` ranks which counted notice is shown first. `algo.MaxFlow` is not registered in this build. Independent sources are distinct citers on counted paths.
+That groups answers that share a Work component containing a publisher notice. The fixture batch report includes these clusters. `algo.SPpaths` ranks which counted notice is shown first. `algo.pageRank` is not the verdict. `algo.MaxFlow` is not registered in this build. Independent sources are distinct citers on counted paths.
 
 Reverse lookup lists every matching notice and only the answers whose sources reach that work. The Cypher `counted` flag uses the same hop rule as the forward verdict: every hop has a stored sentence and weight ≥ 0.5, and the path is one hop or has an `included` / `relies` / `uses_data_or_method` hop. Mention-only multi-hop paths do not count. It is not a monitoring or alert scheduler.
 
@@ -218,7 +233,7 @@ Closest public systems: [Shaky Ground](https://github.com/aryangorde6/shaky-grou
 
 ## AI-use disclosure
 
-MoolTrace code in this repository was written with Cursor agents (including Grok) after the Graph Hacks kickoff on 15 Oct 2026. Paths and notices come from live OpenAlex, Crossref, NCBI, Semantic Scholar, and PMC, not from the model. Each teammate must be able to explain the code they ship.
+MoolTrace code in this repository was written with Cursor agents (including Grok) after the Graph Hacks kickoff on 15 Oct 2026. Paths and notices come from live OpenAlex, Crossref, NCBI, Semantic Scholar, and PMC, not from the model. Optional rewrite prose can call Azure AI Foundry; code still strips flagged citations and re-runs the graph check. Each teammate must be able to explain the code they ship.
 
 ## Demo checklist
 
@@ -226,7 +241,7 @@ MoolTrace code in this repository was written with Cursor agents (including Grok
 2. `python -m mooltrace batch examples/answers.jsonl --fail-on block` (exit 0; warns are annotated).
 3. URL-only Everyday Health check twice; second call should make 0 API calls while notices are fresh.
 4. `python -m mooltrace batch examples/lancet.jsonl --fail-on block` (exit 1) → block on the retraction notice, not the earlier EoC.
-5. UI preset Everyday Health is the 1-hop. Click **Healthline cinnamon** for the URL-only counted 2-hop. Both show path, hop sentence, and the PATHS_TO_NOTICE Cypher (not an unused query).
+5. UI presets are Healthline cinnamon (counted 2-hop), Lancet 2020 (block), and the clean DOI. The Cypher panel shows `algo.SPpaths`. Rewrite and recheck on a warn.
 6. `ro_cypher` with `CONTAINS 'set'` is allowed; `CREATE` is rejected; GRAPH.RO_QUERY is the write barrier.
 7. Public repo, 2:50 video, Track 1, AWS/FalkorDB shown, AI tools listed.
 8. `python -m pytest tests/test_labelled.py` (schema). Optional live: `python -m mooltrace labelled --limit 2`.

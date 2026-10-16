@@ -1,13 +1,22 @@
 from mooltrace.contexts import abstract_candidates
 from mooltrace.reliance import (
+    UNJUDGED_COST,
     WEIGHTS,
     citation_group_size,
     classify_sentence,
     choose_reliance,
+    hop_cost,
 )
 
 
 KHAN_TITLE = "Cinnamon improves glucose and lipids of people with type 2 diabetes"
+
+
+def test_hop_cost_is_cheaper_for_stronger_weights():
+    assert hop_cost(1.0) < hop_cost(0.55)
+    assert hop_cost(0.55) < hop_cost(0.2)
+    assert hop_cost(0) == UNJUDGED_COST
+    assert hop_cost(None) == UNJUDGED_COST
 
 
 def test_grouped_citation_without_the_author_is_background():

@@ -79,3 +79,10 @@ test("decidingReason prefers a notice path over a path with no steps", () => {
   ])
   assert.equal(picked, HEALTHLINE)
 })
+
+test("decidingReason prefers the lower SPpaths cost", () => {
+  const expensive = { ...HEALTHLINE, notice_doi: "10.1/expensive", sp_cost: 2.0 }
+  const cheap = { ...HEALTHLINE, notice_doi: "10.1/cheap", sp_cost: 0.01 }
+  const picked = decidingReason([expensive, cheap])
+  assert.equal(picked, cheap)
+})

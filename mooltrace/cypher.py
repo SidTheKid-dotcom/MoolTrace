@@ -1,8 +1,10 @@
 """OpenCypher the MCP tools and CLI actually execute.
 
 Relationship bounds are literals: FalkorDB rejects parameters there.
-Depth is substituted from a clamped integer (1..3). shortestPath is not
-used for verdicts: a weak short path must not hide a counted longer path.
+Depth is substituted from a clamped integer (1..3). Unweighted shortestPath
+is not the verdict. algo.SPpaths with cost -ln(weight) picks the strongest
+reliance route on the answer subgraph; PATH_RULE still classifies every
+PATHS_TO_NOTICE row so a weak short hop cannot hide a counted retraction.
 """
 
 from __future__ import annotations
@@ -36,6 +38,36 @@ RETURN s.url AS source_url,
        [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged}] AS hops_evidence
 ORDER BY path_score DESC, hops ASC
 LIMIT 80
+""".strip()
+
+# Weighted shortest path on the answer subgraph. cost = -ln(weight) is
+# stored on RESTS_ON. Lower cost is stronger reliance. Used to pick the
+# shown route, not to hide a counted retraction on another path.
+SP_PATHS_TO_NOTICE = """
+MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)
+MATCH p0 = (s)-[:RESTS_ON*1..3]->(w)
+MATCH (n:Notice)-[:FLAGS]->(w:Work)
+WITH DISTINCT s, w, n
+CALL algo.SPpaths({sourceNode: s, targetNode: w, relTypes: ['RESTS_ON'], relDirection: 'outgoing', maxLen: 3, weightProp: 'cost'})
+YIELD path, pathCost
+WITH s, w, n, path, pathCost, relationships(path) AS rels
+RETURN s.url AS source_url,
+       s.title AS source_title,
+       w.doi AS root_doi,
+       w.title AS root_title,
+       w.year AS root_year,
+       n.doi AS notice_doi,
+       n.type AS notice_type,
+       n.label AS notice_label,
+       n.date AS notice_date,
+       n.source AS notice_source,
+       length(path) AS hops,
+       reduce(score = 0.0, r IN rels | score + coalesce(r.cost, 20.0)) AS sp_cost,
+       reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) AS path_score,
+       [x IN nodes(path) | {doi: x.doi, title: x.title, url: x.url, year: x.year}] AS steps,
+       [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, cost: r.cost}] AS hops_evidence
+ORDER BY sp_cost ASC, hops ASC
+LIMIT 40
 """.strip()
 
 # Reverse impact: only answers whose cited sources reach this flagged work.
@@ -217,6 +249,12 @@ def _bound(statement: str, old: str, new: str) -> str:
 def paths_to_notice(depth: int) -> str:
     d = clamp_depth(depth)
     return _bound(PATHS_TO_NOTICE, "*1..3", f"*1..{d}")
+
+
+def sp_paths_to_notice(depth: int) -> str:
+    d = clamp_depth(depth)
+    query = _bound(SP_PATHS_TO_NOTICE, "*1..3", f"*1..{d}")
+    return _bound(query, "maxLen: 3", f"maxLen: {d}")
 
 
 def what_rests_on(depth: int = MAX_DEPTH) -> str:

@@ -41,6 +41,9 @@ LANCET_HCQ_DOI = "10.1016/s0140-6736(20)31180-6"
 LANCET_RETRACTION_DOI = "10.1016/s0140-6736(20)31324-6"
 DIABETES_CARE_ISSNS = ("0149-5992", "1935-5548")
 EVERYDAY_HEALTH_URL = "https://www.everydayhealth.com/diabetes/cinnamon-for-diabetes/"
+HEALTHLINE_CINNAMON_URL = "https://www.healthline.com/nutrition/cinnamon-and-diabetes"
+# Clean rewrite target: in the labelled clean set, no notice at depth 2.
+CLEAN_REWRITE_DOI = "10.1016/j.jsps.2015.03.013"
 
 # Depth 3 is implemented (seeds plus a few review neighbours). Depth 4 is
 # not a distinct walk, so the product caps here instead of pretending.

@@ -16,6 +16,7 @@ from mooltrace import TAGLINE
 from mooltrace.clients import InfraError, MoolTraceError
 from mooltrace.graph import get_graph
 from mooltrace.ssrf import UnsafeURL
+from mooltrace.rewrite import rewrite_answer as run_rewrite
 from mooltrace.trace import (
     check_answer as run_check_answer,
     check_study as run_check_study,
@@ -117,6 +118,29 @@ def trace_answer(
     ] = 2,
 ) -> dict:
     return _call(run_trace, text=text, urls=urls, engine=engine, depth=depth)
+
+
+@server.tool(
+    description=(
+        "After check_answer returns warn or block, rewrite the draft so it "
+        "drops flagged URLs and DOIs, then re-run the check. Uses Azure AI "
+        "Foundry when configured; otherwise a template that cites a clean DOI. "
+        "Returns the first check, the rewritten text, and the recheck."
+    )
+)
+def rewrite_answer(
+    text: Annotated[str, Field(description="Draft that already failed the check.")] = "",
+    urls: Annotated[
+        list[str] | None, Field(description="Cited source URLs from the draft.")
+    ] = None,
+    engine: Annotated[
+        str, Field(description="Engine or fixture name for this draft.")
+    ] = "draft",
+    depth: Annotated[
+        int, Field(ge=1, le=3, description="Hop budget from 1 to 3.")
+    ] = 2,
+) -> dict:
+    return _call(run_rewrite, text=text, urls=urls, engine=engine, depth=depth)
 
 
 @server.tool(

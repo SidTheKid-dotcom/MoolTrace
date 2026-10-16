@@ -176,9 +176,12 @@ def _reason_rank(reason: dict[str, Any]) -> tuple[int, int, float, int]:
     source_rank = 0 if "retraction-watch" in source else 1
     hops = reason.get("hops")
     try:
-        rank = -float(reason.get("pagerank") or 0.0)
+        if reason.get("sp_cost") is not None:
+            rank = float(reason.get("sp_cost"))
+        else:
+            rank = -float(reason.get("path_score") or 0.0)
     except (TypeError, ValueError):
-        rank = 0.0
+        rank = 99.0
     return (kind_rank, source_rank, rank, hops if isinstance(hops, int) else 99)
 
 
@@ -221,7 +224,7 @@ def decide(
     incomplete: bool,
     depth: int,
     has_sources: bool = True,
-    pagerank: dict[str, float] | None = None,
+    sp_cost: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     """Turn traced paths into pass, warn, or block.
 
@@ -234,13 +237,13 @@ def decide(
 
     A counted path has every hop at weight >= 0.5 with a stored sentence,
     and is either one hop or has an included/relies/uses_data_or_method hop.
-    Mention-only multi-hop paths do not count. PageRank on Work nodes
+    Mention-only multi-hop paths do not count. algo.SPpaths cost -ln(weight)
     ranks which counted notice is shown first. A reachable unverified path
     never passes. A discounted short path does not hide a counted longer
     path: every returned path is classified. Plain prose with no DOI,
     PMID, PMCID, scholarly identifier, or public URL is warn (`no_sources`).
     """
-    ranks = pagerank or {}
+    costs = sp_cost or {}
     counted: list[dict[str, Any]] = []
     discounted: list[dict[str, Any]] = []
     unverified: list[dict[str, Any]] = []
@@ -261,8 +264,8 @@ def decide(
     ]
     for reason in reasons:
         doi = (reason.get("root_doi") or "").lower()
-        if doi in ranks:
-            reason["pagerank"] = ranks[doi]
+        if doi in costs:
+            reason["sp_cost"] = costs[doi]
     reasons.sort(key=_reason_rank)
     kinds = {reason["code"] for reason in reasons}
     discounted_reasons = [

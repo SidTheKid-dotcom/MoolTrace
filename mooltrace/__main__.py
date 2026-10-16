@@ -9,6 +9,7 @@ from pathlib import Path
 
 from mooltrace.clients import InfraError, MoolTraceError
 from mooltrace.ssrf import UnsafeURL
+from mooltrace.rewrite import rewrite_answer
 from mooltrace.trace import (
     check_answer,
     check_study,
@@ -59,6 +60,14 @@ def main(argv: list[str] | None = None) -> int:
     trace.add_argument("--engine", default="draft")
     trace.add_argument("--depth", type=int, default=2)
 
+    rewrite = sub.add_parser("rewrite", help="rewrite a flagged draft and recheck")
+    rewrite.add_argument("--text", default="")
+    rewrite.add_argument("--text-file")
+    rewrite.add_argument("--url", action="append", default=[])
+    rewrite.add_argument("--urls-file")
+    rewrite.add_argument("--engine", default="draft")
+    rewrite.add_argument("--depth", type=int, default=2)
+
     study = sub.add_parser("check-study", help="notices on one DOI or PMID")
     study.add_argument("doi_or_pmid")
 
@@ -103,6 +112,16 @@ def main(argv: list[str] | None = None) -> int:
             )
             _print(payload)
             return int(payload["exit_code"])
+        if args.cmd == "rewrite":
+            payload = rewrite_answer(
+                _read(args.text_file, args.text),
+                _urls_from_file(args.urls_file, args.url),
+                args.engine,
+                args.depth,
+            )
+            _print(payload)
+            recheck = payload.get("recheck") or {}
+            return int(recheck.get("exit_code") or 2)
         if args.cmd == "trace":
             _print(
                 trace_answer(

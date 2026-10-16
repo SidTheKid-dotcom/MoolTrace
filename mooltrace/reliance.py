@@ -7,6 +7,7 @@ own intent labels.
 
 from __future__ import annotations
 
+import math
 import re
 from dataclasses import dataclass
 
@@ -21,6 +22,20 @@ PATH_RULE = (
     "mention-only multi-hop paths do not count; unverified hops warn"
 )
 STRONG_RELIANCE = frozenset({"included", "relies", "uses_data_or_method"})
+# Unjudged RESTS_ON hops. Higher than -ln(0.2) so a judged background hop
+# still ranks ahead of a missing judgment.
+UNJUDGED_COST = 20.0
+
+
+def hop_cost(weight: float | None) -> float:
+    """Edge cost for algo.SPpaths: -ln(weight). Stronger reliance is cheaper."""
+    try:
+        value = float(weight) if weight is not None else 0.0
+    except (TypeError, ValueError):
+        value = 0.0
+    if value <= 0:
+        return UNJUDGED_COST
+    return max(1e-9, -math.log(value))
 
 # The draft or cited web page cannot hedge-bypass a publisher notice.
 # Scholarly full text can still set a study aside.

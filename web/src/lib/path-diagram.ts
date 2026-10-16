@@ -20,6 +20,7 @@ export type PathReason = {
   sentence?: string | null
   steps?: PathStep[]
   hops_evidence?: PathHop[]
+  sp_cost?: number | null
 }
 
 export type PathNode = {
@@ -138,10 +139,16 @@ export function buildPathGraph(reason: PathReason): PathGraph {
 }
 
 export function decidingReason<T extends PathReason>(reasons: T[]): T | null {
-  const withPath = (reason: T) => (reason.steps || []).length > 0
-  return (
-    reasons.find((reason) => withPath(reason) && (reason.notice_doi || reason.notice_type)) ||
-    reasons.find(withPath) ||
-    null
-  )
+  const withPath = reasons.filter((reason) => (reason.steps || []).length > 0)
+  const withNotice = withPath.filter((reason) => reason.notice_doi || reason.notice_type)
+  const pool = withNotice.length ? withNotice : withPath
+  if (!pool.length) return null
+  return [...pool].sort((a, b) => {
+    const left = a.sp_cost
+    const right = b.sp_cost
+    if (left == null && right == null) return 0
+    if (left == null) return 1
+    if (right == null) return -1
+    return left - right
+  })[0]
 }

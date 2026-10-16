@@ -17,6 +17,7 @@ from typing import Any
 from mooltrace.clients import InfraError
 from mooltrace.config import GRAPH_NAME, RO_QUERY_TIMEOUT_MS, clamp_depth
 from mooltrace import cypher as C
+from mooltrace.reliance import UNJUDGED_COST, hop_cost
 
 _WORK_FIELDS = frozenset(
     {
@@ -311,9 +312,10 @@ class Graph:
             "rest_on",
             """
             MATCH (a:Work {doi: $source}), (b:Work {doi: $target})
-            MERGE (a)-[:RESTS_ON]->(b)
+            MERGE (a)-[r:RESTS_ON]->(b)
+            ON CREATE SET r.cost = $cost
             """,
-            {"source": source_doi, "target": target_doi},
+            {"source": source_doi, "target": target_doi, "cost": UNJUDGED_COST},
         )
 
     def set_reliance(
@@ -332,6 +334,7 @@ class Graph:
             "target": target_doi,
             "reliance": reliance,
             "weight": float(weight),
+            "cost": hop_cost(weight),
             "sentence": (sentence or "")[:800],
             "evidence_from": evidence_from or "",
         }
@@ -342,14 +345,14 @@ class Graph:
             params["source"] = source_doi
             statement = """
             MATCH (a:Work {doi: $source})-[r:RESTS_ON]->(b:Work {doi: $target})
-            SET r.reliance = $reliance, r.weight = $weight, r.sentence = $sentence,
+            SET r.reliance = $reliance, r.weight = $weight, r.cost = $cost, r.sentence = $sentence,
                 r.evidence_from = $evidence_from, r.judged = true, r.judged_at = $judged_at
             """
         else:
             params["url"] = source_url or ""
             statement = """
             MATCH (a:Source {url: $url})-[r:RESTS_ON]->(b:Work {doi: $target})
-            SET r.reliance = $reliance, r.weight = $weight, r.sentence = $sentence,
+            SET r.reliance = $reliance, r.weight = $weight, r.cost = $cost, r.sentence = $sentence,
                 r.evidence_from = $evidence_from, r.judged = true, r.judged_at = $judged_at
             """
         self.run("set_reliance", statement, params)
@@ -360,9 +363,10 @@ class Graph:
             "source_rests_on",
             """
             MATCH (s:Source {url: $url}), (w:Work {doi: $doi})
-            MERGE (s)-[:RESTS_ON]->(w)
+            MERGE (s)-[r:RESTS_ON]->(w)
+            ON CREATE SET r.cost = $cost
             """,
-            {"url": url, "doi": doi},
+            {"url": url, "doi": doi, "cost": UNJUDGED_COST},
         )
 
     def merge_notice(
@@ -465,6 +469,16 @@ class Graph:
         return self.run(
             "paths_to_notice",
             C.paths_to_notice(bound),
+            {"answer_id": answer_id},
+            read_only=True,
+            timeout=RO_QUERY_TIMEOUT_MS,
+        )
+
+    def sp_paths(self, answer_id: str, depth: int | None = None) -> QueryRun:
+        bound = clamp_depth(depth)
+        return self.run(
+            "sp_paths_to_notice",
+            C.sp_paths_to_notice(bound),
             {"answer_id": answer_id},
             read_only=True,
             timeout=RO_QUERY_TIMEOUT_MS,

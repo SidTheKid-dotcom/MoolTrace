@@ -375,7 +375,7 @@ def test_strong_two_hop_still_counts():
     assert verdict["reasons"][0]["path_score"] == 0.85 * 0.85
 
 
-def test_pagerank_picks_the_deciding_notice():
+def test_sp_cost_picks_the_deciding_notice():
     low = _path("expression_of_concern", "10.1/low")
     low.update(
         weight=0.85,
@@ -396,11 +396,11 @@ def test_pagerank_picks_the_deciding_notice():
         [low, high],
         incomplete=False,
         depth=2,
-        pagerank={"10.1/high": 0.4, "10.1/low": 0.01},
+        sp_cost={"10.1/high": 0.01, "10.1/low": 2.0},
     )
     assert verdict["decision"] == "warn"
     assert verdict["reasons"][0]["root_doi"] == "10.1/high"
-    assert verdict["reasons"][0]["pagerank"] == 0.4
+    assert verdict["reasons"][0]["sp_cost"] == 0.01
 
 
 def test_new_version_is_not_a_path_kind_here():

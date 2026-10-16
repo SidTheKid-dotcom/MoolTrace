@@ -48,6 +48,7 @@ def test_mcp_client_inprocess_lists_tools_and_rejects_writes(tmp_path: Path, mon
             listed = await client.list_tools()
             names = [tool.name for tool in listed.tools]
             assert "check_answer" in names
+            assert "rewrite_answer" in names
             assert "ro_cypher" in names
             bad = await client.call_tool("ro_cypher", {"query": "CREATE (:Work {doi: '10.1/nope'})"})
             assert bad.is_error
@@ -84,6 +85,7 @@ def test_mcp_stdio_client_check_answer_and_ro_cypher(tmp_path: Path):
             listed = await client.list_tools()
             names = [tool.name for tool in listed.tools]
             assert "check_answer" in names
+            assert "rewrite_answer" in names
             ssrf = await client.call_tool(
                 "check_answer",
                 {
@@ -146,6 +148,7 @@ def test_mcp_tool_schema_descriptions_depth_and_readonly(tmp_path: Path, monkeyp
             by_name = {tool.name: tool for tool in listed.tools}
             assert set(by_name) >= {
                 "check_answer",
+                "rewrite_answer",
                 "trace_answer",
                 "check_study",
                 "what_rests_on",
@@ -163,6 +166,7 @@ def test_mcp_tool_schema_descriptions_depth_and_readonly(tmp_path: Path, monkeyp
             assert _read_only(by_name["ro_cypher"]) is True
             assert _read_only(by_name["shared_ancestors"]) is True
             assert _read_only(by_name["check_answer"]) is not True
+            assert _read_only(by_name["rewrite_answer"]) is not True
             assert _read_only(by_name["trace_answer"]) is not True
             too_deep = await client.call_tool("check_answer", {"text": "x", "depth": 4})
             assert too_deep.is_error

@@ -11,6 +11,7 @@ from mooltrace.clients import InfraError, MoolTraceError
 from mooltrace.config import API_HOST, API_PORT, CORS_ORIGINS
 from mooltrace.graph import get_graph
 from mooltrace.ssrf import UnsafeURL
+from mooltrace.rewrite import rewrite_answer
 from mooltrace.trace import (
     check_answer,
     check_study,
@@ -86,6 +87,14 @@ def post_check_answer(body: DraftIn) -> dict:
             detail={"error_code": "infra", "message": payload.get("summary"), "result": payload},
         )
     return payload
+
+
+@app.post("/rewrite")
+def post_rewrite(body: DraftIn) -> dict:
+    try:
+        return rewrite_answer(body.text, body.urls, body.engine, body.depth)
+    except (MoolTraceError, UnsafeURL, InfraError) as exc:
+        raise _raise(exc) from exc
 
 
 @app.post("/trace")

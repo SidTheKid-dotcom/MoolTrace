@@ -59,7 +59,10 @@ def clean_doi(raw: str) -> str:
     text = text.rstrip(".,;:)]}>\"'\u0964\u0965")
     # HTML pages often append &amp; to a DOI inside an href.
     text = re.sub(r"&(?:amp;)?$", "", text, flags=re.I)
-    return text.lower()
+    text = text.lower()
+    if text.endswith("/full"):
+        text = text[: -len("/full")]
+    return text
 
 
 def valid_doi(doi: str) -> bool:

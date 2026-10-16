@@ -49,6 +49,11 @@ def test_readme_names_no_sources_and_fixture_recheck():
     assert "no_sources" in text
     assert "fresh fixture recheck" in text
     assert "not persistent monitoring" in text
+    assert text.splitlines()[2].startswith("Track 1 agent that acts on connected data")
+    assert "rewrite_answer" in text
+    assert "algo.SPpaths" in text
+    assert "Azure AI Foundry" in text
+    assert "`cost` is `-ln(weight)`" in text
 
 
 def test_readme_demo_is_compose_and_honest():
@@ -58,8 +63,10 @@ def test_readme_demo_is_compose_and_honest():
     assert "127.0.0.1:4318" in demo
     assert "127.0.0.1:4317" in demo
     assert "Healthline cinnamon" in demo
-    assert "1-hop" in demo
     assert "counted 2-hop" in demo
+    assert "Lancet 2020" in demo
+    assert "algo.SPpaths" in demo
+    assert "Rewrite and recheck" in demo
     assert "Expression of Concern, not a retraction" in demo
     assert "does not say cinnamon works or does not" in demo
     assert "not logged in" in demo

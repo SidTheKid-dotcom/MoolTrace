@@ -489,6 +489,7 @@ def _deepen(graph: Graph, answer_id: str, depth: int, stats: CallStats, errors: 
                 stale.append(doi)
         else:
             expandable.append(doi)
+    leftover: list[str] = []
     if stale:
         try:
             notice_check(graph, stale, stats)
@@ -498,11 +499,20 @@ def _deepen(graph: Graph, answer_id: str, depth: int, stats: CallStats, errors: 
             errors.append(str(exc))
             incomplete = True
     if len(expandable) > config.MAX_SEEDS_TO_EXPAND:
+        leftover = expandable[config.MAX_SEEDS_TO_EXPAND :]
         errors.append(
             f"expanded {config.MAX_SEEDS_TO_EXPAND} of {len(expandable)} cited works"
         )
         incomplete = True
         expandable = expandable[: config.MAX_SEEDS_TO_EXPAND]
+    if leftover:
+        try:
+            notice_check(graph, leftover, stats)
+        except InfraError:
+            raise
+        except MoolTraceError as exc:
+            errors.append(str(exc))
+            incomplete = True
     for doi in expandable:
         try:
             expand_work(graph, doi, stats)
@@ -770,25 +780,26 @@ def check_answer(
             ),
         }
     graph = graph or get_graph()
-    ranks: dict[str, float] = {}
-    page_rank_run = None
+    costs: dict[str, float] = {}
+    sp_run = None
     try:
-        page_rank_run = graph.page_rank()
-        for row in page_rank_run.rows:
-            doi = (row.get("doi") or "").lower()
-            if doi:
-                try:
-                    ranks[doi] = float(row.get("score") or 0.0)
-                except (TypeError, ValueError):
-                    continue
+        sp_run = graph.sp_paths(traced["answer_id"], traced["depth"])
+        for row in sp_run.rows:
+            doi = (row.get("root_doi") or "").lower()
+            if not doi or doi in costs:
+                continue
+            try:
+                costs[doi] = float(row.get("sp_cost"))
+            except (TypeError, ValueError):
+                continue
     except Exception:
-        page_rank_run = None
+        sp_run = None
     verdict = decide(
         traced["paths"],
         incomplete=traced["incomplete"],
         depth=traced["depth"],
         has_sources=True,
-        pagerank=ranks,
+        sp_cost=costs,
     )
     counted = any(
         reason.get("code") not in {None, "incomplete", "no_sources"}
@@ -797,8 +808,10 @@ def check_answer(
     pitch = PITCH if verdict["decision"] in {"warn", "block"} and counted else None
     clusters = _clusters(graph)
     queries = list(traced["queries"])
-    if page_rank_run is not None:
-        queries.append(page_rank_run.as_public())
+    deciding_cypher = traced["cypher"]
+    if sp_run is not None:
+        queries.append(sp_run.as_public())
+        deciding_cypher = sp_run.cypher
     if clusters.get("cypher"):
         queries.append(
             {
@@ -809,6 +822,40 @@ def check_answer(
                 "rows": len(clusters.get("clusters") or []),
             }
         )
+    impact = None
+    notice_doi = next(
+        (reason.get("notice_doi") for reason in verdict["reasons"] if reason.get("notice_doi")),
+        None,
+    )
+    if notice_doi and verdict["decision"] in {"warn", "block"}:
+        try:
+            reverse = what_rests_on(str(notice_doi), graph=graph, depth=traced["depth"])
+            counted_ids = reverse.get("counted_answer_ids") or []
+            kind = reverse.get("notice_type") or "notice"
+            if kind == "expression_of_concern":
+                label = "Expression of Concern"
+            elif "retract" in str(kind):
+                label = "retraction"
+            else:
+                label = "publisher notice"
+            n = len(counted_ids) or int(reverse.get("answer_count") or 0)
+            impact = {
+                "notice_doi": reverse.get("notice_doi") or notice_doi,
+                "notice_type": reverse.get("notice_type"),
+                "root_doi": reverse.get("root_doi"),
+                "answer_count": reverse.get("answer_count") or 0,
+                "counted_answer_count": len(counted_ids),
+                "engines": reverse.get("engines") or [],
+                "cypher": reverse.get("cypher"),
+                "summary": (
+                    f"This {label} affects {n} checked "
+                    f"{'answer' if n == 1 else 'answers'} in this graph."
+                ),
+            }
+            if reverse.get("queries"):
+                queries.extend(reverse["queries"])
+        except Exception:
+            impact = None
     payload = {
         "product": "MoolTrace",
         "tagline": TAGLINE,
@@ -816,7 +863,7 @@ def check_answer(
         "exit_code": verdict["exit_code"],
         "summary": verdict["summary"],
         "pitch": pitch,
-        "reasons": [{**reason, "cypher": traced["cypher"]} for reason in verdict["reasons"]],
+        "reasons": [{**reason, "cypher": deciding_cypher} for reason in verdict["reasons"]],
         "discounted": verdict["discounted"],
         "unjudged_paths": verdict["unjudged_paths"],
         "unverified_paths": verdict.get("unverified_paths"),
@@ -827,6 +874,7 @@ def check_answer(
         "coverage": verdict.get("coverage"),
         "not_shown": verdict.get("not_shown"),
         "remediation_clusters": clusters,
+        "impact": impact,
         "answer_id": traced["answer_id"],
         "engine": traced["engine"],
         "depth": traced["depth"],
@@ -839,7 +887,7 @@ def check_answer(
         "errors": traced["errors"],
         "context_notes": traced.get("context_notes") or [],
         "queries": queries,
-        "cypher": traced["cypher"],
+        "cypher": deciding_cypher,
         "elapsed_ms": traced["elapsed_ms"],
         "limits": traced["limits"],
     }

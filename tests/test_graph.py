@@ -776,6 +776,52 @@ def test_what_rests_on_ignores_unrelated_answers(tmp_path: Path):
         graph.close()
 
 
+def test_sp_paths_prefers_low_cost_route(tmp_path: Path):
+    graph = Graph(tmp_path / "mooltrace.db")
+    try:
+        graph.merge_answer("a1", "nutrition-coach", "hash", "2026-10-15T00:00:00+00:00")
+        graph.merge_source("https://example.com/p", "Page", "example.com", True)
+        graph.cite("a1", "https://example.com/p")
+        graph.merge_work("10.1/review", title="Review")
+        graph.merge_work("10.1/trial", title="Trial")
+        graph.source_rests_on("https://example.com/p", "10.1/review")
+        graph.rest_on("10.1/review", "10.1/trial")
+        graph.set_reliance(
+            None,
+            "https://example.com/p",
+            "10.1/review",
+            reliance="mention",
+            weight=0.55,
+            sentence="page cites review",
+            evidence_from="page",
+        )
+        graph.set_reliance(
+            "10.1/review",
+            None,
+            "10.1/trial",
+            reliance="relies",
+            weight=1.0,
+            sentence="review relies on trial",
+            evidence_from="pmc",
+        )
+        graph.merge_notice(
+            "10.1/eoc",
+            "10.1/trial",
+            "expression_of_concern",
+            "EoC",
+            "publisher",
+            "2025-01-01",
+        )
+        run = graph.sp_paths("a1", depth=2)
+        assert "algo.SPpaths" in run.cypher
+        assert "weightProp: 'cost'" in run.cypher
+        assert run.rows
+        assert run.rows[0]["root_doi"] == "10.1/trial"
+        assert run.rows[0]["sp_cost"] is not None
+    finally:
+        graph.close()
+
+
 def test_page_rank_scores_work_nodes(tmp_path: Path):
     graph = Graph(tmp_path / "mooltrace.db")
     try:

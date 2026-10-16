@@ -492,6 +492,49 @@ def test_unresolved_doi_is_warn_not_pass(tmp_path: Path, monkeypatch):
         graph.close()
 
 
+def test_seeds_past_expand_cap_are_notice_checked(tmp_path: Path, monkeypatch):
+    graph = Graph(tmp_path / "mooltrace.db")
+    monkeypatch.setattr(config, "MAX_SEEDS_TO_EXPAND", 0)
+    monkeypatch.setattr("mooltrace.trace.openalex_work_doi", lambda *a, **k: None)
+    monkeypatch.setattr("mooltrace.trace.crossref_work", lambda *a, **k: None)
+    monkeypatch.setattr("mooltrace.trace.judge_citation_edges", lambda *a, **k: None)
+    monkeypatch.setattr("mooltrace.trace.pmc_to_doi", lambda *a, **k: {})
+    monkeypatch.setattr("mooltrace.trace.openalex_work_pmid", lambda *a, **k: None)
+
+    def fake_works(dois, stats):
+        return [
+            {
+                "DOI": "10.1016/s0140-6736(20)31180-6",
+                "title": ["Retracted paper"],
+                "updated-by": [
+                    {
+                        "DOI": "10.1016/s0140-6736(20)31324-6",
+                        "type": "retraction",
+                        "label": "Retraction",
+                        "source": "publisher",
+                    }
+                ],
+            }
+        ]
+
+    monkeypatch.setattr("mooltrace.trace.crossref_works", fake_works)
+    try:
+        payload = check_answer(
+            text="DOI 10.1016/S0140-6736(20)31180-6",
+            engine="cap",
+            depth=2,
+            graph=graph,
+        )
+        assert payload["decision"] in {"warn", "block"}
+        assert payload["exit_code"] != 0
+        row = graph.work_row("10.1016/s0140-6736(20)31180-6")
+        notices = graph.notices_for("10.1016/s0140-6736(20)31180-6")
+        assert row
+        assert notices.rows
+    finally:
+        graph.close()
+
+
 def test_empty_checked_work_does_not_pass(tmp_path: Path, monkeypatch):
     graph = Graph(tmp_path / "mooltrace.db")
     monkeypatch.setattr("mooltrace.trace.crossref_works", lambda dois, stats: [])

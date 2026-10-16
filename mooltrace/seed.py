@@ -1,8 +1,9 @@
 """Seed a demo graph from examples/ using live catalogs.
 
-Never writes the shared repo file data/mooltrace.db. Everyday Health is
-URL-only. Lancet is a short draft with a DOI. Neither file holds full
-article text. An Expression of Concern is not a retraction.
+Never writes the shared repo file data/mooltrace.db. Healthline is
+URL-only. Lancet is a short draft with a DOI. The third fixture cites a
+clean DOI. None of the files hold full article text. An Expression of
+Concern is not a retraction.
 """
 
 from __future__ import annotations
@@ -13,16 +14,18 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from mooltrace.config import EVERYDAY_HEALTH_URL, ROOT
+from mooltrace.config import CLEAN_REWRITE_DOI, HEALTHLINE_CINNAMON_URL, ROOT
 from mooltrace.graph import Graph, get_graph
 from mooltrace.trace import check_answer
 
 SHARED_DB = (ROOT / "data" / "mooltrace.db").resolve()
-HERO_ID = "nutrition-everyday-health"
+HERO_ID = "nutrition-healthline"
 LANCET_ID = "lancet-hcq"
+CLEAN_ID = "clean-jsps"
 DEMO_FILES = (
-    ROOT / "examples" / "answers.jsonl",
+    ROOT / "examples" / "healthline.jsonl",
     ROOT / "examples" / "lancet.jsonl",
+    ROOT / "examples" / "clean.jsonl",
 )
 
 
@@ -52,7 +55,7 @@ def _load_jsonl(path: Path) -> list[dict[str, Any]]:
 
 
 def load_demo_fixtures() -> list[dict[str, Any]]:
-    wanted = {HERO_ID, LANCET_ID}
+    wanted = {HERO_ID, LANCET_ID, CLEAN_ID}
     found: dict[str, dict[str, Any]] = {}
     for path in DEMO_FILES:
         for item in _load_jsonl(path):
@@ -65,12 +68,15 @@ def load_demo_fixtures() -> list[dict[str, Any]]:
     hero = found[HERO_ID]
     if hero.get("text"):
         raise SystemExit("hero fixture must be URL-only (empty text)")
-    if hero.get("urls") != [EVERYDAY_HEALTH_URL]:
-        raise SystemExit("hero fixture must cite the Everyday Health URL only")
+    if hero.get("urls") != [HEALTHLINE_CINNAMON_URL]:
+        raise SystemExit("hero fixture must cite the Healthline cinnamon URL only")
     lancet = found[LANCET_ID]
     if "10.1016/S0140-6736(20)31180-6" not in str(lancet.get("text") or ""):
         raise SystemExit("Lancet fixture must name the retracted paper DOI")
-    return [hero, lancet]
+    clean = found[CLEAN_ID]
+    if CLEAN_REWRITE_DOI not in str(clean.get("text") or ""):
+        raise SystemExit("clean fixture must name the clean rewrite DOI")
+    return [hero, lancet, clean]
 
 
 def _urls(row: dict[str, Any]) -> list[str]:
