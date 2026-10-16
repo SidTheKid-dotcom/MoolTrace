@@ -21,6 +21,28 @@ _DISCLOSE_CHUNK = re.compile(
     r"Evidence for this claim is under review \([^)]{0,240}\)",
     re.I,
 )
+_TITLE_PREFIX = re.compile(
+    r"^(RETRACTED|RETRACTION|WITHDRAWN|WITHDRAWAL)\s*:?\s*",
+    re.I,
+)
+_BAD_AUTHOR = frozenset(
+    {
+        "the",
+        "this",
+        "that",
+        "doi",
+        "a",
+        "an",
+        "retracted",
+        "retraction",
+        "withdrawn",
+        "withdrawal",
+        "expression",
+        "concern",
+        "notice",
+        "publisher",
+    }
+)
 _UNFLAGGED_SIBLING = """
 MATCH (review)-[:RESTS_ON]->(flagged:Work {doi: $doi})
 MATCH (review)-[r:RESTS_ON]->(sib:Work)
@@ -159,11 +181,12 @@ def _notice_label(payload: dict[str, Any]) -> tuple[str, str, str]:
     return label, doi, date
 
 
-def _eoc_disclose(payload: dict[str, Any]) -> str:
-    label, doi, date = _notice_label(payload)
+def _eoc_disclose(payload: dict[str, Any], span: str = "", graph=None) -> str:
+    label, _doi, date = _notice_label(payload)
+    author, year, _root = _study_cite(payload, span, graph)
+    if author != "the authors" and year != "n.d.":
+        return f"Evidence for this claim is under review ({author} {year}, {label})."
     bits = [label]
-    if valid_doi(doi):
-        bits.append(doi)
     if date:
         bits.append(date)
     return f"Evidence for this claim is under review ({', '.join(bits)})."
@@ -179,22 +202,68 @@ def _claim_topic(span: str) -> str:
     return " ".join(words).rstrip(":,")
 
 
-def _study_cite(payload: dict[str, Any], span: str) -> tuple[str, str, str]:
+def _family_name(value: Any) -> str:
+    raw = _TITLE_PREFIX.sub("", str(value or "").strip())
+    token = raw.split()[0] if raw else ""
+    token = token.strip(".,;:()[]\"'")
+    if not token or token.lower() in _BAD_AUTHOR:
+        return ""
+    if token.endswith(":") or token.upper() == "RETRACTED":
+        return ""
+    return token
+
+
+def _year_text(value: Any) -> str:
+    if value is None:
+        return ""
+    text = str(value).strip()
+    if not text or text.lower() in {"none", "n.d.", "nd"}:
+        return ""
+    try:
+        return str(int(float(text)))
+    except (TypeError, ValueError):
+        match = re.search(r"((?:19|20)\d{2})", text)
+        return match.group(1) if match else ""
+
+
+def _study_cite(
+    payload: dict[str, Any],
+    span: str = "",
+    graph=None,
+) -> tuple[str, str, str]:
     reason = next((item for item in payload.get("reasons") or [] if item.get("code")), {})
-    root = clean_doi(str(reason.get("root_doi") or ""))
-    year = ""
-    author = ""
+    root = clean_doi(str(reason.get("root_doi") or (reason.get("root") or {}).get("doi") or ""))
+    year = _year_text(reason.get("root_year") or (reason.get("root") or {}).get("year"))
+    author = _family_name(
+        reason.get("root_author") or (reason.get("root") or {}).get("first_author")
+    )
     for step in reason.get("steps") or []:
-        if clean_doi(str(step.get("doi") or "")) == root:
-            year = str(step.get("year") or "").strip()
-            title = str(step.get("title") or "").strip()
-            if title:
-                author = title.split()[0]
+        if root and clean_doi(str(step.get("doi") or "")) != root:
+            continue
+        year = year or _year_text(step.get("year"))
+        author = author or _family_name(step.get("first_author"))
+        if author and year:
             break
+    if graph is not None and root and (not author or not year):
+        try:
+            row = graph.work_row(root)
+        except Exception:
+            row = None
+        if row:
+            author = author or _family_name(row.get("first_author"))
+            year = year or _year_text(row.get("year"))
     if not author:
-        match = re.search(r"\b([A-Z][a-z]{2,})\b(?:\s+and\s+colleagues)?", span or "")
-        if match and match.group(1).lower() not in {"the", "this", "doi", "a"}:
-            author = match.group(1)
+        match = re.search(
+            r"\b([A-Z][a-z]{2,})\s+and\s+colleagues\b"
+            r"|\b([A-Z][a-z]{2,})\s+et\s+al\b",
+            span or "",
+        )
+        if match:
+            author = _family_name(match.group(1) or match.group(2))
+    if not author:
+        match = re.search(r"\b([A-Z][a-z]{2,})\b", span or "")
+        if match:
+            author = _family_name(match.group(1))
     if not year:
         match = re.search(r"\b((?:19|20)\d{2})\b", span or "")
         if match:
@@ -202,27 +271,23 @@ def _study_cite(payload: dict[str, Any], span: str) -> tuple[str, str, str]:
     return author or "the authors", year or "n.d.", root
 
 
-def _retraction_sentence(payload: dict[str, Any], span: str = "") -> str:
-    label, notice, date = _notice_label(payload)
-    author, year, root = _study_cite(payload, span)
+def _retraction_sentence(payload: dict[str, Any], span: str = "", graph=None) -> str:
+    _label, _notice, date = _notice_label(payload)
+    author, year, _root = _study_cite(payload, span, graph)
     topic = _claim_topic(span)
-    study = f"{author} {year}"
-    if valid_doi(root):
-        study = f"{study}, {root}"
     when = date or "an unknown date"
-    notice_bit = f" (notice {notice})" if valid_doi(notice) else ""
     return (
-        f"{topic}: the study this relied on ({study}) was retracted on "
-        f"{when}{notice_bit}. This claim has been removed."
+        f"{topic}: the study this relied on ({author} {year}) was retracted on "
+        f"{when}. This claim has been removed."
     )
 
 
-def _disclose(payload: dict[str, Any], span: str = "") -> str:
+def _disclose(payload: dict[str, Any], span: str = "", graph=None) -> str:
     reason = next((item for item in payload.get("reasons") or [] if item.get("code")), {})
     code = str(reason.get("code") or "")
     if code in {"retraction", "withdrawal"}:
-        return _retraction_sentence(payload, span)
-    return _eoc_disclose(payload)
+        return _retraction_sentence(payload, span, graph)
+    return _eoc_disclose(payload, span, graph)
 
 
 def _sibling_doi(graph, flagged_dois: set[str]) -> str | None:
@@ -244,7 +309,7 @@ def _replacement(payload: dict[str, Any], graph=None, span: str = "") -> str:
     reason = next((item for item in payload.get("reasons") or [] if item.get("code")), {})
     code = str(reason.get("code") or "")
     if code in {"retraction", "withdrawal"}:
-        return _retraction_sentence(payload, span)
+        return _retraction_sentence(payload, span, graph)
     dois, _urls = _flagged(payload)
     sibling = _sibling_doi(graph, dois)
     if sibling:
@@ -252,7 +317,7 @@ def _replacement(payload: dict[str, Any], graph=None, span: str = "") -> str:
             f"A related study already on this path, with no publisher notice "
             f"in range, is DOI {sibling}."
         )
-    return _eoc_disclose(payload)
+    return _eoc_disclose(payload, span, graph)
 
 
 def template_rewrite(
@@ -270,9 +335,6 @@ def template_rewrite(
         for url in (urls or [])
         if url and url.rstrip("/") not in flagged_urls
     ]
-    live = extract_identifiers(original)
-    live_dois = {clean_doi(doi) for doi in live.dois if clean_doi(doi) not in dois}
-    only_page = bool(flagged_urls) and not kept_urls and not live_dois
     if not original.strip():
         rewritten = _replacement(payload, graph)
         return {
@@ -285,23 +347,13 @@ def template_rewrite(
     pieces: list[str] = []
     changed = False
     for span in spans:
-        hit = _span_hits(span, dois, flagged_urls) or (
-            only_page and not _DISCLOSE_CHUNK.search(span)
-        )
-        if hit:
+        if _span_hits(span, dois, flagged_urls):
             replacement = _replacement(payload, graph, span)
             pieces.append(replacement + (" " if span.endswith(" ") else ""))
             changed = True
         else:
             pieces.append(span)
-    if not changed:
-        rewritten = original
-    else:
-        rewritten = "".join(pieces)
-        rewritten = re.sub(r"[ \t]+\n", "\n", rewritten)
-        rewritten = re.sub(r"  +", " ", rewritten).strip()
-        if original.endswith("\n") and not rewritten.endswith("\n"):
-            rewritten += "\n"
+    rewritten = original if not changed else "".join(pieces)
     return {
         "text": rewritten,
         "urls": kept_urls,
@@ -325,10 +377,13 @@ def _azure_rewrite(
         "Rewrite ONLY the sentences whose citations reach these flagged "
         "URLs or DOIs. Keep every other sentence byte-identical.\n"
         f"{sorted(dois | flagged_urls)}\n"
-        f"Publisher notice: {label} {notice_doi} {date}\n"
+        f"Publisher notice type: {label} date {date}\n"
+        "Name the flagged study as first author plus year. "
+        "Never write RETRACTED:. Never cite the notice DOI "
+        f"{notice_doi}.\n"
         "If you cannot name an on-topic replacement already in the draft's "
         "own citation graph, replace the affected sentence with: "
-        f"{_disclose(payload, text)}\n"
+        f"{_disclose(payload, text, graph)}\n"
         "Never invent a citation. Never cite an unrelated paper. "
         "Never say a retraction is under review. "
         "Do not call an Expression of Concern a retraction.\n\n"
@@ -347,6 +402,14 @@ def _azure_rewrite(
     }
     if still_cites(proposal["text"], proposal["urls"], payload):
         return None
+    if "RETRACTED:" in drafted:
+        return None
+    if valid_doi(notice_doi) and notice_doi.lower() in drafted.lower():
+        return None
+    dois, urls_set = _flagged(payload)
+    for span in _join_citation_tails(_split_spans(text), dois, urls_set):
+        if not _span_hits(span, dois, urls_set) and span not in drafted:
+            return None
     return proposal
 
 

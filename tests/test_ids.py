@@ -148,3 +148,12 @@ def test_extract_skips_rewrite_disclosures():
     )
     assert extract_identifiers(eoc).dois == []
     assert is_disclosure_only(eoc, [])
+    named = (
+        "Hydroxychloroquine outcomes: the study this relied on "
+        "(Mehra 2020) was retracted on 2020-06-05. This claim has been removed."
+    )
+    assert extract_identifiers(named).dois == []
+    assert is_disclosure_only(named, [])
+    eoc_named = "Evidence for this claim is under review (Khan 2003, Expression of Concern)."
+    assert extract_identifiers(eoc_named).dois == []
+    assert is_disclosure_only(eoc_named, [])

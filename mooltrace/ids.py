@@ -29,7 +29,7 @@ _EOC_DISCLOSE = re.compile(
 )
 _RETRACT_DISCLOSE = re.compile(
     r"the study this relied on \((?:[^()]|\([^()]*\))*\) was retracted on "
-    r"[^.]*? \(notice (?:[^()]|\([^()]*\))*\)\. This claim has been removed\.?",
+    r".+?\. This claim has been removed\.?",
     re.I,
 )
 _PUBLISHER_SUFFIXES = (
