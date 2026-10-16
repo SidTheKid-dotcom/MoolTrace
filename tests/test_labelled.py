@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_labelled_file_schema_and_balance():
     rows = load_labelled()
     assert Path(DEFAULT_FILE).resolve() == (ROOT / "examples" / "labelled.jsonl").resolve()
-    assert len(rows) == 42
+    assert len(rows) == 52
     ids = [row["id"] for row in rows]
     assert len(ids) == len(set(ids))
     families = {row["family"] for row in rows}
@@ -26,11 +26,11 @@ def test_labelled_file_schema_and_balance():
     assert counts["retraction"] == 4
     assert counts["hedged"] == 6
     assert counts["clean"] == 6
-    assert counts["no_sources"] == 3
+    assert counts["no_sources"] == 4
     assert counts["depth"] == 3
-    assert counts["page"] == 4
-    assert counts["identifier"] == 5
-    assert counts["i18n"] == 3
+    assert counts["page"] == 8
+    assert counts["identifier"] == 9
+    assert counts["i18n"] == 4
     for row in rows:
         assert row["expected"] in {"pass", "warn", "block"}
         assert isinstance(row.get("urls"), list)
