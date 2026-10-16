@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import { PathDiagram } from "@/components/path-diagram"
+import { decidingReason } from "@/lib/path-diagram"
 import { stepLabel } from "@/lib/step-label"
 
 type Step = { kind?: string; doi?: string | null; title?: string | null; url?: string | null; year?: number | null }
@@ -190,6 +192,7 @@ export function PreShip() {
   }
 
   const counted = (result?.reasons || []).filter((reason) => reason.code && reason.code !== "incomplete")
+  const deciding = decidingReason(counted)
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
@@ -327,6 +330,12 @@ export function PreShip() {
                 {result.pitch ? <CardDescription>{result.pitch}</CardDescription> : null}
               </CardHeader>
               <CardContent className="flex flex-col gap-5">
+                {deciding ? (
+                  <PathDiagram
+                    key={`${deciding.notice_doi || ""}-${deciding.steps?.[0]?.url || deciding.steps?.[0]?.doi || ""}`}
+                    reason={deciding}
+                  />
+                ) : null}
                 {counted.length === 0 ? (
                   <p className="text-sm leading-6 text-muted-foreground">{result.limits}</p>
                 ) : null}
