@@ -831,27 +831,6 @@ def test_sp_paths_prefers_low_cost_route(tmp_path: Path):
         graph.close()
 
 
-def test_page_rank_scores_work_nodes(tmp_path: Path):
-    graph = Graph(tmp_path / "mooltrace.db")
-    try:
-        graph.merge_work("10.1370/afm.1517", title="Allen")
-        graph.merge_work("10.2337/diacare.26.12.3215", title="Khan")
-        graph.rest_on("10.1370/afm.1517", "10.2337/diacare.26.12.3215")
-        procs = graph.run(
-            "procedures",
-            "CALL dbms.procedures() YIELD name RETURN name",
-            read_only=True,
-        )
-        assert any("pageRank" in str(row.get("name") or "") for row in procs.rows)
-        run = graph.page_rank()
-        assert "algo.pageRank" in run.cypher
-        dois = {row.get("doi") for row in run.rows}
-        assert "10.2337/diacare.26.12.3215" in dois
-        assert all("score" in row for row in run.rows)
-    finally:
-        graph.close()
-
-
 def test_depth_cap_is_honored(tmp_path: Path):
     graph = Graph(tmp_path / "mooltrace.db")
     try:

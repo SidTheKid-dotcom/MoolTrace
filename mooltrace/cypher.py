@@ -100,16 +100,6 @@ RETURN n.doi AS notice_doi,
        size([u IN collect(DISTINCT s.url) WHERE u IS NOT NULL]) AS source_count
 """.strip()
 
-# PageRank over Work nodes connected by RESTS_ON. Used to rank which
-# counted notice is shown first. Validated on FalkorDBLite 0.10.0.
-PAGERANK_WORKS = """
-CALL algo.pageRank('Work', 'RESTS_ON')
-YIELD node, score
-RETURN node.doi AS doi, score
-ORDER BY score DESC
-LIMIT 50
-""".strip()
-
 # Weakly connected Work clusters that contain a publisher notice.
 # Validated on FalkorDBLite 0.10.0: CALL algo.WCC({nodeLabels, relationshipTypes}).
 # Join answers at one Source-RESTS_ON hop: WCC already collected every Work

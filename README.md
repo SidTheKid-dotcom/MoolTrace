@@ -235,12 +235,7 @@ CALL algo.WCC({nodeLabels: ['Work'], relationshipTypes: ['RESTS_ON']})
 YIELD node, componentId
 ```
 
-```cypher
-CALL algo.pageRank('Work', 'RESTS_ON')
-YIELD node, score
-```
-
-That groups answers that share a Work component containing a publisher notice. The fixture batch report includes these clusters. `algo.SPpaths` with cost `-ln(weight)` is the verdict. `algo.pageRank` is not the verdict. `algo.MaxFlow` is not registered in this build. Independent sources are distinct citers on counted paths.
+That groups answers that share a Work component containing a publisher notice. The fixture batch report includes these clusters. `algo.SPpaths` with cost `-ln(weight)` is the verdict. `algo.MaxFlow` is not registered in this build. Independent sources are distinct citers on counted paths.
 
 ## Why a graph
 
