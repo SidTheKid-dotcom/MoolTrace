@@ -86,7 +86,7 @@ The web UI is an evidence viewer for the demo, not the core claim. MCP is an edi
 docker compose up --build
 ```
 
-Open [http://127.0.0.1:4318](http://127.0.0.1:4318). API health is [http://127.0.0.1:4317/health](http://127.0.0.1:4317/health). Compose publishes those ports on loopback only. Three presets: **Healthline cinnamon** (URL-only counted 2-hop, page → Silva 2022 → Khan Expression of Concern, warn), Lancet 2020 (block: retraction), and a clean DOI (pass at depth 2). Expression of Concern, not a retraction. First boot seeds those three into `/data/demo.db` (a Compose volume, not `data/mooltrace.db`). After a warn or block, **Rewrite and recheck** drops the flagged citations. The Cypher panel shows `algo.SPpaths`. No copyrighted full text. This does not say cinnamon works or does not. Private, loopback, and credentialed URLs stay refused. There is no public host URL in this checkout: Railway, Fly, and Render were not logged in. Later: `railway login && railway init && railway up` or `fly auth login && fly launch` or `render login`.
+Open [http://127.0.0.1:4318](http://127.0.0.1:4318). API health is [http://127.0.0.1:4317/health](http://127.0.0.1:4317/health). Compose publishes those ports on loopback only. Three presets from recorded live runs on 16 Oct 2026: **Healthline olive oil** (URL-only counted 2-hop, page `mention` 0.55 → Schwingshackl 2014 `mention` 0.55 → Estruch 2013 retraction `10.1056/nejmc1806491` 2018-06-13, `Decided by: algo.SPpaths, path strength 0.30`, block), **Healthline cinnamon** (URL-only counted 2-hop, page → Silva 2022 `relies` 1.0 → Khan Expression of Concern, path strength 0.55, warn), and a clean DOI (pass at depth 2). Both olive-oil hops are `mention`; do not read that as the review relying on the trial. The 2013 trial was retracted and republished in 2018 after re-analysis. Expression of Concern is not a retraction. First boot seeds those three into `/data/demo.db` (a Compose volume, not `data/mooltrace.db`). After a warn or block, **Rewrite and recheck** drops the flagged citations. The Cypher panel shows `algo.SPpaths`. No copyrighted full text. This does not say olive oil, cinnamon, or the Mediterranean diet works or does not. Private, loopback, and credentialed URLs stay refused. There is no public host URL in this checkout yet; Lightsail commands are in `SHIP_CHECKLIST.md`.
 
 ## Use from an AI agent
 
@@ -331,7 +331,7 @@ MoolTrace code in this repository was written with Cursor agents (including Grok
 2. `python -m mooltrace batch examples/answers.jsonl --fail-on block` (exit 0; warns are annotated).
 3. URL-only Healthline `--summary` twice on the same DB. 16 Oct 2026: cold 47–49 s (~119–121 API calls), warm 23 s (26 API calls), still warn. Do not claim zero API calls on the warm path.
 4. `python -m mooltrace batch examples/lancet.jsonl --fail-on block` (exit 1) → block on the retraction notice, not the earlier EoC.
-5. UI presets are Healthline cinnamon (counted 2-hop), Lancet 2020 (block), and the clean DOI. The Cypher panel shows `algo.SPpaths`. Rewrite and recheck on a warn.
+5. UI presets are Healthline olive oil (block, path strength 0.30), Healthline cinnamon (warn, path strength 0.55), and the clean DOI. The Cypher panel shows `algo.SPpaths`. Rewrite and recheck on a warn.
 6. `ro_cypher` with `CONTAINS 'set'` is allowed; `CREATE` is rejected; GRAPH.RO_QUERY is the write barrier.
 7. Public repo, 2:50 video, Track 1, AWS/FalkorDB shown, AI tools listed.
 8. `python -m pytest tests/test_labelled.py` (schema). Optional live: `python -m mooltrace labelled --limit 2`.

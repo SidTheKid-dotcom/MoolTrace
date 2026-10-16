@@ -90,22 +90,22 @@ type Rewrite = {
 
 const PRESETS = [
   {
+    id: "olive-oil",
+    label: "Healthline olive oil (block)",
+    hint: "URL-only page → Schwingshackl 2014 review → Estruch 2013 retraction (mention × mention)",
+    engine: "nutrition-coach",
+    depth: 3,
+    text: "",
+    urls: ["https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil"],
+  },
+  {
     id: "healthline",
     label: "Healthline cinnamon (warn)",
-    hint: "URL-only page, counted 2-hop to an Expression of Concern",
+    hint: "URL-only page, counted 2-hop to an Expression of Concern, not a retraction",
     engine: "nutrition-coach",
     depth: 2,
     text: "",
     urls: ["https://www.healthline.com/nutrition/cinnamon-and-diabetes"],
-  },
-  {
-    id: "lancet",
-    label: "Lancet 2020 HCQ (block)",
-    hint: "Retracted registry paper",
-    engine: "patient-chatbot",
-    depth: 1,
-    text: "A draft patient note says a 2020 Lancet registry analysis by Mehra and colleagues reported outcomes for hydroxychloroquine. DOI 10.1016/S0140-6736(20)31180-6. This note is not a recommendation to start or stop a medicine.",
-    urls: [] as string[],
   },
   {
     id: "clean",
@@ -315,7 +315,7 @@ export function PreShip() {
   useEffect(() => {
     if (typeof window === "undefined") return
     const id = new URLSearchParams(window.location.search).get("preset")
-    if (id === "healthline" || id === "lancet" || id === "clean") {
+    if (id === "olive-oil" || id === "healthline" || id === "clean") {
       applyPreset(id)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -480,7 +480,7 @@ export function PreShip() {
           <CardHeader>
             <CardTitle>Nothing checked yet</CardTitle>
             <CardDescription>
-              Three presets: Healthline cinnamon (warn), Lancet 2020 HCQ (block), Clean study
+              Three presets: Healthline olive oil (block), Healthline cinnamon (warn), Clean study
               (pass). A warn or a block shows the deciding path, the sentence at each hop, and the
               FalkorDB algo.SPpaths call.
             </CardDescription>
@@ -517,9 +517,10 @@ export function PreShip() {
       {rewrite?.recheck ? <ResultCard result={rewrite.recheck} /> : null}
 
       <footer className="text-xs leading-5 text-muted-foreground">
-        An Expression of Concern is not a retraction. Khan 2003 carries an Expression of Concern;
-        the 2020 Lancet hydroxychloroquine registry analysis was retracted. OpenAlex can still mark
-        Khan as not retracted. This demo does not say a food or a medicine works or does not work.
+        An Expression of Concern is not a retraction. The olive-oil path reaches Estruch 2013, which
+        was retracted and republished in 2018 after re-analysis (notice 10.1056/nejmc1806491). Khan
+        2003 carries an Expression of Concern. This demo does not say a food or a medicine works or
+        does not work. Both olive-oil hops are mention 0.55, not relies.
         Citation-context sentences may include{" "}
         <a className="underline" href="https://www.semanticscholar.org/">
           Semantic Scholar

@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from mooltrace.config import CLEAN_REWRITE_DOI, HEALTHLINE_CINNAMON_URL, ROOT
-from mooltrace.seed import CLEAN_ID, HERO_ID, LANCET_ID, SHARED_DB, demo_db_path, load_demo_fixtures
+from mooltrace.seed import BLOCK_ID, CLEAN_ID, SHARED_DB, WARN_ID, demo_db_path, load_demo_fixtures
 
 
 def test_demo_db_path_refuses_missing_env(monkeypatch):
@@ -22,18 +22,18 @@ def test_demo_db_path_refuses_shared_file(monkeypatch, tmp_path):
     assert demo_db_path() == other.resolve()
 
 
-def test_demo_fixtures_are_url_only_hero_and_lancet_block():
-    hero, lancet, clean = load_demo_fixtures()
-    assert hero["id"] == HERO_ID
-    assert hero["text"] == ""
-    assert hero["urls"] == [HEALTHLINE_CINNAMON_URL]
-    assert lancet["id"] == LANCET_ID
-    assert "10.1016/S0140-6736(20)31180-6" in lancet["text"]
-    assert len(lancet["text"]) < 500
-    assert "hydroxychloroquine" in lancet["text"].lower()
+def test_demo_fixtures_are_url_only_olive_oil_block_and_cinnamon_warn():
+    block, warn, clean = load_demo_fixtures()
+    assert block["id"] == BLOCK_ID
+    assert block["text"] == ""
+    assert block["urls"] == ["https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil"]
+    assert int(block.get("depth") or 0) == 3
+    assert warn["id"] == WARN_ID
+    assert warn["text"] == ""
+    assert warn["urls"] == [HEALTHLINE_CINNAMON_URL]
     assert clean["id"] == CLEAN_ID
     assert CLEAN_REWRITE_DOI in clean["text"]
-    joined = hero["text"] + lancet["text"] + clean["text"]
+    joined = block["text"] + warn["text"] + clean["text"]
     assert "Introduction" not in joined
     assert "<html" not in joined.lower()
 

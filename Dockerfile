@@ -1,4 +1,4 @@
-# FastAPI (4317) + Next.js viewer (4318). Live catalogs only; no mock graph.
+# FastAPI (4317) + Next.js viewer (4318). Hosted demo sets MOOLTRACE_PUBLIC_DEMO=1.
 # Compose writes /data/demo.db. It never mounts data/mooltrace.db.
 
 FROM python:3.14-slim-trixie AS api

@@ -1,16 +1,87 @@
 {
-  "note": "Hops recorded from live fetches. Not the handwritten 0.85 × 0.85 = 0.72 seed.",
+  "note": "Hops recorded from live MoolTrace runs on throwaway graphs. data/mooltrace.db was not opened.",
   "presets": [
+    {
+      "id": "nutrition-olive-oil",
+      "decision": "block",
+      "fetch_date": "2026-10-16",
+      "label": "recorded live run on 2026-10-16, content hash 6bf731b68f3b0f2781322d21de0e9702c972fb16cc7fdd8ba73237cfa257f570",
+      "sources": [
+        {
+          "url": "https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil",
+          "title": "11 Proven Benefits of Olive Oil",
+          "site": "healthline.com",
+          "fetched_at": "2026-10-16T15:52:36+00:00"
+        }
+      ],
+      "works": [
+        {
+          "doi": "10.1186/1476-511x-13-154",
+          "title": "Monounsaturated fatty acids, olive oil and health status: a systematic review and meta-analysis of cohort studies",
+          "year": 2014,
+          "first_author": "Schwingshackl",
+          "expanded": true,
+          "notice_checked": true,
+          "notice_checked_at": "2026-10-16T15:52:41+00:00"
+        },
+        {
+          "doi": "10.1056/nejmoa1200303",
+          "title": "RETRACTED: Primary Prevention of Cardiovascular Disease with a Mediterranean Diet",
+          "year": 2013,
+          "first_author": "Estruch",
+          "expanded": false,
+          "notice_checked": true,
+          "notice_checked_at": "2026-10-16T15:52:39+00:00"
+        }
+      ],
+      "hops": [
+        {
+          "from_url": "https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil",
+          "to_doi": "10.1186/1476-511x-13-154",
+          "reliance": "mention",
+          "weight": 0.55,
+          "sentence": "Monounsaturated fatty acids, olive oil and health status: A systematic review and meta-analysis of cohort studies.",
+          "evidence_from": "page",
+          "source_url": "https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil",
+          "fetched_at": "2026-10-16T15:52:44+00:00",
+          "content_hash": "6bf731b68f3b0f2781322d21de0e9702c972fb16cc7fdd8ba73237cfa257f570",
+          "recorded_at": "2026-10-16T15:52:44+00:00"
+        },
+        {
+          "from_doi": "10.1186/1476-511x-13-154",
+          "to_doi": "10.1056/nejmoa1200303",
+          "reliance": "mention",
+          "weight": 0.55,
+          "sentence": "Estruch R, Ros E, Salas-Salvado J, Covas MI, Corella D, Aros F, Gomez-Gracia E, Ruiz-Gutierrez V, Fiol M, Lapetra J, Lamuela-Raventos RM, Serra-Majem L, Pintó X, Basora J, Muñoz MA, Sorlí JV, Martínez JA, Martínez-González MA.",
+          "evidence_from": "pmc_html",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4198773/",
+          "fetched_at": "2026-10-16T15:52:47+00:00",
+          "content_hash": "ad5e550cd77f254da6608bcc81c974d2b104a75b750d4335c588469f85cefa67",
+          "recorded_at": "2026-10-16T15:52:47+00:00"
+        }
+      ],
+      "notices": [
+        {
+          "doi": "10.1056/nejmc1806491",
+          "work_doi": "10.1056/nejmoa1200303",
+          "type": "retraction",
+          "label": "Retraction",
+          "source": "retraction-watch",
+          "date": "2018-06-13"
+        }
+      ]
+    },
     {
       "id": "nutrition-healthline",
       "decision": "warn",
       "fetch_date": "2026-10-16",
+      "label": "recorded live run on 2026-10-16, content hash 011e322c612b01c503d463a07e6979ffffc1c37c64c92d21dc3f1694c640d8c8",
       "sources": [
         {
           "url": "https://www.healthline.com/nutrition/cinnamon-and-diabetes",
           "title": "How Cinnamon Lowers Blood Sugar and Fights Diabetes",
           "site": "healthline.com",
-          "fetched_at": "2026-10-16T13:43:11+00:00"
+          "fetched_at": "2026-10-16T15:54:18+00:00"
         }
       ],
       "works": [
@@ -21,16 +92,16 @@
           "first_author": "Silva",
           "expanded": true,
           "notice_checked": true,
-          "notice_checked_at": "2026-10-15T15:26:07+00:00"
+          "notice_checked_at": "2026-10-16T15:54:31+00:00"
         },
         {
           "doi": "10.2337/diacare.26.12.3215",
           "title": "Cinnamon Improves Glucose and Lipids of People With Type 2 Diabetes",
           "year": 2003,
           "first_author": "Khan",
-          "expanded": true,
+          "expanded": false,
           "notice_checked": true,
-          "notice_checked_at": "2026-10-15T14:25:04+00:00"
+          "notice_checked_at": "2026-10-16T15:54:31+00:00"
         }
       ],
       "hops": [
@@ -41,16 +112,22 @@
           "weight": 0.55,
           "sentence": "Cinnamon as a complementary therapeutic approach for dysglycemia and dyslipidemia control in type 2 diabetes mellitus and its molecular mechanism of action: A review.",
           "evidence_from": "page",
-          "recorded_at": "2026-10-16T13:43:11+00:00"
+          "source_url": "https://www.healthline.com/nutrition/cinnamon-and-diabetes",
+          "fetched_at": "2026-10-16T15:55:25+00:00",
+          "content_hash": "011e322c612b01c503d463a07e6979ffffc1c37c64c92d21dc3f1694c640d8c8",
+          "recorded_at": "2026-10-16T15:55:25+00:00"
         },
         {
           "from_doi": "10.3390/nu14132773",
           "to_doi": "10.2337/diacare.26.12.3215",
           "reliance": "relies",
           "weight": 1.0,
-          "sentence": "Khan et al. demonstrated that the administration of either 1, 3, or 6 g for 40 days of C. cassia decreased triglycerides (TG) levels and total cholesterol (TC) levels [ 15 ].",
-          "evidence_from": "europepmc_xml",
-          "recorded_at": "2026-10-15T15:27:28+00:00"
+          "sentence": "cassia decreased triglycerides (TG) levels and total cholesterol (TC) levels [15].",
+          "evidence_from": "semantic_scholar",
+          "source_url": "https://api.semanticscholar.org/graph/v1/paper/DOI:10.3390%2Fnu14132773/references?fields=contexts,citedPaper.externalIds&limit=200&offset=0",
+          "fetched_at": "2026-10-16T15:55:59+00:00",
+          "content_hash": "470abf43c6876897121f4463577799c46f8fa5e47d3fa74afceb28d1d4563f36",
+          "recorded_at": "2026-10-16T15:55:59+00:00"
         }
       ],
       "notices": [
@@ -65,60 +142,16 @@
       ]
     },
     {
-      "id": "lancet-hcq",
-      "decision": "block",
-      "fetch_date": "2026-10-15",
-      "sources": [
-        {
-          "url": "paste",
-          "title": "Pasted draft",
-          "site": "paste",
-          "fetched_at": "2026-10-15T05:30:00+00:00"
-        }
-      ],
-      "works": [
-        {
-          "doi": "10.1016/s0140-6736(20)31180-6",
-          "title": "Hydroxychloroquine or chloroquine with or without a macrolide",
-          "year": 2020,
-          "first_author": "Mehra",
-          "expanded": true,
-          "notice_checked": true,
-          "notice_checked_at": "2026-10-15T05:30:00+00:00"
-        }
-      ],
-      "hops": [
-        {
-          "from_url": "paste",
-          "to_doi": "10.1016/s0140-6736(20)31180-6",
-          "reliance": "relies",
-          "weight": 1.0,
-          "sentence": "A draft patient note says a 2020 Lancet registry analysis by Mehra and colleagues reported outcomes for hydroxychloroquine.",
-          "evidence_from": "draft",
-          "recorded_at": "2026-10-16T13:43:11+00:00"
-        }
-      ],
-      "notices": [
-        {
-          "doi": "10.1016/s0140-6736(20)31324-6",
-          "work_doi": "10.1016/s0140-6736(20)31180-6",
-          "type": "retraction",
-          "label": "Retraction",
-          "source": "publisher",
-          "date": "2020-06-05"
-        }
-      ]
-    },
-    {
       "id": "clean-jsps",
       "decision": "pass",
-      "fetch_date": "2026-10-15",
+      "fetch_date": "2026-10-16",
+      "label": "recorded live run on 2026-10-16, content hash 630d9acb0c7d306a71209000acb1d7c7c514d3b2f8d4646cb7ec186913e53636",
       "sources": [
         {
           "url": "paste",
           "title": "Pasted draft",
           "site": "paste",
-          "fetched_at": "2026-10-15T15:26:14+00:00"
+          "fetched_at": "2026-10-16T15:56:44+00:00"
         }
       ],
       "works": [
@@ -129,7 +162,7 @@
           "first_author": "Asmat",
           "expanded": true,
           "notice_checked": true,
-          "notice_checked_at": "2026-10-15T15:26:14+00:00"
+          "notice_checked_at": "2026-10-16T15:56:44+00:00"
         }
       ],
       "hops": [
@@ -140,7 +173,10 @@
           "weight": 0.55,
           "sentence": "10.1016/j.jsps.2015.03.013",
           "evidence_from": "draft",
-          "recorded_at": "2026-10-16T13:43:11+00:00"
+          "source_url": "urn:mooltrace:paste:clean-jsps",
+          "fetched_at": "2026-10-16T15:56:44+00:00",
+          "content_hash": "630d9acb0c7d306a71209000acb1d7c7c514d3b2f8d4646cb7ec186913e53636",
+          "recorded_at": "2026-10-16T15:56:44+00:00"
         }
       ],
       "notices": []

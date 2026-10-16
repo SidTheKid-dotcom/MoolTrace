@@ -16,9 +16,7 @@ services:
       MOOLTRACE_MAILTO: mooltrace-demo@example.com
       MOOLTRACE_CORS_ORIGINS: "http://127.0.0.1:4318,http://localhost:4318"
       MOOLTRACE_SEED: "1"
-      AZURE_INFERENCE_ENDPOINT: ${AZURE_INFERENCE_ENDPOINT:-}
-      AZURE_INFERENCE_API_KEY: ${AZURE_INFERENCE_API_KEY:-}
-      AZURE_INFERENCE_MODEL: ${AZURE_INFERENCE_MODEL:-}
+      MOOLTRACE_PUBLIC_DEMO: "1"
     volumes:
       - mooltrace-demo:/data
     ports:

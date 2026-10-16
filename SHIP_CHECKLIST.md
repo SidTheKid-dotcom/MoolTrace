@@ -32,24 +32,55 @@ git rev-parse HEAD origin/main
 
 Open the public GitHub README signed-out. Check: screenshot PNG, mermaid diagram, CI snippet, MCP JSON, Honest results table.
 
-## 4. Hosted demo
+## 4. Hosted demo (AWS Lightsail, ap-south-1)
 
-This session had **no** Railway / Fly / Hugging Face / Render token. Do not paste a fake URL.
+`aws sts get-caller-identity` worked on 16 Oct 2026 (account `533267274451`). The public HTTPS URL is:
 
-When a login exists, pick one:
+https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/
+
+Read-only demo: `MOOLTRACE_PUBLIC_DEMO=1`, no `MOOLTRACE_PUBLIC_LIVE`, no Azure env vars. Power **micro** (1 GB, at most micro), scale 1, tag `project=mooltrace`. No other paid resources.
+
+Exact commands used:
 
 ```bash
-# Fly (API only in fly.toml — add a web process or a combined image before going live)
-fly auth login
-fly launch --copy-config --yes
-# or
-railway login && railway init && railway up
+aws sts get-caller-identity
+# lightsailctl must be on PATH (AWS CLI plugin for push-container-image)
+# curl -fsSL https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl -o ~/.local/bin/lightsailctl && chmod +x ~/.local/bin/lightsailctl
+
+aws lightsail create-container-service \
+  --region ap-south-1 \
+  --service-name mooltrace \
+  --power micro \
+  --scale 1 \
+  --tags key=project,value=mooltrace
+
+docker build --target api -t mooltrace-api:latest .
+docker build --target web -t mooltrace-web:latest \
+  --build-arg MOOLTRACE_API_ORIGIN=http://localhost:4317 .
+
+aws lightsail push-container-image --region ap-south-1 \
+  --service-name mooltrace --label api --image mooltrace-api:latest
+aws lightsail push-container-image --region ap-south-1 \
+  --service-name mooltrace --label web --image mooltrace-web:latest
+
+aws lightsail create-container-service-deployment \
+  --region ap-south-1 \
+  --cli-input-json file://deploy/lightsail-deployment.json
 ```
 
-Public demo **must** set `MOOLTRACE_PUBLIC_DEMO=1` (offline presets, no arbitrary URL fetch). Optional live checks: `MOOLTRACE_PUBLIC_LIVE=1` plus the existing SSRF guard. Signed-out check:
+Signed-out check (web is the public endpoint; API is localhost inside the service):
 
 ```bash
-curl -sI https://<host>/health
+curl -sI https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/
+curl -sS -X POST https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/nw/check-answer \
+  -H 'content-type: application/json' \
+  -d '{"text":"","urls":["https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil"],"engine":"nutrition-coach","depth":3}'
+```
+
+### Teardown (stops billing)
+
+```bash
+aws lightsail delete-container-service --region ap-south-1 --service-name mooltrace
 ```
 
 Paste the URL into README **outside** the `## Demo` compose section, and into `SUBMISSION.md`.

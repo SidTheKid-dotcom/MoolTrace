@@ -10,8 +10,9 @@ from mooltrace import TAGLINE
 from mooltrace.clients import InfraError, MoolTraceError
 from mooltrace.config import API_HOST, API_PORT, CORS_ORIGINS
 from mooltrace.graph import get_graph
-from mooltrace.ssrf import UnsafeURL
+from mooltrace.ssrf import UnsafeURL, public_http_url
 from mooltrace.public_demo import (
+    draft_too_large,
     is_preset,
     public_demo_enabled,
     public_live_enabled,
@@ -84,17 +85,28 @@ def stats() -> dict:
 def _guard_public_demo(body: DraftIn) -> None:
     if not public_demo_enabled():
         return
-    if rate_limited():
-        raise HTTPException(status_code=429, detail="Public demo rate limit. Try the three presets.")
     if is_preset(body.engine, body.text, body.urls):
         return
+    if draft_too_large(body.text, body.urls):
+        raise HTTPException(
+            status_code=413,
+            detail="Draft or URL list is too large for the public demo.",
+        )
+    if public_live_enabled():
+        for url in body.urls or []:
+            try:
+                public_http_url(url, reason="url")
+            except UnsafeURL as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if rate_limited():
+        raise HTTPException(status_code=429, detail="Public demo rate limit. Try the three presets.")
     if public_live_enabled():
         return
     raise HTTPException(
         status_code=400,
         detail=(
-            "This public demo only runs the three presets (Healthline warn, "
-            "Lancet block, clean pass) with no live page fetch. Clone the repo "
+            "This public demo only runs the three presets (Healthline olive oil block, "
+            "Healthline cinnamon warn, clean pass) with no live page fetch. Clone the repo "
             "to check other URLs."
         ),
     )

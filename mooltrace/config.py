@@ -42,6 +42,7 @@ LANCET_RETRACTION_DOI = "10.1016/s0140-6736(20)31324-6"
 DIABETES_CARE_ISSNS = ("0149-5992", "1935-5548")
 EVERYDAY_HEALTH_URL = "https://www.everydayhealth.com/diabetes/cinnamon-for-diabetes/"
 HEALTHLINE_CINNAMON_URL = "https://www.healthline.com/nutrition/cinnamon-and-diabetes"
+HEALTHLINE_OLIVE_OIL_URL = "https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil"
 # Clean rewrite target: in the labelled clean set, no notice at depth 2.
 CLEAN_REWRITE_DOI = "10.1016/j.jsps.2015.03.013"
 

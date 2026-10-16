@@ -29,7 +29,7 @@ Expect **WARN (exit 2)** and `Decided by: algo.SPpaths, path strength 0.55` (Hea
 .venv/bin/python -m mooltrace batch examples/lancet.jsonl --fail-on block; echo $?
 ```
 
-Expect exit **1** (retraction). Optional UI: `docker compose up --build` → http://127.0.0.1:4318 — presets Healthline / Lancet / clean.
+Expect exit **1** (retraction). Optional UI: `docker compose up --build` → http://127.0.0.1:4318 — presets Healthline olive oil (block, path strength 0.30) / cinnamon (warn, 0.55) / clean.
 
 ## Tech used
 

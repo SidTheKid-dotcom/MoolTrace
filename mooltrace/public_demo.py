@@ -15,7 +15,10 @@ from typing import Any
 
 from mooltrace.config import ROOT
 
-PUBLIC_LIVE_PER_MIN = int(os.environ.get("MOOLTRACE_PUBLIC_LIVE_PER_MIN", "10"))
+PUBLIC_LIVE_PER_MIN = 10
+MAX_DRAFT_CHARS = 32_000
+MAX_URLS = 16
+MAX_URL_CHARS = 2_048
 RECORDED_PRESETS = ROOT / "examples" / "presets_recorded.json"
 
 _lock = threading.Lock()
@@ -28,6 +31,25 @@ def public_demo_enabled() -> bool:
 
 def public_live_enabled() -> bool:
     return os.environ.get("MOOLTRACE_PUBLIC_LIVE", "").strip() == "1"
+
+
+def live_per_min() -> int:
+    raw = os.environ.get("MOOLTRACE_PUBLIC_LIVE_PER_MIN", "").strip()
+    if not raw:
+        return PUBLIC_LIVE_PER_MIN
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return PUBLIC_LIVE_PER_MIN
+
+
+def draft_too_large(text: str, urls: list[str] | None) -> bool:
+    if len(text or "") > MAX_DRAFT_CHARS:
+        return True
+    items = _norm_urls(urls)
+    if len(items) > MAX_URLS:
+        return True
+    return any(len(item) > MAX_URL_CHARS for item in items)
 
 
 def _norm_urls(urls: list[str] | None) -> list[str]:
@@ -68,7 +90,7 @@ def rate_limited() -> bool:
     with _lock:
         while _hits and now - _hits[0] > 60:
             _hits.pop(0)
-        if len(_hits) >= PUBLIC_LIVE_PER_MIN:
+        if len(_hits) >= live_per_min():
             return True
         _hits.append(now)
         return False

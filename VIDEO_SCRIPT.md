@@ -26,7 +26,7 @@ Point at the red EoC badge. Point at the path: Healthline → Silva 2022 → Kha
 
 On-screen text must include: `Decided by: algo.SPpaths, path strength 0.55`.
 
-**Retraction + CI (1:45–2:15).** Click preset **Lancet 2020 HCQ (block)**. Then terminal:
+**Retraction + CI (1:45–2:15).** Click preset **Healthline olive oil (block)** (`/?preset=olive-oil`). Path strength 0.30, both hops `mention`, Estruch 2013 retracted and republished in 2018. Then terminal:
 
 ```bash
 .venv/bin/python -m mooltrace batch examples/lancet.jsonl --fail-on block
@@ -37,7 +37,7 @@ Say:
 
 > Same gate on a retracted 2020 Lancet paper. BLOCK. CI fails. An Expression of Concern is not this. A retraction is.
 
-**Rewrite + reverse (2:15–2:45).** On the Lancet (or Healthline) result, click **Rewrite and recheck**. Then:
+**Rewrite + reverse (2:15–2:45).** On the olive-oil (or cinnamon) result, click **Rewrite and recheck**. Then:
 
 ```bash
 .venv/bin/python -m mooltrace what-rests-on 10.2337/dc25-ec09
@@ -57,7 +57,7 @@ Stop before 3:00. Do not claim medical correctness. Do not call an Expression of
 
 1. UI `?preset=healthline` (or the CLI `--summary` command above)
 2. Cypher / algorithm panel
-3. UI `?preset=lancet`
+3. UI `?preset=olive-oil`
 4. Terminal `batch examples/lancet.jsonl --fail-on block`
 5. Rewrite and recheck
 6. `what-rests-on 10.2337/dc25-ec09`

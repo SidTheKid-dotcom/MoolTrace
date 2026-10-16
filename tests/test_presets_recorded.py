@@ -76,8 +76,8 @@ def _run_presets(tmp_path: Path) -> list[dict]:
     recorded = {row["id"]: row for row in load_recorded_presets()["presets"]}
     out = []
     for ident, depth in (
+        ("nutrition-olive-oil", 3),
         ("nutrition-healthline", 2),
-        ("lancet-hcq", 1),
         ("clean-jsps", 2),
     ):
         row = fixtures[ident]
@@ -95,8 +95,13 @@ def test_recorded_presets_match_docs_and_captions(tmp_path: Path, monkeypatch):
     assert recorded["presets"], "recorded presets are missing"
     for spec in recorded["presets"]:
         assert spec.get("fetch_date"), spec["id"]
+        assert str(spec.get("label") or "").startswith("recorded live run on "), spec["id"]
         assert spec["hops"], spec["id"]
         assert all(hop.get("recorded_at") for hop in spec["hops"]), spec["id"]
+        for hop in spec["hops"]:
+            digest = str(hop.get("content_hash") or "")
+            assert len(digest) == 64, spec["id"]
+            assert set(digest) <= set("0123456789abcdef"), spec["id"]
 
     payloads = _run_presets(tmp_path)
     observed_numbers: set[str] = set()
@@ -128,6 +133,16 @@ def test_recorded_presets_match_docs_and_captions(tmp_path: Path, monkeypatch):
         summary = format_summary(payload)
         for match in STRENGTH.finditer(summary):
             observed_numbers.add(match.group(1))
+
+    blocked = by_id["nutrition-olive-oil"]
+    assert blocked["decision"] == "block"
+    assert _fmt((blocked.get("algorithm") or {}).get("strength")) == "0.30"
+    block_hops = {
+        hop.get("reliance")
+        for reason in blocked.get("reasons") or []
+        for hop in reason.get("hops_evidence") or []
+    }
+    assert block_hops == {"mention"}
 
     hero = by_id["nutrition-healthline"]
     assert hero["decision"] == "warn"

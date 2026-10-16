@@ -14,17 +14,24 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from mooltrace.config import CLEAN_REWRITE_DOI, HEALTHLINE_CINNAMON_URL, ROOT
+from mooltrace.config import (
+    CLEAN_REWRITE_DOI,
+    HEALTHLINE_CINNAMON_URL,
+    HEALTHLINE_OLIVE_OIL_URL,
+    ROOT,
+)
 from mooltrace.graph import Graph, get_graph
 from mooltrace.trace import check_answer
 
 SHARED_DB = (ROOT / "data" / "mooltrace.db").resolve()
-HERO_ID = "nutrition-healthline"
-LANCET_ID = "lancet-hcq"
+BLOCK_ID = "nutrition-olive-oil"
+WARN_ID = "nutrition-healthline"
 CLEAN_ID = "clean-jsps"
+LANCET_ID = "lancet-hcq"
+HERO_ID = BLOCK_ID
 DEMO_FILES = (
+    ROOT / "examples" / "olive_oil.jsonl",
     ROOT / "examples" / "healthline.jsonl",
-    ROOT / "examples" / "lancet.jsonl",
     ROOT / "examples" / "clean.jsonl",
 )
 
@@ -55,7 +62,7 @@ def _load_jsonl(path: Path) -> list[dict[str, Any]]:
 
 
 def load_demo_fixtures() -> list[dict[str, Any]]:
-    wanted = {HERO_ID, LANCET_ID, CLEAN_ID}
+    wanted = {BLOCK_ID, WARN_ID, CLEAN_ID}
     found: dict[str, dict[str, Any]] = {}
     for path in DEMO_FILES:
         for item in _load_jsonl(path):
@@ -65,18 +72,22 @@ def load_demo_fixtures() -> list[dict[str, Any]]:
     missing = wanted - set(found)
     if missing:
         raise SystemExit(f"demo fixtures missing ids: {sorted(missing)}")
-    hero = found[HERO_ID]
-    if hero.get("text"):
-        raise SystemExit("hero fixture must be URL-only (empty text)")
-    if hero.get("urls") != [HEALTHLINE_CINNAMON_URL]:
-        raise SystemExit("hero fixture must cite the Healthline cinnamon URL only")
-    lancet = found[LANCET_ID]
-    if "10.1016/S0140-6736(20)31180-6" not in str(lancet.get("text") or ""):
-        raise SystemExit("Lancet fixture must name the retracted paper DOI")
+    block = found[BLOCK_ID]
+    if block.get("text"):
+        raise SystemExit("block fixture must be URL-only (empty text)")
+    if block.get("urls") != [HEALTHLINE_OLIVE_OIL_URL]:
+        raise SystemExit("block fixture must cite the Healthline olive oil URL only")
+    if int(block.get("depth") or 0) != 3:
+        raise SystemExit("block fixture must request depth 3")
+    warn = found[WARN_ID]
+    if warn.get("text"):
+        raise SystemExit("warn fixture must be URL-only (empty text)")
+    if warn.get("urls") != [HEALTHLINE_CINNAMON_URL]:
+        raise SystemExit("warn fixture must cite the Healthline cinnamon URL only")
     clean = found[CLEAN_ID]
     if CLEAN_REWRITE_DOI not in str(clean.get("text") or ""):
         raise SystemExit("clean fixture must name the clean rewrite DOI")
-    return [hero, lancet, clean]
+    return [block, warn, clean]
 
 
 def _urls(row: dict[str, Any]) -> list[str]:
@@ -101,7 +112,7 @@ def seed_demo(graph: Graph) -> list[dict[str, Any]]:
             text=str(item.get("text") or ""),
             urls=_urls(item),
             engine=str(item.get("engine") or ident),
-            depth=2,
+            depth=int(item.get("depth") or 2),
             graph=graph,
         )
         results.append(

@@ -2,7 +2,13 @@
 
 from pathlib import Path
 
+from fastapi.testclient import TestClient
+
+from mooltrace.api import app
+from mooltrace.config import HEALTHLINE_CINNAMON_URL
 from mooltrace.public_demo import is_preset, seed_offline_presets
+
+OLIVE_OIL_URL = "https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil"
 from mooltrace.seed import load_demo_fixtures
 from mooltrace.graph import Graph
 from mooltrace.trace import check_answer
@@ -13,32 +19,120 @@ def test_offline_presets_match_ui_and_skip_http(tmp_path: Path, monkeypatch):
     monkeypatch.delenv("MOOLTRACE_PUBLIC_LIVE", raising=False)
     graph = Graph(tmp_path / "demo.db")
     seeded = seed_offline_presets(graph)
-    assert {row["id"] for row in seeded} == {"nutrition-healthline", "lancet-hcq", "clean-jsps"}
-    hero, lancet, clean = load_demo_fixtures()
-    assert is_preset(hero["engine"], hero["text"], hero["urls"])
-    assert is_preset(lancet["engine"], lancet["text"], lancet["urls"])
+    assert {row["id"] for row in seeded} == {
+        "nutrition-olive-oil",
+        "nutrition-healthline",
+        "clean-jsps",
+    }
+    block, warn, clean = load_demo_fixtures()
+    assert block["id"] == "nutrition-olive-oil"
+    assert block["text"] == ""
+    assert block["urls"] == [OLIVE_OIL_URL]
+    assert warn["id"] == "nutrition-healthline"
+    assert warn["urls"] == [HEALTHLINE_CINNAMON_URL]
+    assert is_preset(block["engine"], block["text"], block["urls"])
+    assert is_preset(warn["engine"], warn["text"], warn["urls"])
     assert is_preset(clean["engine"], clean["text"], clean["urls"])
     assert not is_preset("nutrition-coach", "", ["https://example.com/not-a-preset"])
 
-    warn = check_answer(hero["text"], hero["urls"], hero["engine"], 2, graph=graph)
-    assert warn["decision"] == "warn"
-    assert warn["exit_code"] == 2
-    assert warn["api_calls"] == 0
-    assert (warn.get("algorithm") or {}).get("name") == "algo.SPpaths"
+    blocked = check_answer(block["text"], block["urls"], block["engine"], 3, graph=graph)
+    assert blocked["decision"] == "block"
+    assert blocked["exit_code"] == 1
+    assert blocked["api_calls"] == 0
+    assert (blocked.get("algorithm") or {}).get("name") == "algo.SPpaths"
+    assert _fmt((blocked.get("algorithm") or {}).get("strength")) == "0.30"
+    hop_words = {
+        hop.get("reliance")
+        for reason in blocked.get("reasons") or []
+        for hop in reason.get("hops_evidence") or []
+    }
+    assert hop_words == {"mention"}
     assert any(
-        (reason.get("notice_type") or "") == "expression_of_concern"
-        for reason in warn.get("reasons") or []
+        (reason.get("notice_type") or "") == "retraction"
+        and (reason.get("notice_doi") or "") == "10.1056/nejmc1806491"
+        for reason in blocked.get("reasons") or []
     )
 
-    block = check_answer(lancet["text"], lancet["urls"], lancet["engine"], 1, graph=graph)
-    assert block["decision"] == "block"
-    assert block["exit_code"] == 1
-    assert block["api_calls"] == 0
+    warned = check_answer(warn["text"], warn["urls"], warn["engine"], 2, graph=graph)
+    assert warned["decision"] == "warn"
+    assert warned["exit_code"] == 2
+    assert warned["api_calls"] == 0
+    assert any(
+        (reason.get("notice_type") or "") == "expression_of_concern"
+        for reason in warned.get("reasons") or []
+    )
 
     passed = check_answer(clean["text"], clean["urls"], clean["engine"], 2, graph=graph)
     assert passed["decision"] == "pass"
     assert passed["exit_code"] == 0
     assert passed["api_calls"] == 0
+
+
+def test_presets_never_429_after_rate_limit(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("MOOLTRACE_PUBLIC_DEMO", "1")
+    monkeypatch.delenv("MOOLTRACE_PUBLIC_LIVE", raising=False)
+    from mooltrace import public_demo
+
+    public_demo._hits.clear()
+    graph = Graph(tmp_path / "demo.db")
+    seed_offline_presets(graph)
+    monkeypatch.setattr("mooltrace.api.get_graph", lambda: graph)
+    monkeypatch.setattr("mooltrace.trace.get_graph", lambda: graph)
+    client = TestClient(app)
+    cap = int(getattr(public_demo, "PUBLIC_LIVE_PER_MIN", 10))
+    for _ in range(cap):
+        burned = client.post(
+            "/check-answer",
+            json={
+                "text": "not a preset",
+                "urls": ["https://example.com/other"],
+                "engine": "other",
+                "depth": 1,
+            },
+        )
+        assert burned.status_code in {400, 413, 429}
+    extra = client.post(
+        "/check-answer",
+        json={
+            "text": "still not a preset",
+            "urls": ["https://example.com/other-2"],
+            "engine": "other",
+            "depth": 1,
+        },
+    )
+    assert extra.status_code == 429
+    warn = load_demo_fixtures()[1]
+    preset = client.post(
+        "/check-answer",
+        json={
+            "text": warn["text"],
+            "urls": warn["urls"],
+            "engine": warn["engine"],
+            "depth": 2,
+        },
+    )
+    assert preset.status_code == 200, preset.text
+    assert preset.json()["decision"] == "warn"
+
+
+def test_public_demo_rejects_oversized_draft(monkeypatch):
+    monkeypatch.setenv("MOOLTRACE_PUBLIC_DEMO", "1")
+    monkeypatch.delenv("MOOLTRACE_PUBLIC_LIVE", raising=False)
+    from mooltrace import public_demo
+
+    public_demo._hits.clear()
+    client = TestClient(app)
+    response = client.post(
+        "/check-answer",
+        json={
+            "text": "a" * 100_001,
+            "urls": ["https://www.healthline.com/nutrition/cinnamon-and-diabetes"],
+            "engine": "oversize",
+            "depth": 1,
+        },
+    )
+    assert response.status_code == 413
+    assert "too large" in response.json()["detail"].lower()
 
 
 def test_entrypoint_documents_offline_seed():
@@ -49,3 +143,9 @@ def test_entrypoint_documents_offline_seed():
     entry = (ROOT / "scripts" / "docker-entrypoint-api.sh").read_text()
     assert "seed --if-empty --offline" in entry
     assert "MOOLTRACE_PUBLIC_DEMO" in entry
+
+
+def _fmt(value: float | None) -> str:
+    if value is None:
+        return ""
+    return f"{float(value):.2f}"
