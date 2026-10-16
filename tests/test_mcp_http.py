@@ -197,7 +197,7 @@ def test_api_mounts_mcp_route():
 
     mounted = any("/mcp" in str(getattr(route, "path", route)) for route in app.routes)
     assert mounted
-    with TestClient(app) as client:
+    with TestClient(app, follow_redirects=False) as client:
         response = client.post(
             "/mcp",
             json={
@@ -212,6 +212,7 @@ def test_api_mounts_mcp_route():
             },
             headers={"accept": "application/json, text/event-stream"},
         )
+        assert response.status_code not in {307, 308}, response.headers.get("location")
         assert response.status_code != 404
         assert response.status_code < 500
 

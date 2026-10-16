@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from starlette.routing import Route
 
 from mooltrace import TAGLINE
 from mooltrace.clients import InfraError, MoolTraceError
@@ -23,14 +24,21 @@ from mooltrace.trace import (
     what_rests_on,
 )
 
-app = FastAPI(title="MoolTrace", version="0.1.0", description=TAGLINE, lifespan=mcp_lifespan)
+app = FastAPI(
+    title="MoolTrace",
+    version="0.1.0",
+    description=TAGLINE,
+    lifespan=mcp_lifespan,
+    redirect_slashes=False,
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
     allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["*"],
 )
-app.mount("/mcp", mcp_asgi)
+app.router.routes.append(Route("/mcp", endpoint=mcp_asgi, methods=["GET", "POST", "DELETE"]))
+app.router.routes.append(Route("/mcp/", endpoint=mcp_asgi, methods=["GET", "POST", "DELETE"]))
 
 
 class DraftIn(BaseModel):

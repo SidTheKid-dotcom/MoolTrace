@@ -2,7 +2,7 @@
   "serviceName": "mooltrace",
   "containers": {
     "api": {
-      "image": ":mooltrace.api.latest",
+      "image": ":mooltrace.api.3",
       "environment": {
         "MOOLTRACE_PUBLIC_DEMO": "1",
         "MOOLTRACE_SEED": "1",
@@ -17,7 +17,7 @@
       }
     },
     "web": {
-      "image": ":mooltrace.web.latest",
+      "image": ":mooltrace.web.4",
       "environment": {
         "MOOLTRACE_API_ORIGIN": "http://localhost:4317",
         "NODE_OPTIONS": "--max-old-space-size=384"
