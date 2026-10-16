@@ -55,7 +55,7 @@ Signed-out, in this order:
 
 Stop. No pushes after Sun 18 Oct 2026, 11:59 PM IST. Keep the live link, public repo, and video up through judging.
 
-Live container images (17 Oct 2026 rebuild from current main): `:mooltrace.api.6` (digest `sha256:d7428e7bcdd1ce6fcb3bbeeace5f44c9bcc14dc383642c03189896b937c72de9`) and `:mooltrace.web.7` (digest `sha256:b1eb2e09ff93624ed96288775952640720adf2331ef05271912747dc67506aae`). Power micro, scale 1, `MOOLTRACE_PUBLIC_DEMO=1`, no Azure env vars. Pinned in `deploy/lightsail-deployment.json`.
+Live container images (17 Oct 2026 rebuild from current main, depth toggle): `:mooltrace.api.8` (digest `sha256:487e643e787a3e7635a04fed8337c8264b4ad4141d8b32f84ac256e811890ded`) and `:mooltrace.web.9` (digest `sha256:62d95835836723f35ba024221c1bf3f6d595bb93691e3ee6540d0f1e072c07b4`). Power micro, scale 1, `MOOLTRACE_PUBLIC_DEMO=1`, no Azure env vars. Pinned in `deploy/lightsail-deployment.json`. Toggle depth 1 then 3 on the olive-oil preset: PASS (0 notice paths) then BLOCK.
 
 ## After judging (stops Lightsail billing)
 
