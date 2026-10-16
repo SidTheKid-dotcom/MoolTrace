@@ -19,7 +19,17 @@ PUBLIC_LIVE_PER_MIN = 10
 MAX_DRAFT_CHARS = 32_000
 MAX_URLS = 16
 MAX_URL_CHARS = 2_048
+MAX_DOI_CHARS = 256
 RECORDED_PRESETS = ROOT / "examples" / "presets_recorded.json"
+
+
+class PublicDemoRejected(Exception):
+    """Public demo refused this input. status_code is the HTTP equivalent."""
+
+    def __init__(self, status_code: int, detail: str):
+        self.status_code = status_code
+        self.detail = detail
+        super().__init__(detail)
 
 _lock = threading.Lock()
 _hits: list[float] = []
@@ -83,6 +93,87 @@ def is_preset(engine: str, text: str, urls: list[str] | None) -> bool:
         if preset_key(str(row.get("engine") or ""), str(row.get("text") or ""), row.get("urls") or []) == key:
             return True
     return False
+
+
+def doi_too_large(doi: str) -> bool:
+    return len(doi or "") > MAX_DOI_CHARS
+
+
+def is_preset_doi(doi: str) -> bool:
+    raw = (doi or "").strip().lower()
+    if not raw:
+        return False
+    for spec in load_recorded_presets().get("presets") or []:
+        for notice in spec.get("notices") or []:
+            if str(notice.get("doi") or "").strip().lower() == raw:
+                return True
+        for work in spec.get("works") or []:
+            if str(work.get("doi") or "").strip().lower() == raw:
+                return True
+    return False
+
+
+def guard_public_check(engine: str, text: str, urls: list[str] | None) -> None:
+    """Refuse unsafe or non-preset drafts on the public demo.
+
+    Presets return immediately so they never consume the rate limit.
+    """
+    if not public_demo_enabled():
+        return
+    if is_preset(engine, text, urls):
+        return
+    if draft_too_large(text, urls):
+        raise PublicDemoRejected(413, "Draft or URL list is too large for the public demo.")
+    if public_live_enabled():
+        from mooltrace.ssrf import public_http_url
+
+        for url in urls or []:
+            public_http_url(url, reason="url")
+    if rate_limited():
+        raise PublicDemoRejected(429, "Public demo rate limit. Try the three presets.")
+    if public_live_enabled():
+        return
+    raise PublicDemoRejected(
+        400,
+        (
+            "This public demo only runs the three presets (Healthline olive oil block, "
+            "Healthline cinnamon warn, clean pass) with no live page fetch. Clone the repo "
+            "to check other URLs."
+        ),
+    )
+
+
+def guard_remote_check(engine: str, text: str, urls: list[str] | None) -> None:
+    """Size-cap and SSRF-guard the remote MCP check, then apply the public demo rules."""
+    if is_preset(engine, text, urls):
+        return
+    if draft_too_large(text, urls):
+        raise PublicDemoRejected(413, "Draft or URL list is too large for the public demo.")
+    if public_demo_enabled():
+        guard_public_check(engine, text, urls)
+        return
+    from mooltrace.ssrf import public_http_url
+
+    for url in urls or []:
+        public_http_url(url, reason="url")
+
+
+def guard_remote_doi(doi: str) -> None:
+    """Size-cap a reverse-lookup DOI. Preset notice DOIs never hit the rate limit."""
+    if doi_too_large(doi):
+        raise PublicDemoRejected(413, "DOI is too large for the public demo.")
+    if not public_demo_enabled():
+        return
+    if is_preset_doi(doi):
+        return
+    if rate_limited():
+        raise PublicDemoRejected(429, "Public demo rate limit. Try the three presets.")
+    if public_live_enabled():
+        return
+    raise PublicDemoRejected(
+        400,
+        "This public demo only looks up notice DOIs from the three presets. Clone the repo for the full graph.",
+    )
 
 
 def rate_limited() -> bool:

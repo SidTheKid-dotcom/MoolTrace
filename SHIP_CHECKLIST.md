@@ -68,13 +68,14 @@ aws lightsail create-container-service-deployment \
   --cli-input-json file://deploy/lightsail-deployment.json
 ```
 
-Signed-out check (web is the public endpoint; API is localhost inside the service):
+Signed-out check (web is the public endpoint; API is localhost inside the service). MCP is `/mcp` on the same host (Next rewrites to the API):
 
 ```bash
 curl -sI https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/
 curl -sS -X POST https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/nw/check-answer \
   -H 'content-type: application/json' \
   -d '{"text":"","urls":["https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil"],"engine":"nutrition-coach","depth":3}'
+# MCP: official client against https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/mcp
 ```
 
 ### Teardown (stops billing)

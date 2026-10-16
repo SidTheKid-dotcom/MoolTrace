@@ -53,7 +53,21 @@ Exit codes: **0** pass, **1** block, **2** warn/review, **3** infrastructure fai
 
 Local UI (optional): `docker compose up --build` then http://127.0.0.1:4318 — or `cd web && npm ci && npm run dev -- --port 4318 --hostname 127.0.0.1` with `.venv/bin/python -m mooltrace.api` on 4317. `/nw/*` rewrites to the API.
 
-MCP (Cursor or Claude Desktop). Point `command` at this venv:
+**Remote MCP** (read-only, no sign-up): `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/mcp` — streamable HTTP. Tools: `check_answer`, `what_rests_on`, `recheck_affected`. Same three presets as the demo; presets never 429. Copy-paste for Cursor or Claude Desktop (`mcp.http.example.json`):
+
+```json
+{
+  "mcpServers": {
+    "mooltrace": {
+      "url": "https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/mcp"
+    }
+  }
+}
+```
+
+Claude Desktop can add `"type": "http"` next to `url`.
+
+**Local MCP** (one command, full tool list). After the venv above: `.venv/bin/python -m mooltrace mcp`. Point Cursor/Claude at `mcp.example.json`:
 
 ```json
 {
@@ -106,7 +120,7 @@ MoolTrace is a pre-ship check, not a medical model. The agent drafts. MoolTrace 
 
 Exit **1** fails the job (retraction path). Exit **2** with `--fail-on block` still passes; GitHub prints `::warning` so the reviewer sees the Expression of Concern. Use `--fail-on warn` if your team will not merge warned fixtures. An agent that generates answers should write that JSONL, then run the same command, then read `decision` / `reasons[].notice_doi` / `reasons[].sentence`.
 
-**Editor MCP (Cursor, Claude Code, or any stdio MCP host).** Copy `mcp.example.json` and point `command` at your venv. Tools:
+**Editor MCP.** Remote: paste the `/mcp` URL above into Cursor or Claude Desktop (three read-only tools). Local: `.venv/bin/python -m mooltrace mcp` and copy `mcp.example.json`. Tools on stdio:
 
 | Tool | When the agent calls it |
 | --- | --- |

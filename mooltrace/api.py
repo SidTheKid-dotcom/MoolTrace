@@ -10,14 +10,9 @@ from mooltrace import TAGLINE
 from mooltrace.clients import InfraError, MoolTraceError
 from mooltrace.config import API_HOST, API_PORT, CORS_ORIGINS
 from mooltrace.graph import get_graph
-from mooltrace.ssrf import UnsafeURL, public_http_url
-from mooltrace.public_demo import (
-    draft_too_large,
-    is_preset,
-    public_demo_enabled,
-    public_live_enabled,
-    rate_limited,
-)
+from mooltrace.mcp_http import mcp_asgi, mcp_lifespan
+from mooltrace.public_demo import PublicDemoRejected, guard_public_check
+from mooltrace.ssrf import UnsafeURL
 from mooltrace.rewrite import rewrite_answer
 from mooltrace.trace import (
     check_answer,
@@ -28,13 +23,14 @@ from mooltrace.trace import (
     what_rests_on,
 )
 
-app = FastAPI(title="MoolTrace", version="0.1.0", description=TAGLINE)
+app = FastAPI(title="MoolTrace", version="0.1.0", description=TAGLINE, lifespan=mcp_lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["*"],
 )
+app.mount("/mcp", mcp_asgi)
 
 
 class DraftIn(BaseModel):
@@ -83,33 +79,12 @@ def stats() -> dict:
 
 
 def _guard_public_demo(body: DraftIn) -> None:
-    if not public_demo_enabled():
-        return
-    if is_preset(body.engine, body.text, body.urls):
-        return
-    if draft_too_large(body.text, body.urls):
-        raise HTTPException(
-            status_code=413,
-            detail="Draft or URL list is too large for the public demo.",
-        )
-    if public_live_enabled():
-        for url in body.urls or []:
-            try:
-                public_http_url(url, reason="url")
-            except UnsafeURL as exc:
-                raise HTTPException(status_code=400, detail=str(exc)) from exc
-    if rate_limited():
-        raise HTTPException(status_code=429, detail="Public demo rate limit. Try the three presets.")
-    if public_live_enabled():
-        return
-    raise HTTPException(
-        status_code=400,
-        detail=(
-            "This public demo only runs the three presets (Healthline olive oil block, "
-            "Healthline cinnamon warn, clean pass) with no live page fetch. Clone the repo "
-            "to check other URLs."
-        ),
-    )
+    try:
+        guard_public_check(body.engine, body.text, body.urls)
+    except PublicDemoRejected as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+    except UnsafeURL as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/check-answer")

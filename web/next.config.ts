@@ -15,6 +15,14 @@ const nextConfig: NextConfig = {
         source: "/nw/:path*",
         destination: `${apiOrigin}/:path*`,
       },
+      {
+        source: "/mcp",
+        destination: `${apiOrigin}/mcp`,
+      },
+      {
+        source: "/mcp/:path*",
+        destination: `${apiOrigin}/mcp/:path*`,
+      },
     ];
   },
   partialPrefetching: true,
