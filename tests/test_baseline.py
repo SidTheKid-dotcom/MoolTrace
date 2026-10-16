@@ -197,6 +197,49 @@ def test_recorded_catalog_covers_every_literal_labelled_doi():
     assert any(item.get("type") == "expression_of_concern" for item in khan)
 
 
+def test_recorded_mooltrace_snapshot_reproduces_metrics():
+    from mooltrace.baseline import DEFAULT_MOOLTRACE, run_baseline_eval
+    import json
+
+    assert DEFAULT_MOOLTRACE.is_file()
+    snapshot = json.loads(DEFAULT_MOOLTRACE.read_text(encoding="utf-8"))
+    report = run_baseline_eval(mooltrace_report=snapshot)
+    mt = report["mooltrace"]["metrics"]
+    assert mt["n"] == 52
+    assert mt["scored"] == 52
+    assert mt["infra"] == 0
+    assert mt["precision"] == 0.8974
+    assert mt["recall"] == 1.0
+    assert mt["tp"] == 35
+    assert mt["fp"] == 4
+    assert mt["fn"] == 0
+    assert {row["id"] for row in report["labelled_disagreements"]} == {
+        "page-nccih-cinnamon",
+        "page-webmd-cinnamon-guide",
+        "page-mnt-cinnamon-diabetes",
+        "ident-mdpi-pdf-foods",
+    }
+    assert report["verdict_changes_vs_labelled_2026-10-15"] == []
+    assert len(report["only_multihop_catches"]) == 15
+    assert report["baseline"]["metrics"]["precision"] == 1.0
+    assert report["baseline"]["metrics"]["recall"] == 0.4286
+
+
+def test_baseline_results_md_quotes_recorded_metrics():
+    from pathlib import Path
+    import json
+
+    root = Path(__file__).resolve().parents[1]
+    md = (root / "results" / "baseline_2026-10-16.md").read_text(encoding="utf-8")
+    report = json.loads((root / "results" / "baseline_2026-10-16.json").read_text(encoding="utf-8"))
+    assert str(report["baseline"]["metrics"]["recall"]) in md
+    assert str(report["mooltrace"]["metrics"]["precision"]) in md
+    assert ".venv/bin/python -m mooltrace baseline" in md
+    assert "eoc-allen-2013" in md
+    assert "page-healthline-cinnamon" in md
+    assert "Expression of Concern" in md
+
+
 def test_cli_baseline_help_documents_no_graph(capsys):
     from mooltrace.__main__ import main
 

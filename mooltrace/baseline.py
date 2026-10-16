@@ -449,12 +449,44 @@ def run_baseline_eval(
         "wall_s": round(time.perf_counter() - started, 1),
     }
     if mooltrace_report:
+        by_base = {str(row["id"]): row for row in results}
+        disagreements = []
+        graph_only = []
+        for mt in mt_rows:
+            base = by_base.get(str(mt["id"])) or {}
+            if not mt.get("match"):
+                disagreements.append(
+                    {
+                        "id": mt["id"],
+                        "family": mt.get("family"),
+                        "expected": mt.get("expected"),
+                        "mooltrace": mt.get("decision"),
+                        "baseline": base.get("decision"),
+                        "summary": mt.get("summary"),
+                        "reasons": mt.get("reasons") or [],
+                        "errors": mt.get("errors") or [],
+                    }
+                )
+            if mt.get("predicted_flagged") and not base.get("predicted_flagged"):
+                graph_only.append(
+                    {
+                        "id": mt["id"],
+                        "family": mt.get("family"),
+                        "expected": mt.get("expected"),
+                        "mooltrace": mt.get("decision"),
+                        "baseline": base.get("decision"),
+                        "multihop": str(mt["id"]) in {item["id"] for item in only_multihop},
+                    }
+                )
         report["mooltrace"] = {
             "ran_at": mooltrace_report.get("ran_at"),
             "kind": mooltrace_report.get("kind"),
+            "wall_s": mooltrace_report.get("wall_s"),
             "metrics": mooltrace_report.get("metrics"),
             "results": mt_rows,
         }
+        report["labelled_disagreements"] = disagreements
+        report["graph_caught_baseline_missed"] = graph_only
         report["verdict_changes_vs_labelled_2026-10-15"] = changes
         report["new_since_labelled_2026-10-15"] = new_ids
     return report
