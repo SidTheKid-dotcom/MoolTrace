@@ -153,3 +153,20 @@ def test_ship_checklist_is_human_only():
     assert "gh repo edit" in text
     assert "signed-out" in lowered or "signed out" in lowered
     assert "do not rewrite" in lowered or "do not rewrite history" in lowered
+
+
+def test_lightsail_pin_is_public_demo_without_azure():
+    payload = json.loads((ROOT / "deploy" / "lightsail-deployment.json").read_text())
+    env = payload["containers"]["api"]["environment"]
+    assert env.get("MOOLTRACE_PUBLIC_DEMO") == "1"
+    assert "MOOLTRACE_PUBLIC_LIVE" not in env
+    blob = json.dumps(payload)
+    assert "AZURE" not in blob
+    assert "OPENAI" not in blob
+    api = payload["containers"]["api"]["image"]
+    web = payload["containers"]["web"]["image"]
+    assert api.startswith(":mooltrace.api.")
+    assert web.startswith(":mooltrace.web.")
+    ship = SHIP.read_text()
+    assert api in ship
+    assert web in ship

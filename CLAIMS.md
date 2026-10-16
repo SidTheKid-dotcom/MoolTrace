@@ -103,7 +103,7 @@ decided_by algo.SPpaths
 what_rests_on This retraction affects 1 stored answer. counted 1
 ```
 
-Hosted `recheck_affected` on the same olive-oil notice still returns **warn exit 2 incomplete** (`MoolTrace could not finish this pre-ship check`) on the live `api.5` image. Cause: recheck stuffed first-hop work DOIs into draft text, minting a new answer id. Local main after `dc032d0` replays URL-only inputs and blocks (`test_public_demo_recheck_affected_replays_olive_oil_block`). Keep `recheck_affected` off camera until Lightsail is rebuilt from that commit.
+Hosted `recheck_affected` on the same olive-oil notice, after the 17 Oct 2026 Lightsail rebuild (`:mooltrace.api.6` / `:mooltrace.web.7`), returns **block exit 1** (`incomplete` False) on the stored olive-oil answer. `what_rests_on` still counts 1 stored answer. Official MCP `Client` against `/mcp` this session.
 
 Local one-command (after the venv above): `.venv/bin/python -m mooltrace mcp`. Point Cursor/Claude at `mcp.example.json` (`args` `["-m", "mooltrace.mcp_server"]`). Stdio has the full tool list. Confirmed this session: `TOOLS` 9 names including `rewrite_answer`; empty draft → warn exit 2 `no_sources`.
 
@@ -176,7 +176,7 @@ docker compose up --build
 unshare --net --map-root-user .venv/bin/python -m pytest -q
 ```
 
-17 Oct 2026 this checkout: 266 passed, 0 failed, 421.76 s, network namespace unshared.
+17 Oct 2026 this checkout: 267 passed, 0 failed, 421.03 s, network namespace unshared.
 
 ## Limits quoted in README (spot-checks)
 
@@ -221,4 +221,3 @@ Files: `results/gate_2026-10-16_t14_run1.json`, `run2`, `run3`.
 | Fresh-clone quickstart 65.06 s | T12 `/tmp` timing; not re-cloned in T14 |
 | `docker compose up --build` | Config confirmed; public demo already live |
 | Live `mooltrace labelled` (52 cases) | Offline baseline reproduce + schema test |
-| Lightsail rebuild after `dc032d0` | Hosted `recheck_affected` still warn/incomplete on `api.5` |
