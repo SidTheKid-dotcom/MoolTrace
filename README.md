@@ -130,7 +130,7 @@ jobs:
 
 ## MCP
 
-**Remote MCP** (read-only, no sign-up): `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/mcp` — streamable HTTP. Tools: `check_answer`, `what_rests_on`, `recheck_affected`. Same four presets as the demo; presets never 429. Copy-paste for Cursor or Claude Desktop (`mcp.http.example.json`):
+**Remote MCP** (read-only, no sign-up): `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/mcp` — streamable HTTP. Tools: `check_answer`, `what_rests_on`, `recheck_affected`. Same four presets as the demo (never 429), plus an allow-listed live URL when hosted live fetch is on. Copy-paste for Cursor or Claude Desktop (`mcp.http.example.json`):
 
 ```json
 {
@@ -195,7 +195,7 @@ Four labelled-pass disagreements (why precision is 0.8974, not 1.0): WebMD cinna
 - Private, loopback, credentialed, and non-http URLs are refused (SSRF). The API binds `127.0.0.1` and does not honor CORS `*`.
 - Semantic Scholar 429s after retries skip that route; other sentence routes still run.
 - The sample GitHub workflow fetches live OpenAlex, Crossref, and the Everyday Health page. If a host refuses GitHub IPs, the job exits 3. The daily cron re-runs that fixture file; it does not watch answers over time.
-- Hosted demo free-text is presets-only (`MOOLTRACE_PUBLIC_DEMO=1`). Oversized drafts return 413.
+- Hosted demo presets are recorded (no live fetch). A user-pasted URL is fetched live only for healthline.com, everydayhealth.com, verywellhealth.com, medicalnewstoday.com, webmd.com, pubmed.ncbi.nlm.nih.gov, and doi.org (`MOOLTRACE_PUBLIC_LIVE=1`). SSRF, 32k size cap, per-IP rate limit (presets exempt), global concurrency 1, 120 s timeout. Other hosts return 400. Oversized drafts return 413.
 - Rewrite is a deterministic template: only sentences that cite flagged work change; every other sentence stays byte-identical. Named as first author + year. Never writes `RETRACTED:` and never cites the notice DOI.
 
 ## Prior art

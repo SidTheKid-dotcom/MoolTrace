@@ -1,8 +1,10 @@
-"""Read-only hosted demo: four presets, no live HTTP, no arbitrary URLs.
+"""Read-only hosted demo: four presets, plus an allow-listed live URL.
 
-Set MOOLTRACE_PUBLIC_DEMO=1. Live catalog calls stay off. Arbitrary URL
-fetching stays off unless MOOLTRACE_PUBLIC_LIVE=1, and then only with the
-SSRF guard plus the in-process rate limit.
+Set MOOLTRACE_PUBLIC_DEMO=1. Live catalog calls stay off unless
+MOOLTRACE_PUBLIC_LIVE=1. Then a user-pasted URL is fetched only when every
+cited URL is on the consumer-health / scholarly allow-list, after the SSRF
+guard, size cap, per-IP rate limit (presets never consume it), a global
+concurrency cap of 1, and a hard 120 s timeout.
 """
 
 from __future__ import annotations
@@ -11,16 +13,32 @@ import json
 import os
 import threading
 import time
+from collections.abc import Callable
 from typing import Any
+from urllib.parse import urlparse
 
 from mooltrace.config import ROOT
 
 PUBLIC_LIVE_PER_MIN = 10
+LIVE_TIMEOUT_S = 120
+LIVE_CONCURRENCY = 1
 MAX_DRAFT_CHARS = 32_000
 MAX_URLS = 16
 MAX_URL_CHARS = 2_048
 MAX_DOI_CHARS = 256
 RECORDED_PRESETS = ROOT / "examples" / "presets_recorded.json"
+LIVE_HOSTS = frozenset(
+    {
+        "healthline.com",
+        "everydayhealth.com",
+        "verywellhealth.com",
+        "medicalnewstoday.com",
+        "webmd.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "doi.org",
+    }
+)
+LIVE_ALLOW_LIST = ", ".join(sorted(LIVE_HOSTS))
 
 
 class PublicDemoRejected(Exception):
@@ -33,6 +51,8 @@ class PublicDemoRejected(Exception):
 
 _lock = threading.Lock()
 _hits: list[float] = []
+_hits_by_ip: dict[str, list[float]] = {}
+_live_running = 0
 
 
 def public_demo_enabled() -> bool:
@@ -51,6 +71,58 @@ def live_per_min() -> int:
         return max(1, int(raw))
     except ValueError:
         return PUBLIC_LIVE_PER_MIN
+
+
+def live_timeout_s() -> int:
+    raw = os.environ.get("MOOLTRACE_PUBLIC_LIVE_TIMEOUT_S", "").strip()
+    if not raw:
+        return LIVE_TIMEOUT_S
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return LIVE_TIMEOUT_S
+
+
+def live_concurrency() -> int:
+    raw = os.environ.get("MOOLTRACE_PUBLIC_LIVE_CONCURRENCY", "").strip()
+    if not raw:
+        return LIVE_CONCURRENCY
+    try:
+        return max(1, min(2, int(raw)))
+    except ValueError:
+        return LIVE_CONCURRENCY
+
+
+def _hostname(url: str) -> str:
+    try:
+        host = (urlparse((url or "").strip()).hostname or "").strip().lower().rstrip(".")
+    except ValueError:
+        return ""
+    if host.startswith("www."):
+        return host[4:]
+    return host
+
+
+def live_host_allowed(url: str) -> bool:
+    host = _hostname(url)
+    return bool(host) and host in LIVE_HOSTS
+
+
+def skip_http_for(engine: str, text: str, urls: list[str] | None) -> bool:
+    """Presets always replay seeds. Live fetch is only for allow-listed URLs."""
+    if not public_demo_enabled():
+        return False
+    if is_preset(engine, text, urls):
+        return True
+    return not public_live_enabled()
+
+
+def reset_public_limits() -> None:
+    global _live_running
+    with _lock:
+        _hits.clear()
+        _hits_by_ip.clear()
+        _live_running = 0
 
 
 def draft_too_large(text: str, urls: list[str] | None) -> bool:
@@ -113,7 +185,12 @@ def is_preset_doi(doi: str) -> bool:
     return False
 
 
-def guard_public_check(engine: str, text: str, urls: list[str] | None) -> None:
+def guard_public_check(
+    engine: str,
+    text: str,
+    urls: list[str] | None,
+    client_ip: str | None = None,
+) -> None:
     """Refuse unsafe or non-preset drafts on the public demo.
 
     Presets return immediately so they never consume the rate limit.
@@ -127,12 +204,30 @@ def guard_public_check(engine: str, text: str, urls: list[str] | None) -> None:
     if public_live_enabled():
         from mooltrace.ssrf import public_http_url
 
-        for url in urls or []:
-            public_http_url(url, reason="url")
-    if rate_limited():
-        raise PublicDemoRejected(429, "Public demo rate limit. Try the four presets.")
-    if public_live_enabled():
+        cited = _norm_urls(urls)
+        if not cited:
+            raise PublicDemoRejected(
+                400,
+                (
+                    "Paste a URL on the allow-list "
+                    f"({LIVE_ALLOW_LIST}). Presets do not need a live fetch."
+                ),
+            )
+        for url in cited:
+            public_http_url(url, reason="url", resolve_dns=False)
+            if not live_host_allowed(url):
+                raise PublicDemoRejected(
+                    400,
+                    (
+                        "This public demo live-checks only "
+                        f"{LIVE_ALLOW_LIST}. Try a preset or paste one of those URLs."
+                    ),
+                )
+        if rate_limited(client_ip):
+            raise PublicDemoRejected(429, "Public demo rate limit. Try the four presets.")
         return
+    if rate_limited(client_ip):
+        raise PublicDemoRejected(429, "Public demo rate limit. Try the four presets.")
     raise PublicDemoRejected(
         400,
         (
@@ -176,15 +271,76 @@ def guard_remote_doi(doi: str) -> None:
     )
 
 
-def rate_limited() -> bool:
+def rate_limited(client_ip: str | None = None) -> bool:
     now = time.monotonic()
+    key = (client_ip or "").strip() or "unknown"
     with _lock:
-        while _hits and now - _hits[0] > 60:
-            _hits.pop(0)
-        if len(_hits) >= live_per_min():
+        hits = _hits_by_ip.setdefault(key, [])
+        while hits and now - hits[0] > 60:
+            hits.pop(0)
+        if len(hits) >= live_per_min():
             return True
-        _hits.append(now)
+        hits.append(now)
+        _hits.clear()
+        _hits.extend(hits)
         return False
+
+
+def acquire_live_slot() -> None:
+    global _live_running
+    with _lock:
+        if _live_running >= live_concurrency():
+            raise PublicDemoRejected(
+                429,
+                "A live check is already running. Try a preset, or wait about 60 s.",
+            )
+        _live_running += 1
+
+
+def release_live_slot() -> None:
+    global _live_running
+    with _lock:
+        _live_running = max(0, _live_running - 1)
+
+
+def run_live(fn: Callable[[], Any], timeout_s: float | None = None) -> Any:
+    """Run one live check under the global slot and a hard timeout."""
+    limit = live_timeout_s() if timeout_s is None else float(timeout_s)
+    acquire_live_slot()
+    box: dict[str, Any] = {}
+    done = threading.Event()
+
+    def worker() -> None:
+        try:
+            try:
+                box["ok"] = fn()
+            except Exception as exc:
+                box["err"] = exc
+        finally:
+            done.set()
+            release_live_slot()
+
+    threading.Thread(target=worker, daemon=True).start()
+    if not done.wait(limit):
+        raise PublicDemoRejected(
+            504,
+            "Live check hit the 120 s limit. Try a preset or clone the repo.",
+        )
+    if "err" in box:
+        raise box["err"]
+    return box["ok"]
+
+
+def execute_public_check(
+    engine: str,
+    text: str,
+    urls: list[str] | None,
+    fn: Callable[[], Any],
+) -> Any:
+    """Presets skip the live slot. Allow-listed live URLs get concurrency + timeout."""
+    if is_preset(engine, text, urls) or not (public_demo_enabled() and public_live_enabled()):
+        return fn()
+    return run_live(fn)
 
 
 def _paste_url(answer_id: str) -> str:

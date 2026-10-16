@@ -76,7 +76,7 @@ def test_presets_never_429_after_rate_limit(tmp_path: Path, monkeypatch):
     monkeypatch.delenv("MOOLTRACE_PUBLIC_LIVE", raising=False)
     from mooltrace import public_demo
 
-    public_demo._hits.clear()
+    public_demo.reset_public_limits()
     graph = Graph(tmp_path / "demo.db")
     seed_offline_presets(graph)
     monkeypatch.setattr("mooltrace.api.get_graph", lambda: graph)
@@ -123,7 +123,7 @@ def test_public_demo_rejects_oversized_draft(monkeypatch):
     monkeypatch.delenv("MOOLTRACE_PUBLIC_LIVE", raising=False)
     from mooltrace import public_demo
 
-    public_demo._hits.clear()
+    public_demo.reset_public_limits()
     client = TestClient(app)
     response = client.post(
         "/check-answer",

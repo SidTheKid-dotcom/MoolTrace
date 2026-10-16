@@ -128,6 +128,44 @@ const PRESETS = [
 ]
 
 const DEPTHS = [1, 2, 3] as const
+const LIVE_HOSTS = [
+  "healthline.com",
+  "everydayhealth.com",
+  "verywellhealth.com",
+  "medicalnewstoday.com",
+  "webmd.com",
+  "pubmed.ncbi.nlm.nih.gov",
+  "doi.org",
+]
+const LIVE_MS = 120_000
+
+function parseUrls(raw: string): string[] {
+  return raw.split(/\s+/).map((item) => item.trim()).filter(Boolean)
+}
+
+function liveHostAllowed(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./i, "").toLowerCase()
+    return LIVE_HOSTS.includes(host)
+  } catch {
+    return false
+  }
+}
+
+function isPresetBody(engine: string, text: string, listed: string[]): boolean {
+  return PRESETS.some(
+    (preset) =>
+      preset.engine === engine &&
+      preset.text === text &&
+      preset.urls.length === listed.length &&
+      preset.urls.every((url, index) => url === listed[index]),
+  )
+}
+
+function isLivePaste(engine: string, text: string, listed: string[]): boolean {
+  if (isPresetBody(engine, text, listed)) return false
+  return listed.length > 0 && listed.every(liveHostAllowed)
+}
 
 function decisionVariant(decision: string): "default" | "secondary" | "destructive" {
   if (decision === "block") return "destructive"
@@ -330,6 +368,8 @@ export function PreShip() {
   const [byDepth, setByDepth] = useState<Partial<Record<number, Check>>>({})
   const [rewrite, setRewrite] = useState<Rewrite | null>(null)
   const [rewriting, setRewriting] = useState(false)
+  const listed = parseUrls(urls)
+  const liveRunning = loading && isLivePaste(engine, text, listed)
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -358,8 +398,24 @@ export function PreShip() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(LIVE_MS),
     })
     if (!response.ok) {
+      const detail = await response.text()
+      if (response.status === 429) {
+        throw new Error("A live check is already running, or this IP hit the rate limit. Try a preset, or wait about 60 s.")
+      }
+      if (response.status === 504) {
+        throw new Error("Live check hit the 120 s limit. Try a preset or a shorter page.")
+      }
+      if (response.status === 413) {
+        throw new Error("Draft or URL list is too large for the public demo.")
+      }
+      if (response.status === 400 && /allow/i.test(detail)) {
+        throw new Error(
+          `Live checks only run for ${LIVE_HOSTS.join(", ")}. Try a preset or paste one of those URLs.`,
+        )
+      }
       throw new Error(`The check returned HTTP ${response.status}.`)
     }
     return (await response.json()) as Check
@@ -499,20 +555,27 @@ export function PreShip() {
         <CardHeader>
           <CardTitle>Draft answer</CardTitle>
           <CardDescription>
-            Paste the draft and the URLs or DOIs it cites. This does not give medical advice,
-            and it does not say the draft is wrong.
+            Paste the draft and the URLs or DOIs it cites. Live URL checks are only for{" "}
+            {LIVE_HOSTS.join(", ")}. This does not give medical advice, and it does not say
+            the draft is wrong.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <Textarea
             value={text}
-            onChange={(event) => setText(event.target.value)}
+            onChange={(event) => {
+              setPresetId("")
+              setText(event.target.value)
+            }}
             placeholder="Paste a draft answer, a DOI, or both."
             className="min-h-36"
           />
           <Textarea
             value={urls}
-            onChange={(event) => setUrls(event.target.value)}
+            onChange={(event) => {
+              setPresetId("")
+              setUrls(event.target.value)
+            }}
             placeholder="One cited URL or DOI per line"
             className="min-h-20"
           />
@@ -556,13 +619,17 @@ export function PreShip() {
               onClick={() =>
                 void runCheck({
                   text,
-                  urls: urls.split(/\s+/).map((item) => item.trim()).filter(Boolean),
+                  urls: listed,
                   engine,
                   depth,
                 })
               }
             >
-              {loading ? "Fetching pages and checking notices…" : "Check before shipping"}
+              {liveRunning
+                ? "Running live, about 60 s…"
+                : loading
+                  ? "Fetching pages and checking notices…"
+                  : "Check before shipping"}
             </Button>
           </div>
         </CardContent>
@@ -587,13 +654,19 @@ export function PreShip() {
               2 / 3 on the same question. Olive oil depth 1 is PASS (0 notice paths); depth 3 is BLOCK
               with the path. Not in the graph says so plainly: nothing connects that page to a study.
               This is not proof it is safe; the source may not be modelled. Coverage is expanded X of
-              Y cited works on every verdict.
+              Y cited works on every verdict. You can also paste your own URL from healthline.com,
+              everydayhealth.com, verywellhealth.com, medicalnewstoday.com, webmd.com,
+              pubmed.ncbi.nlm.nih.gov, or doi.org. That check runs live, about 60 s.
             </CardDescription>
           </CardHeader>
         </Card>
       ) : null}
 
-      {loading && !result ? (
+      {liveRunning ? (
+        <p className="text-sm text-muted-foreground" role="status" data-testid="live-running">
+          Running live, about 60 s. One live check at a time on this host. Presets stay instant.
+        </p>
+      ) : loading && !result ? (
         <p className="text-sm text-muted-foreground" role="status">
           Fetching the cited page, walking reviews, then checking publisher notices…
         </p>

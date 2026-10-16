@@ -79,7 +79,7 @@ def test_remote_mcp_presets_never_429_after_rate_limit(tmp_path: Path, monkeypat
     from mooltrace import public_demo
     from mooltrace.mcp_http import remote_server
 
-    public_demo._hits.clear()
+    public_demo.reset_public_limits()
     graph = Graph(tmp_path / "mcp-http.db")
     seed_offline_presets(graph)
     monkeypatch.setattr("mooltrace.trace.get_graph", lambda: graph)
@@ -137,7 +137,7 @@ def test_remote_mcp_rejects_oversized_draft(tmp_path: Path, monkeypatch):
     from mooltrace import public_demo
     from mooltrace.mcp_http import remote_server
 
-    public_demo._hits.clear()
+    public_demo.reset_public_limits()
     graph = Graph(tmp_path / "mcp-http.db")
     monkeypatch.setattr("mooltrace.trace.get_graph", lambda: graph)
 
@@ -167,7 +167,7 @@ def test_remote_mcp_ssrf_url_is_error(tmp_path: Path, monkeypatch):
     from mooltrace import public_demo
     from mooltrace.mcp_http import remote_server
 
-    public_demo._hits.clear()
+    public_demo.reset_public_limits()
     graph = Graph(tmp_path / "mcp-http.db")
     monkeypatch.setattr("mooltrace.trace.get_graph", lambda: graph)
 
@@ -243,7 +243,7 @@ def test_remote_mcp_http_client_check_answer_and_what_rests_on(tmp_path: Path, m
     from mooltrace import public_demo
     from mooltrace.api import app
 
-    public_demo._hits.clear()
+    public_demo.reset_public_limits()
     graph = Graph(db)
     seed_offline_presets(graph)
     graph.persist()

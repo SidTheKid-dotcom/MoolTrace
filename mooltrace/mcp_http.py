@@ -19,6 +19,7 @@ from mooltrace import TAGLINE
 from mooltrace.mcp_server import ToolError, _call
 from mooltrace.public_demo import (
     PublicDemoRejected,
+    execute_public_check,
     guard_remote_check,
     guard_remote_doi,
 )
@@ -36,8 +37,9 @@ remote_server = MCPServer(
     title="MoolTrace",
     instructions=(
         f"{TAGLINE} Read-only public MCP. Tools: check_answer, what_rests_on, "
-        "recheck_affected. The hosted demo only runs the four recorded presets "
-        "and their notice DOIs. Flag reliance on a publisher notice. Do not call "
+        "recheck_affected. The hosted demo runs the four recorded presets and, "
+        "when live fetch is on, one allow-listed consumer-health or scholarly "
+        "URL. Flag reliance on a publisher notice. Do not call "
         "the draft wrong, and do not call an Expression of Concern a retraction. "
         "Depth is 1..3."
     ),
@@ -58,8 +60,10 @@ def _guarded(fn, **kwargs):
         "Call this before shipping a health-AI draft. Pass the draft text and "
         "cited URLs. Returns pass (ships), warn (human review), or block "
         "(fail the build), plus the FalkorDB algo.SPpaths route and Cypher. "
-        "The public endpoint only runs the four recorded presets unless live "
-        "fetch is on. Depth 1-3."
+        "The public endpoint runs the four recorded presets, or one allow-listed "
+        "URL (healthline.com, everydayhealth.com, verywellhealth.com, "
+        "medicalnewstoday.com, webmd.com, pubmed.ncbi.nlm.nih.gov, doi.org) "
+        "when live fetch is on. Depth 1-3."
     )
 )
 def check_answer(
@@ -75,7 +79,14 @@ def check_answer(
     ] = 2,
 ) -> dict:
     _guarded(guard_remote_check, engine=engine, text=text, urls=urls)
-    payload = _call(run_check_answer, text=text, urls=urls, engine=engine, depth=depth)
+    payload = _guarded(
+        lambda: execute_public_check(
+            engine,
+            text,
+            urls,
+            lambda: _call(run_check_answer, text=text, urls=urls, engine=engine, depth=depth),
+        )
+    )
     if payload.get("exit_code") == 3:
         raise ToolError(payload.get("summary") or "infrastructure failure")
     return payload

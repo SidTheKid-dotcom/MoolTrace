@@ -159,7 +159,7 @@ def test_lightsail_pin_is_public_demo_without_azure():
     payload = json.loads((ROOT / "deploy" / "lightsail-deployment.json").read_text())
     env = payload["containers"]["api"]["environment"]
     assert env.get("MOOLTRACE_PUBLIC_DEMO") == "1"
-    assert "MOOLTRACE_PUBLIC_LIVE" not in env
+    assert env.get("MOOLTRACE_PUBLIC_LIVE") == "1"
     blob = json.dumps(payload)
     assert "AZURE" not in blob
     assert "OPENAI" not in blob

@@ -863,9 +863,9 @@ def trace_answer(
     answer_id = _answer_id(engine, text or "", url_list)
     graph.merge_answer(answer_id, engine, _text_hash(text or ""), _now())
 
-    from mooltrace.public_demo import public_demo_enabled, public_live_enabled
+    from mooltrace.public_demo import skip_http_for
 
-    skip_http = public_demo_enabled() and not public_live_enabled()
+    skip_http = skip_http_for(engine, text or "", url_list)
     pages = _page_urls(url_list, text or "", errors)
     if skip_http:
         incomplete = False

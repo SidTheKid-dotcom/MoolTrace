@@ -14,6 +14,8 @@ Click **Not in the graph**. This is the NHS page “How to wash your hands” (`
 
 Every verdict also prints a coverage line (`expanded X of Y cited works`) instead of treating leftover expansion as a scary incomplete flag when a notice path already decides.
 
+Optional: paste your own URL that is **not** a preset, from `healthline.com`, `everydayhealth.com`, `verywellhealth.com`, `medicalnewstoday.com`, `webmd.com`, `pubmed.ncbi.nlm.nih.gov`, or `doi.org`. The UI shows **Running live, about 60 s**. One live check at a time; presets stay instant. Other domains are refused. SSRF, a size cap, a per-IP rate limit, and a 120 s hard stop still apply.
+
 ## 2. One CLI command (90 s)
 
 ```bash

@@ -12,7 +12,11 @@ from mooltrace.clients import InfraError, MoolTraceError
 from mooltrace.config import API_HOST, API_PORT, CORS_ORIGINS
 from mooltrace.graph import get_graph
 from mooltrace.mcp_http import mcp_asgi, mcp_lifespan
-from mooltrace.public_demo import PublicDemoRejected, guard_public_check
+from mooltrace.public_demo import (
+    PublicDemoRejected,
+    execute_public_check,
+    guard_public_check,
+)
 from mooltrace.ssrf import UnsafeURL
 from mooltrace.rewrite import rewrite_answer
 from mooltrace.trace import (
@@ -86,9 +90,19 @@ def stats() -> dict:
     return {"counts": run.rows, "cypher": run.cypher, "elapsed_ms": round(run.elapsed_ms, 2)}
 
 
-def _guard_public_demo(body: DraftIn) -> None:
+def _client_ip(request: Request) -> str:
+    forwarded = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+    if forwarded:
+        return forwarded
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
+
+
+def _guard_public_demo(body: DraftIn, request: Request | None = None) -> None:
+    client_ip = _client_ip(request) if request is not None else None
     try:
-        guard_public_check(body.engine, body.text, body.urls)
+        guard_public_check(body.engine, body.text, body.urls, client_ip=client_ip)
     except PublicDemoRejected as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
     except UnsafeURL as exc:
@@ -97,10 +111,15 @@ def _guard_public_demo(body: DraftIn) -> None:
 
 @app.post("/check-answer")
 def post_check_answer(body: DraftIn, request: Request) -> dict:
-    _ = request
-    _guard_public_demo(body)
+    _guard_public_demo(body, request)
+
+    def run() -> dict:
+        return check_answer(body.text, body.urls, body.engine, body.depth)
+
     try:
-        payload = check_answer(body.text, body.urls, body.engine, body.depth)
+        payload = execute_public_check(body.engine, body.text, body.urls, run)
+    except PublicDemoRejected as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
     except (MoolTraceError, UnsafeURL, InfraError) as exc:
         raise _raise(exc) from exc
     if payload.get("error_code") == "infra" or payload.get("exit_code") == 3:
@@ -112,8 +131,8 @@ def post_check_answer(body: DraftIn, request: Request) -> dict:
 
 
 @app.post("/rewrite")
-def post_rewrite(body: DraftIn) -> dict:
-    _guard_public_demo(body)
+def post_rewrite(body: DraftIn, request: Request) -> dict:
+    _guard_public_demo(body, request)
     try:
         return rewrite_answer(body.text, body.urls, body.engine, body.depth)
     except (MoolTraceError, UnsafeURL, InfraError) as exc:
@@ -121,8 +140,8 @@ def post_rewrite(body: DraftIn) -> dict:
 
 
 @app.post("/trace")
-def post_trace(body: DraftIn) -> dict:
-    _guard_public_demo(body)
+def post_trace(body: DraftIn, request: Request) -> dict:
+    _guard_public_demo(body, request)
     try:
         return trace_answer(body.text, body.urls, body.engine, body.depth)
     except (MoolTraceError, UnsafeURL, InfraError) as exc:
