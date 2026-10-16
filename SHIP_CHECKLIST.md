@@ -49,8 +49,8 @@ If the Lightsail demo is down, do not paste a substitute. Note it and stop.
 Signed-out, in this order:
 
 1. Public GitHub README: tagline, live demo URL, olive-oil BLOCK screenshot, track name **Agents That Act on Connected Data**.
-2. Live demo: click **Healthline olive oil (block)**. BLOCK, path strength 0.30, both hops `mention`, retraction `10.1056/nejmc1806491`.
-3. YouTube: duration ≤90 s, close line "MoolTrace. Check the roots before you ship."
+2. Live demo: click **Healthline olive oil (block)**. Toggle depth 1 (PASS, 0 notice paths) then depth 3 (BLOCK, path strength 0.30, both hops `mention`, retraction `10.1056/nejmc1806491`). Click **Not in the graph**: WARN, expanded 0 of 0 cited works.
+3. YouTube: duration ≤90 s, include the depth 1 → 3 toggle and the Not in the graph beat, close line "MoolTrace. Check the roots before you ship."
 4. Hackathon form track is **Agents That Act on Connected Data**. `SUBMISSION.md` has the three links filled (repo, video, demo). Video placeholder `_paste after upload_` is gone.
 
 Stop. No pushes after Sun 18 Oct 2026, 11:59 PM IST. Keep the live link, public repo, and video up through judging.

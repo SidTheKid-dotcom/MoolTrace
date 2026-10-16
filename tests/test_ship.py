@@ -22,13 +22,14 @@ BEATS = (
     "Paste AI answer",
     "No-graph check",
     "MoolTrace BLOCK and path",
+    "Not in the graph",
     "Rewrite",
     "CI fails the PR",
     "Agent calls what_rests_on over MCP",
     "Baseline result",
     "Close",
 )
-BEAT_SECONDS = (5, 10, 5, 20, 10, 10, 15, 10, 5)
+BEAT_SECONDS = (5, 8, 5, 18, 8, 8, 8, 12, 8, 5)
 HEADING = re.compile(r"^#{2,3} (.+?) \((\d+) s\)\s*$", re.M)
 
 
@@ -65,8 +66,16 @@ def test_video_script_quotes_live_numbers_with_citations():
         "Estruch 2013",
         "mention",
         "path strength 0.30",
+        "depth 1",
+        "0 notice paths",
+        "depth 3",
         "BLOCK (exit 1)",
         "10.1056/nejmc1806491",
+        "Not in the graph",
+        "https://www.nhs.uk/live-well/best-way-to-wash-your-hands/",
+        "expanded 0 of 0 cited works",
+        "31/40",
+        "results/vitality_2026-10-17.json",
         "retracted and republished",
         "Direct-DOI check (no graph)",
         "pass",
@@ -91,9 +100,16 @@ def test_video_script_quotes_live_numbers_with_citations():
     assert "algo.pageRank" not in text or "not called" in text
     assert "0.72" not in text
     # Olive-oil hops are mention; do not quote cinnamon relies as the BLOCK path.
-    block_section = text.split("## MoolTrace BLOCK and path", 1)[1].split("## Rewrite", 1)[0]
+    block_section = text.split("## MoolTrace BLOCK and path", 1)[1].split("## Not in the graph", 1)[0]
     assert "mention" in block_section
     assert "relies" not in block_section
+    assert "depth 1" in block_section.lower()
+    assert "pass" in block_section.lower()
+    assert "depth 3" in block_section.lower()
+    assert "block" in block_section.lower()
+    not_in = text.split("## Not in the graph", 1)[1].split("## Rewrite", 1)[0]
+    assert "expanded 0 of 0 cited works" in not_in
+    assert "not proof it is safe" in not_in.lower() or "not proof" in not_in.lower()
 
 
 def test_submission_has_track_links_cypher_algorithms_video_placeholder():
@@ -146,6 +162,8 @@ def test_ship_checklist_is_human_only():
     assert DEMO in text
     assert TRACK in text
     assert "90" in text
+    assert "depth 1" in lowered
+    assert "not in the graph" in lowered
     assert "under 180" not in lowered
     assert "≤3 min" not in text
     assert "unshare --net" not in text

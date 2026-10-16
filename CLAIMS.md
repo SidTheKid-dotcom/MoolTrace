@@ -56,16 +56,18 @@ Same URL via the README `check-answer` form (not re-fetched; same cinnamon page)
 | Toggle olive-oil **depth 2** | same POST, `"depth":2` | **BLOCK (exit 1)**. Same Estruch path as depth 3. Strength `0.30250000000000005`. |
 | Click **Healthline cinnamon (warn)** | same POST, cinnamon URL, depth 2 | **WARN (exit 2)**. Strength `0.55`. Expression of Concern `10.2337/dc25-ec09`. Depth 1 is PASS (0 notice paths). |
 | Clean study (pass) | same POST, text `10.1016/j.jsps.2015.03.013`, engine `clean-check` | **pass** exit 0 at depths 1, 2, and 3 |
+| Click **Not in the graph** | same POST, NHS `https://www.nhs.uk/live-well/best-way-to-wash-your-hands/`, depth 2 | **WARN (exit 2)**. Coverage **expanded 0 of 0 cited works**. Summary: “Nothing in the graph connects this answer to a study. This is not proof it is safe; the source may not be modelled.” Recorded 16 Oct 2026T20:22:08Z, page hash `5c015843460b0e872bd9a0b01bf0c5bf91a810a04a9f21b72b0574b525495329`. Hosted signed-out POST 16 Oct 2026 (T18 / T20). |
 | Oversized free-text | POST 40k-char draft | HTTP **413** `Draft or URL list is too large for the public demo.` |
 
 The 2013 PREDIMED trial was retracted and republished in 2018 after re-analysis. Both olive-oil hops are `mention`. This does not say olive oil or the Mediterranean diet works or does not.
 
-Offline replay of the same three recorded presets (no HTTP; throwaway graph):
+Offline replay of the same four recorded presets (no HTTP; throwaway graph):
 
 ```
 nutrition-olive-oil block exit 1 strength 0.30250000000000005 decided algo.SPpaths
 nutrition-healthline warn exit 2 strength 0.55 decided algo.SPpaths
 clean-jsps pass exit 0 strength None decided algo.SPpaths
+not-in-graph warn exit 2 coverage expanded 0 of 0 cited works
 ```
 
 ## Verdict table
@@ -194,7 +196,7 @@ Confirmed: `3 passed in 24.92s`. Weight 0.85 → warn, 0.2 → pass; `sp_paths` 
 docker compose up --build
 ```
 
-**Not booted this session** (Lightsail already serves the same three presets). Confirmed `docker compose config`: services `api` / `web`; published `127.0.0.1:4317` and `127.0.0.1:4318`; `MOOLTRACE_DB=/data/demo.db`; `MOOLTRACE_PUBLIC_DEMO=1`. Volume is not `data/mooltrace.db`.
+**Not booted this session** (Lightsail already serves the same four presets). Confirmed `docker compose config`: services `api` / `web`; published `127.0.0.1:4317` and `127.0.0.1:4318`; `MOOLTRACE_DB=/data/demo.db`; `MOOLTRACE_PUBLIC_DEMO=1`. Volume is not `data/mooltrace.db`.
 
 ## Offline unit suite
 

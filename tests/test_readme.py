@@ -164,6 +164,8 @@ def test_readme_demo_is_compose_and_honest():
     assert "127.0.0.1:4317" in demo
     assert "Healthline cinnamon" in demo
     assert "Healthline olive oil" in demo
+    assert "Not in the graph" in demo
+    assert "Four presets" in demo
     assert "counted 2-hop" in demo
     assert "path strength 0.30" in demo
     assert "algo.SPpaths" in demo

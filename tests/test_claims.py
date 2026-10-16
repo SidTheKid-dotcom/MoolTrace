@@ -63,6 +63,8 @@ def test_claims_records_confirmed_outputs_and_quickstart_time():
         "mooltrace baseline",
         "mooltrace vitality",
         "31/40",
+        "Not in the graph",
+        "expanded 0 of 0 cited works",
         "unshare --net --map-root-user",
         "fresh clone",
         "/tmp",

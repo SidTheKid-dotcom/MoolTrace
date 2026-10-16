@@ -16,7 +16,7 @@ Health-AI products (symptom checkers, nutrition coaches, patient chatbots) cite 
 
 ## How judges run it in two minutes
 
-Live demo (no sign-up): https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/ — click **Healthline olive oil (block)**. Expect **BLOCK (exit 1)** and `Decided by: algo.SPpaths, path strength 0.30` (page `mention` 0.55 × Schwingshackl→Estruch `mention` 0.55; retraction `10.1056/nejmc1806491` 2018-06-13; recorded 16 Oct 2026 in `examples/presets_recorded.json`). Never say the review relies on the trial. The 2013 trial was retracted and republished in 2018 after re-analysis. This does not say olive oil works or does not.
+Live demo (no sign-up): https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/ — click **Healthline olive oil (block)**. Toggle **depth 1**: **PASS** (0 notice paths). Toggle **depth 3**: **BLOCK (exit 1)** and `Decided by: algo.SPpaths, path strength 0.30` (page `mention` 0.55 × Schwingshackl→Estruch `mention` 0.55; retraction `10.1056/nejmc1806491` 2018-06-13; recorded 16 Oct 2026 in `examples/presets_recorded.json`). Click **Not in the graph** for the honest negative (NHS how-to, WARN, expanded 0 of 0 cited works). Never say the review relies on the trial. The 2013 trial was retracted and republished in 2018 after re-analysis. This does not say olive oil works or does not.
 
 ```bash
 python3 -m venv .venv
@@ -31,7 +31,7 @@ Expect **WARN (exit 2)** and `Decided by: algo.SPpaths, path strength 0.55` (Hea
 .venv/bin/python -m mooltrace batch examples/lancet.jsonl --fail-on block; echo $?
 ```
 
-Expect exit **1** (Mehra 2020 retraction). Direct-DOI on the olive-oil URL with no graph is **pass** (no DOI in the draft; this session, `check_direct_doi`). Depth-3 MoolTrace is **block**.
+Expect exit **1** (Mehra 2020 retraction). Direct-DOI on the olive-oil URL with no graph is **pass** (no DOI in the draft; this session, `check_direct_doi`). Depth-1 MoolTrace is **pass** (0 notice paths). Depth-3 MoolTrace is **block**.
 
 ## Cypher (deciding query)
 
@@ -82,7 +82,7 @@ YIELD node, componentId
 
 ## Baseline (cited)
 
-From `results/baseline_2026-10-16.json` (16 Oct 2026; 52 labelled cases; Direct-DOI recall **0.4286**, MoolTrace recall **1.0**, 15 only-multi-hop catches). Reproduce: `.venv/bin/python -m mooltrace baseline --out results/baseline_2026-10-16.json`. This is not a medical accuracy score.
+From `results/baseline_2026-10-16.json` (16 Oct 2026; 52 labelled cases; Direct-DOI recall **0.4286**, MoolTrace recall **1.0**, 15 only-multi-hop catches). Reproduce: `.venv/bin/python -m mooltrace baseline --out results/baseline_2026-10-16.json`. Sealed external set from `results/vitality_2026-10-17.json`: Direct-DOI **0/40**, MoolTrace same-trial **31/40**, false alarms **0/10**. Reproduce: `.venv/bin/python -m mooltrace vitality --out results/vitality_2026-10-17.json`. This is not a medical accuracy score.
 
 ## Tech used
 
