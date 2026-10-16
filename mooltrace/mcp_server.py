@@ -20,6 +20,8 @@ from mooltrace.rewrite import rewrite_answer as run_rewrite
 from mooltrace.trace import (
     check_answer as run_check_answer,
     check_study as run_check_study,
+    explain_path as run_explain,
+    recheck_affected as run_recheck,
     ro_cypher as run_ro_cypher,
     shared_ancestors as run_shared,
     trace_answer as run_trace,
@@ -72,10 +74,11 @@ def _call(fn, **kwargs):
 
 @server.tool(
     description=(
-        "Pre-ship check for a health-AI draft or answer fixture. Pass the draft "
-        "text and cited URLs. Returns pass, warn, or block. warn: counted path "
-        "to an Expression of Concern, unverified hop, unfinished check, or "
-        "no verifiable citation or source (`no_sources`). "
+        "Call this before shipping a health-AI draft. Pass the draft text and "
+        "cited URLs. Returns pass (ships), warn (human review), or block "
+        "(fail the build), plus the FalkorDB algo.SPpaths route and Cypher. "
+        "warn: counted path to an Expression of Concern, unverified hop, "
+        "unfinished check, or no verifiable source. "
         "block: counted path to a retraction, withdrawal, or removal. "
         "exit_code 3 is infrastructure failure. Depth 1-3."
     )
@@ -161,8 +164,10 @@ def check_study(
 
 @server.tool(
     description=(
-        "Reverse impact. Given a notice DOI or a study DOI, list answers and "
-        "sources in this graph that rest on it. Returns every matching notice. "
+        "Reverse impact after a notice changes. Given a notice DOI or a study "
+        "DOI, return 'This Expression of Concern affects N stored answers' "
+        "plus the counted answer ids (weighted PATH_RULE paths only). "
+        "Then call recheck_affected to re-run those answers. "
         "This is not a monitoring or alert scheduler."
     )
 )
@@ -170,6 +175,44 @@ def what_rests_on(
     doi: Annotated[str, Field(description="Notice DOI or study DOI to reverse from.")],
 ) -> dict:
     return _call(run_rests, doi=doi)
+
+
+@server.tool(
+    description=(
+        "After what_rests_on, re-run check_answer on just the counted answers "
+        "that rest on this notice. Use when a publisher notice changed and "
+        "you need to know which shipped answers to revisit."
+    )
+)
+def recheck_affected(
+    doi: Annotated[str, Field(description="Notice DOI or study DOI to recheck from.")],
+    depth: Annotated[
+        int, Field(ge=1, le=3, description="Hop budget from 1 to 3.")
+    ] = 2,
+) -> dict:
+    return _call(run_recheck, doi=doi, depth=depth)
+
+
+@server.tool(
+    description=(
+        "Explain the deciding citation path. Same inputs as check_answer. "
+        "Returns the algo.SPpaths call, path strength, hop sentences, and "
+        "the Cypher that produced the verdict."
+    )
+)
+def explain_path(
+    text: Annotated[str, Field(description="Draft or fixture text to explain.")] = "",
+    urls: Annotated[
+        list[str] | None, Field(description="Cited source URLs from the draft.")
+    ] = None,
+    engine: Annotated[
+        str, Field(description="Engine or fixture name for this draft.")
+    ] = "draft",
+    depth: Annotated[
+        int, Field(ge=1, le=3, description="Hop budget from 1 to 3.")
+    ] = 2,
+) -> dict:
+    return _call(run_explain, text=text, urls=urls, engine=engine, depth=depth)
 
 
 @server.tool(

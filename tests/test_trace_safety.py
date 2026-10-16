@@ -170,14 +170,9 @@ def test_expand_applies_crossref_refs_when_openalex_id_batch_fails(
     monkeypatch.setattr("mooltrace.trace.crossref_work", fake_crossref)
     monkeypatch.setattr("mooltrace.trace.notice_check", lambda *_a, **_k: None)
     try:
-        try:
-            expand_work(graph, review, CallStats())
-        except MoolTraceError as exc:
-            assert "OpenAlex" in str(exc)
-        else:
-            raise AssertionError("OpenAlex batch failure should still fail closed")
+        expand_work(graph, review, CallStats())
         row = graph.work_row(review)
-        assert row is None or not row.get("expanded")
+        assert row and row.get("expanded")
         neighbors = graph.run(
             "neighbors",
             "MATCH (a:Work {doi: $doi})-[:RESTS_ON]->(b:Work) RETURN b.doi AS doi",

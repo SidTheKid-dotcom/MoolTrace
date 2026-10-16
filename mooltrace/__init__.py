@@ -2,5 +2,8 @@
 
 __version__ = "0.1.0"
 
-TAGLINE = "Trace your AI's answer to its root, and see if that root is flagged."
+TAGLINE = (
+    "MoolTrace catches when your health AI's sources quietly rest on a "
+    "flagged or retracted study, even three links deep."
+)
 PITCH = "Your AI leaned on a flagged study and didn't tell you."

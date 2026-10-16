@@ -259,6 +259,8 @@ def test_check_answer_exhausted_openalex_is_infra(tmp_path: Path, monkeypatch):
 
     monkeypatch.setattr("mooltrace.trace.openalex_work_doi", boom)
     monkeypatch.setattr("mooltrace.trace.crossref_work", boom)
+    monkeypatch.setattr("mooltrace.trace.datacite_work", boom)
+    monkeypatch.setattr("mooltrace.trace.doi_org_csl", boom)
     graph = Graph(tmp_path / "mooltrace.db")
     try:
         payload = check_answer(

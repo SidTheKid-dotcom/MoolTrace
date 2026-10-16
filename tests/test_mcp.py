@@ -152,6 +152,8 @@ def test_mcp_tool_schema_descriptions_depth_and_readonly(tmp_path: Path, monkeyp
                 "trace_answer",
                 "check_study",
                 "what_rests_on",
+                "recheck_affected",
+                "explain_path",
                 "shared_ancestors",
                 "ro_cypher",
             }

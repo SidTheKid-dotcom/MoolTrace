@@ -852,3 +852,141 @@ def test_depth_cap_is_honored(tmp_path: Path):
         assert "*1..1" in run.cypher
     finally:
         graph.close()
+
+
+NOW = "2026-10-16T08:00:00+00:00"
+FLIP_URL = "https://example.com/cinnamon"
+FLIP_ENGINE = "flip-test"
+SILVA = "10.3390/nu14132773"
+KHAN = "10.2337/diacare.26.12.3215"
+EOC = "10.2337/dc25-ec09"
+
+
+def _seed_flip_graph(graph: Graph, *, weight: float, reliance: str) -> None:
+    from mooltrace.trace import _answer_id
+
+    answer_id = _answer_id(FLIP_ENGINE, "", [FLIP_URL])
+    graph.merge_answer(answer_id, FLIP_ENGINE, "hash", NOW)
+    graph.merge_source(FLIP_URL, "Cinnamon page", "example.com", True, fetched_at=NOW)
+    graph.cite(answer_id, FLIP_URL)
+    graph.merge_work(
+        SILVA,
+        title="Silva 2022",
+        year=2022,
+        expanded=True,
+        notice_checked=True,
+        notice_checked_at=NOW,
+    )
+    graph.merge_work(
+        KHAN,
+        title="Khan 2003",
+        year=2003,
+        expanded=True,
+        notice_checked=True,
+        notice_checked_at=NOW,
+    )
+    graph.source_rests_on(FLIP_URL, SILVA)
+    graph.rest_on(SILVA, KHAN)
+    graph.set_reliance(
+        None,
+        FLIP_URL,
+        SILVA,
+        reliance="uses_data_or_method",
+        weight=0.85,
+        sentence="The page cites Silva 2022 on cinnamon and blood sugar.",
+        evidence_from="page",
+    )
+    graph.set_reliance(
+        SILVA,
+        None,
+        KHAN,
+        reliance=reliance,
+        weight=weight,
+        sentence="Silva included Khan 2003 among the reviewed trials.",
+        evidence_from="pmc",
+    )
+    graph.merge_notice(
+        EOC,
+        KHAN,
+        "expression_of_concern",
+        "Expression of concern",
+        "publisher",
+        "2025-08-20",
+    )
+
+
+def _offline_check(monkeypatch) -> None:
+    monkeypatch.setattr("mooltrace.trace.judge_citation_edges", lambda *a, **k: None)
+    monkeypatch.setattr("mooltrace.trace.expand_work", lambda *a, **k: None)
+    monkeypatch.setattr("mooltrace.trace.notice_check", lambda *a, **k: None)
+
+    def no_fetch(*_a, **_k):
+        raise AssertionError("live HTTP is not allowed in this test")
+
+    monkeypatch.setattr("mooltrace.trace.fetch_page", no_fetch)
+
+
+def test_sp_weight_flip_changes_verdict(tmp_path: Path, monkeypatch):
+    from mooltrace.trace import check_answer
+
+    _offline_check(monkeypatch)
+    strong = Graph(tmp_path / "strong" / "mooltrace.db")
+    weak = Graph(tmp_path / "weak" / "mooltrace.db")
+    try:
+        _seed_flip_graph(strong, weight=0.85, reliance="uses_data_or_method")
+        _seed_flip_graph(weak, weight=0.2, reliance="background")
+        warn = check_answer("", [FLIP_URL], FLIP_ENGINE, 2, graph=strong)
+        passed = check_answer("", [FLIP_URL], FLIP_ENGINE, 2, graph=weak)
+        assert warn["decision"] == "warn"
+        assert warn["exit_code"] == 2
+        assert passed["decision"] == "pass"
+        assert passed["exit_code"] == 0
+        algo = warn.get("algorithm") or {}
+        assert algo.get("name") == "algo.SPpaths"
+        assert "algo.SPpaths" in (warn.get("cypher") or "")
+        assert algo.get("weight_prop") == "cost"
+        assert "-ln(weight)" in (algo.get("cost_formula") or "")
+        assert (algo.get("strength") or 0) > 0.5
+        weak_algo = passed.get("algorithm") or {}
+        assert weak_algo.get("name") == "algo.SPpaths"
+        assert (weak_algo.get("strength") or 1) < 0.5
+    finally:
+        strong.close()
+        weak.close()
+
+
+def test_what_rests_on_summary_and_recheck_affected(tmp_path: Path, monkeypatch):
+    from mooltrace.trace import recheck_affected, what_rests_on
+
+    _offline_check(monkeypatch)
+    graph = Graph(tmp_path / "mooltrace.db")
+    try:
+        _seed_flip_graph(graph, weight=0.85, reliance="uses_data_or_method")
+        impact = what_rests_on(EOC, graph=graph, depth=2)
+        assert impact["counted_answer_count"] == 1
+        assert impact["summary"] == (
+            "This Expression of Concern affects 1 stored answer."
+        )
+        assert impact["counted_answer_ids"]
+        seen: list[str] = []
+
+        def fake_check(**kwargs):
+            seen.append(str(kwargs.get("engine") or ""))
+            return {
+                "decision": "warn",
+                "exit_code": 2,
+                "engine": kwargs.get("engine"),
+                "summary": "rechecked",
+            }
+
+        monkeypatch.setattr("mooltrace.trace.check_answer", fake_check)
+        out = recheck_affected(EOC, graph=graph, depth=2)
+        assert out["affected"] == 1
+        assert out["rechecks"]
+        assert out["rechecks"][0]["decision"] == "warn"
+        assert seen == [FLIP_ENGINE]
+        inputs = graph.answer_inputs(impact["counted_answer_ids"][0])
+        assert FLIP_URL in (inputs.get("urls") or [])
+        assert SILVA in (inputs.get("dois") or [])
+    finally:
+        graph.close()

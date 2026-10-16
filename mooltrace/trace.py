@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
 from mooltrace import config
@@ -30,6 +31,7 @@ from mooltrace.clients import (
 )
 from mooltrace import cypher as C
 from mooltrace.decision import EXIT_INFRA, EXIT_WARN, decide, path_score
+from mooltrace.reliance import WEIGHT_FLOOR
 from mooltrace.graph import Graph, get_graph
 from mooltrace.reliance import PATH_RULE
 from mooltrace.ssrf import UnsafeURL, public_http_url
@@ -44,6 +46,7 @@ from mooltrace.ids import (
     valid_doi,
 )
 from mooltrace import PITCH, TAGLINE
+from mooltrace.progress import emit as progress
 
 _LIMITS = (
     "MoolTrace reports a path to a publisher notice. "
@@ -311,11 +314,15 @@ def expand_work(graph: Graph, doi: str, stats: CallStats) -> None:
     cr_failed = False
     try:
         openalex = openalex_work_doi(doi, stats)
+    except InfraError:
+        raise
     except MoolTraceError:
         openalex = None
         oa_failed = True
     try:
         crossref = crossref_work(doi, stats)
+    except InfraError:
+        raise
     except MoolTraceError:
         crossref = None
         cr_failed = True
@@ -365,8 +372,11 @@ def expand_work(graph: Graph, doi: str, stats: CallStats) -> None:
     _apply_notices(graph, doi, crossref)
 
     ref_dois: list[str] = []
+    cr_refs = reference_dois(crossref)
     referenced = (openalex or {}).get("referenced_works") or []
-    if referenced:
+    # Crossref's reference list is enough to walk one hop. Skip the
+    # OpenAlex id batch when those DOIs are already in hand.
+    if referenced and not cr_refs:
         try:
             for record in openalex_by_ids(referenced, stats):
                 ref = _store_openalex(graph, record)
@@ -374,11 +384,8 @@ def expand_work(graph: Graph, doi: str, stats: CallStats) -> None:
                     graph.rest_on(doi, ref)
                     ref_dois.append(ref)
         except (MoolTraceError, InfraError):
-            # Crossref's reference list is enough to walk one hop. Do not
-            # abort before those DOIs are stored. Exhausted OpenAlex 429 is
-            # InfraError, not MoolTraceError.
             oa_failed = True
-    for ref in reference_dois(crossref):
+    for ref in cr_refs:
         if ref != doi:
             graph.merge_work(ref)
             graph.rest_on(doi, ref)
@@ -580,14 +587,40 @@ def _deepen(graph: Graph, answer_id: str, depth: int, stats: CallStats, errors: 
         except MoolTraceError as exc:
             errors.append(str(exc))
             incomplete = True
-    for doi in expandable:
-        try:
-            expand_work(graph, doi, stats)
-        except InfraError:
-            raise
-        except MoolTraceError as exc:
-            errors.append(f"{doi}: {exc}")
-            incomplete = True
+    if expandable:
+        progress(f"Checking notices 0/{len(expandable)}…")
+    done = 0
+
+    def _one(doi: str) -> None:
+        expand_work(graph, doi, stats)
+
+    workers = max(1, min(4, len(expandable)))
+    if workers == 1:
+        jobs = expandable
+        for doi in jobs:
+            try:
+                _one(doi)
+            except InfraError:
+                raise
+            except MoolTraceError as exc:
+                errors.append(f"{doi}: {exc}")
+                incomplete = True
+            done += 1
+            progress(f"Checking notices {done}/{len(expandable)}…")
+    elif expandable:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futs = {pool.submit(_one, doi): doi for doi in expandable}
+            for fut in as_completed(futs):
+                doi = futs[fut]
+                try:
+                    fut.result()
+                except InfraError:
+                    raise
+                except MoolTraceError as exc:
+                    errors.append(f"{doi}: {exc}")
+                    incomplete = True
+                done += 1
+                progress(f"Checking notices {done}/{len(expandable)}…")
     if depth >= 3:
         for doi in graph.review_neighbors(seeds, config.MAX_DEPTH3_REVIEWS):
             try:
@@ -672,7 +705,8 @@ def _clusters(graph: Graph) -> dict[str, Any]:
         "note": (
             "Weakly connected Work components that contain a publisher notice. "
             "Use these clusters to group answers that share a contaminated "
-            "citation component. The verdict still comes from PATHS_TO_NOTICE."
+            "citation component. The shown route is algo.SPpaths; PATH_RULE "
+            "still classifies every PATHS_TO_NOTICE row."
         ),
     }
 
@@ -728,6 +762,8 @@ def trace_answer(
     graph.merge_answer(answer_id, engine, _text_hash(text or ""), _now())
 
     pages = _page_urls(url_list, text or "", errors)
+    if pages:
+        progress(f"Fetching {len(pages)} page{'s' if len(pages) != 1 else ''}…")
     _ingest_pages(graph, answer_id, pages, stats, errors)
     _ingest_text(graph, answer_id, "\n".join([text or "", *url_list]), stats, errors)
 
@@ -861,6 +897,17 @@ def check_answer(
                 continue
     except Exception:
         sp_run = None
+    sp_paths = []
+    if sp_run is not None:
+        sp_paths = [_public_path(row) for row in sp_run.rows]
+        for path, row in zip(sp_paths, sp_run.rows):
+            try:
+                path["sp_cost"] = float(row.get("sp_cost"))
+            except (TypeError, ValueError):
+                pass
+    # Classify every PATHS_TO_NOTICE row so a weak short hop cannot hide a
+    # counted retraction. algo.SPpaths supplies cost/strength for the shown
+    # route; a counted SP path is what the algorithm decided.
     verdict = decide(
         traced["paths"],
         incomplete=traced["incomplete"],
@@ -876,9 +923,30 @@ def check_answer(
     clusters = _clusters(graph)
     queries = list(traced["queries"])
     deciding_cypher = traced["cypher"]
+    algorithm = None
     if sp_run is not None:
         queries.append(sp_run.as_public())
         deciding_cypher = sp_run.cypher
+        best = sp_run.rows[0] if sp_run.rows else None
+        strength = None
+        if best is not None and best.get("path_score") is not None:
+            try:
+                strength = float(best.get("path_score"))
+            except (TypeError, ValueError):
+                strength = None
+        algorithm = {
+            "name": "algo.SPpaths",
+            "weight_prop": "cost",
+            "cost_formula": "-ln(weight)",
+            "strength": strength,
+            "weight_floor": WEIGHT_FLOOR,
+            "cypher": sp_run.cypher,
+            "explanation": (
+                "algo.SPpaths with cost -ln(weight) on this answer's subgraph. "
+                f"Best path strength (product of RESTS_ON weights) is {strength}. "
+                f"PATH_RULE classified that route as {verdict['decision']}."
+            ),
+        }
     if clusters.get("cypher"):
         queries.append(
             {
@@ -942,6 +1010,7 @@ def check_answer(
         "coverage": verdict.get("coverage"),
         "not_shown": verdict.get("not_shown"),
         "remediation_clusters": clusters,
+        "algorithm": algorithm,
         "impact": impact,
         "answer_id": traced["answer_id"],
         "engine": traced["engine"],
@@ -1052,6 +1121,18 @@ def what_rests_on(doi: str, graph: Graph | None = None, depth: int | None = None
         for item in impact.rows
     ]
     head = impact.rows[0] if impact.rows else {}
+    counted_ids = head.get("counted_answer_ids") or []
+    n = len(counted_ids)
+    kind = head.get("notice_type") or ""
+    if kind == "expression_of_concern":
+        label = "Expression of Concern"
+    elif "retract" in str(kind):
+        label = "retraction"
+    elif "withdraw" in str(kind):
+        label = "withdrawal"
+    else:
+        label = "publisher notice"
+    impact_summary = f"This {label} affects {n} stored {'answer' if n == 1 else 'answers'}."
     graph.persist()
     return {
         "query_doi": target,
@@ -1068,7 +1149,9 @@ def what_rests_on(doi: str, graph: Graph | None = None, depth: int | None = None
         "engines": head.get("engines") or [],
         "source_urls": head.get("source_urls") or [],
         "answer_count": head.get("answer_count") or 0,
+        "counted_answer_count": n,
         "source_count": head.get("source_count") or 0,
+        "summary": impact_summary,
         "notices": notices,
         "upstream_works": upstream.rows,
         "api_calls": stats.api_calls,
@@ -1086,6 +1169,78 @@ def what_rests_on(doi: str, graph: Graph | None = None, depth: int | None = None
             "multi-hop paths do not count. This is not a monitoring or "
             "alert scheduler."
         ),
+    }
+
+
+def recheck_affected(
+    doi: str,
+    graph: Graph | None = None,
+    depth: int | None = None,
+) -> dict[str, Any]:
+    """Re-run check_answer on every counted answer that rests on this notice."""
+    graph = graph or get_graph()
+    depth = config.clamp_depth(depth)
+    impact = what_rests_on(doi, graph=graph, depth=depth)
+    ids = list(impact.get("counted_answer_ids") or [])
+    rechecks: list[dict[str, Any]] = []
+    for answer_id in ids:
+        inputs = graph.answer_inputs(answer_id)
+        urls = [
+            url
+            for url in (inputs.get("urls") or [])
+            if url and not str(url).startswith("urn:")
+        ]
+        dois = [item for item in (inputs.get("dois") or []) if item]
+        text = " ".join(f"DOI {item}" for item in dois)
+        payload = check_answer(
+            text=text,
+            urls=urls,
+            engine=str(inputs.get("engine") or "draft"),
+            depth=depth,
+            graph=graph,
+        )
+        rechecks.append(
+            {
+                "answer_id": answer_id,
+                "engine": payload.get("engine"),
+                "decision": payload.get("decision"),
+                "exit_code": payload.get("exit_code"),
+                "summary": payload.get("summary"),
+            }
+        )
+    return {
+        "query_doi": impact.get("query_doi") or doi,
+        "notice_doi": impact.get("notice_doi"),
+        "notice_type": impact.get("notice_type"),
+        "affected": len(ids),
+        "counted_answer_ids": ids,
+        "summary": impact.get("summary"),
+        "rechecks": rechecks,
+        "cypher": impact.get("cypher"),
+        "impact": impact,
+    }
+
+
+def explain_path(
+    text: str = "",
+    urls: list[str] | None = None,
+    engine: str = "draft",
+    depth: int = config.DEFAULT_DEPTH,
+    graph: Graph | None = None,
+) -> dict[str, Any]:
+    """Show the algorithm call and the deciding path for one check."""
+    payload = check_answer(text, urls, engine, depth, graph=graph)
+    reason = next((item for item in payload.get("reasons") or [] if item.get("steps")), None)
+    if reason is None and payload.get("reasons"):
+        reason = payload["reasons"][0]
+    return {
+        "decision": payload.get("decision"),
+        "exit_code": payload.get("exit_code"),
+        "algorithm": payload.get("algorithm"),
+        "cypher": payload.get("cypher"),
+        "reason": reason,
+        "explanation": (payload.get("algorithm") or {}).get("explanation"),
+        "notices_checked_ago": payload.get("notices_checked_ago"),
     }
 
 

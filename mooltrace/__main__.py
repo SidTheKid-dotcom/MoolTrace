@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
 from mooltrace.clients import InfraError, MoolTraceError
 from mooltrace.ssrf import UnsafeURL
 from mooltrace.rewrite import rewrite_answer
+from mooltrace.summary import format_summary
 from mooltrace.trace import (
     check_answer,
     check_study,
+    recheck_affected,
     shared_ancestors,
     trace_answer,
     what_rests_on,
@@ -40,56 +43,95 @@ def _print(payload: dict) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="mooltrace",
-        description="Pre-ship citation check for health AI drafts.",
+        description=(
+            "Pre-ship citation check for health AI drafts. "
+            "pass ships, warn needs a human, block fails the build."
+        ),
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    check = sub.add_parser("check-answer", help="pass / warn / block a draft")
-    check.add_argument("--text", default="")
-    check.add_argument("--text-file")
-    check.add_argument("--url", action="append", default=[])
-    check.add_argument("--urls-file")
-    check.add_argument("--engine", default="draft")
-    check.add_argument("--depth", type=int, default=2)
+    check = sub.add_parser(
+        "check-answer",
+        aliases=["check"],
+        help="pass / warn / block a draft",
+    )
+    check.add_argument("--text", default="", help="Draft text to check.")
+    check.add_argument("--text-file", help="Read draft text from a file.")
+    check.add_argument(
+        "--url",
+        action="append",
+        default=[],
+        help="Cited source URL. Repeat for more than one.",
+    )
+    check.add_argument("--urls-file", help="File of cited URLs, one per line.")
+    check.add_argument("--engine", default="draft", help="Engine or fixture name.")
+    check.add_argument("--depth", type=int, default=2, help="Hop budget from 1 to 3.")
+    check.add_argument(
+        "--summary",
+        action="store_true",
+        help="Print a 3-line plain-English verdict instead of JSON.",
+    )
+    check.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the full JSON payload (default when stdout is not a TTY).",
+    )
 
     trace = sub.add_parser("trace", help="return paths to publisher notices")
-    trace.add_argument("--text", default="")
-    trace.add_argument("--text-file")
-    trace.add_argument("--url", action="append", default=[])
-    trace.add_argument("--urls-file")
-    trace.add_argument("--engine", default="draft")
-    trace.add_argument("--depth", type=int, default=2)
+    trace.add_argument("--text", default="", help="Draft text to trace.")
+    trace.add_argument("--text-file", help="Read draft text from a file.")
+    trace.add_argument("--url", action="append", default=[], help="Cited source URL.")
+    trace.add_argument("--urls-file", help="File of cited URLs, one per line.")
+    trace.add_argument("--engine", default="draft", help="Engine or fixture name.")
+    trace.add_argument("--depth", type=int, default=2, help="Hop budget from 1 to 3.")
 
-    rewrite = sub.add_parser("rewrite", help="rewrite a flagged draft and recheck")
-    rewrite.add_argument("--text", default="")
-    rewrite.add_argument("--text-file")
-    rewrite.add_argument("--url", action="append", default=[])
-    rewrite.add_argument("--urls-file")
-    rewrite.add_argument("--engine", default="draft")
-    rewrite.add_argument("--depth", type=int, default=2)
+    rewrite = sub.add_parser("rewrite", help="rewrite flagged sentences and recheck")
+    rewrite.add_argument("--text", default="", help="Draft text to rewrite.")
+    rewrite.add_argument("--text-file", help="Read draft text from a file.")
+    rewrite.add_argument("--url", action="append", default=[], help="Cited source URL.")
+    rewrite.add_argument("--urls-file", help="File of cited URLs, one per line.")
+    rewrite.add_argument("--engine", default="draft", help="Engine or fixture name.")
+    rewrite.add_argument("--depth", type=int, default=2, help="Hop budget from 1 to 3.")
 
     study = sub.add_parser("check-study", help="notices on one DOI or PMID")
-    study.add_argument("doi_or_pmid")
+    study.add_argument("doi_or_pmid", help="DOI or PubMed id of one study.")
 
     rests = sub.add_parser("rests-on", help="what in the graph rests on a DOI")
-    rests.add_argument("doi")
+    rests.add_argument("doi", help="Notice DOI or study DOI.")
+    rests.add_argument(
+        "--summary",
+        action="store_true",
+        help="Print the affect-N-answers line instead of JSON.",
+    )
+
+    recheck = sub.add_parser(
+        "recheck-affected",
+        help="re-run the check on answers that rest on a flagged DOI",
+    )
+    recheck.add_argument("doi", help="Notice DOI or study DOI.")
+    recheck.add_argument("--depth", type=int, default=2, help="Hop budget from 1 to 3.")
 
     shared = sub.add_parser("shared", help="shared hub works for two engines or answers")
-    shared.add_argument("--answer-a", default="")
-    shared.add_argument("--answer-b", default="")
-    shared.add_argument("--engine-a", default="")
-    shared.add_argument("--engine-b", default="")
+    shared.add_argument("--answer-a", default="", help="First answer id already in the graph.")
+    shared.add_argument("--answer-b", default="", help="Second answer id already in the graph.")
+    shared.add_argument("--engine-a", default="", help="Engine name if answer-a is omitted.")
+    shared.add_argument("--engine-b", default="", help="Engine name if answer-b is omitted.")
 
     batch = sub.add_parser("batch", help="check a JSONL file of answer fixtures")
-    batch.add_argument("jsonl")
-    batch.add_argument("--fail-on", choices=("block", "warn", "infra", "never"), default="block")
-    batch.add_argument("--depth", type=int, default=None)
-    batch.add_argument("--db")
+    batch.add_argument("jsonl", help="JSONL of answer fixtures (id, engine, text, urls).")
+    batch.add_argument(
+        "--fail-on",
+        choices=("block", "warn", "infra", "never"),
+        default="block",
+        help="Lowest severity that fails the job. Default: block.",
+    )
+    batch.add_argument("--depth", type=int, default=None, help="Hop budget from 1 to 3.")
+    batch.add_argument("--db", help="Throwaway graph path. Default: a temp file.")
 
     labelled = sub.add_parser("labelled", help="run the labelled set on isolated graphs")
-    labelled.add_argument("--file", default=None)
-    labelled.add_argument("--limit", type=int, default=None)
-    labelled.add_argument("--family", default=None)
+    labelled.add_argument("--file", default=None, help="JSONL of labelled cases.")
+    labelled.add_argument("--limit", type=int, default=None, help="Run only the first N cases.")
+    labelled.add_argument("--family", default=None, help="Run one family only.")
 
     sub.add_parser("mcp", help="run the MCP server on stdio")
     sub.add_parser("api", help="run the demo HTTP API")
@@ -103,14 +145,20 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     try:
-        if args.cmd == "check-answer":
+        if args.cmd in {"check-answer", "check"}:
+            if args.summary:
+                os.environ.setdefault("MOOLTRACE_PROGRESS", "1")
             payload = check_answer(
                 _read(args.text_file, args.text),
                 _urls_from_file(args.urls_file, args.url),
                 args.engine,
                 args.depth,
             )
-            _print(payload)
+            want_summary = args.summary or (sys.stdout.isatty() and not args.json)
+            if want_summary and not args.json:
+                sys.stdout.write(format_summary(payload))
+            else:
+                _print(payload)
             return int(payload["exit_code"])
         if args.cmd == "rewrite":
             payload = rewrite_answer(
@@ -139,7 +187,14 @@ def main(argv: list[str] | None = None) -> int:
             _print(check_study(args.doi_or_pmid))
             return 0
         if args.cmd == "rests-on":
-            _print(what_rests_on(args.doi))
+            payload = what_rests_on(args.doi)
+            if args.summary:
+                sys.stdout.write((payload.get("summary") or "") + "\n")
+            else:
+                _print(payload)
+            return 0
+        if args.cmd == "recheck-affected":
+            _print(recheck_affected(args.doi, depth=args.depth))
             return 0
         if args.cmd == "shared":
             _print(shared_ancestors(args.answer_a, args.answer_b, args.engine_a, args.engine_b))

@@ -75,14 +75,17 @@ class CallStats:
     api_calls: int = 0
     cache_hits: int = 0
     by_host: dict[str, int] = field(default_factory=dict)
+    _lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
 
     def bump(self, url: str) -> None:
         host = urlparse(url).netloc
-        self.api_calls += 1
-        self.by_host[host] = self.by_host.get(host, 0) + 1
+        with self._lock:
+            self.api_calls += 1
+            self.by_host[host] = self.by_host.get(host, 0) + 1
 
     def hit(self, n: int = 1) -> None:
-        self.cache_hits += n
+        with self._lock:
+            self.cache_hits += n
 
 
 class _Limiter:

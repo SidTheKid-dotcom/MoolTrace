@@ -272,6 +272,28 @@ class Graph:
             },
         )
 
+    def answer_inputs(self, answer_id: str) -> dict[str, Any]:
+        run = self.run(
+            "answer_inputs",
+            """
+            MATCH (a:Answer {id: $id})
+            OPTIONAL MATCH (a)-[:CITES]->(s:Source)
+            OPTIONAL MATCH (s)-[:RESTS_ON]->(w:Work)
+            RETURN a.engine AS engine,
+                   [u IN collect(DISTINCT s.url) WHERE u IS NOT NULL] AS urls,
+                   [d IN collect(DISTINCT w.doi) WHERE d IS NOT NULL] AS dois
+            """,
+            {"id": answer_id},
+            read_only=True,
+            timeout=RO_QUERY_TIMEOUT_MS,
+        )
+        row = run.rows[0] if run.rows else {}
+        return {
+            "engine": row.get("engine") or "draft",
+            "urls": row.get("urls") or [],
+            "dois": row.get("dois") or [],
+        }
+
     def cite(self, answer_id: str, url: str) -> None:
         self.run(
             "cite",
