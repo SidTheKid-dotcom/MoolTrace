@@ -1311,7 +1311,11 @@ def recheck_affected(
             if url and not str(url).startswith("urn:")
         ]
         dois = [item for item in (inputs.get("dois") or []) if item]
-        text = " ".join(f"DOI {item}" for item in dois)
+        # URL-only answers (the olive-oil BLOCK preset) had empty draft
+        # text. First-hop work DOIs are not that draft; stuffing them into
+        # text mints a new answer_id, so the public-demo replay misses the
+        # seeded graph and warns incomplete.
+        text = "" if urls else " ".join(f"DOI {item}" for item in dois)
         payload = check_answer(
             text=text,
             urls=urls,
@@ -1319,15 +1323,24 @@ def recheck_affected(
             depth=depth,
             graph=graph,
         )
-        rechecks.append(
-            {
-                "answer_id": answer_id,
-                "engine": payload.get("engine"),
-                "decision": payload.get("decision"),
-                "exit_code": payload.get("exit_code"),
-                "summary": payload.get("summary"),
-            }
-        )
+        rec = {
+            "answer_id": answer_id,
+            "engine": payload.get("engine"),
+            "decision": payload.get("decision"),
+            "exit_code": payload.get("exit_code"),
+            "summary": payload.get("summary"),
+            "incomplete": bool(payload.get("incomplete")),
+        }
+        if rec["incomplete"]:
+            from mooltrace.public_demo import public_demo_enabled, public_live_enabled
+
+            rec["errors"] = list(payload.get("errors") or [])[:8]
+            rec["note"] = (
+                "recheck incomplete in read-only demo"
+                if public_demo_enabled() and not public_live_enabled()
+                else "recheck could not finish this check"
+            )
+        rechecks.append(rec)
     return {
         "query_doi": impact.get("query_doi") or doi,
         "notice_doi": impact.get("notice_doi"),

@@ -11,7 +11,7 @@ from mooltrace.public_demo import is_preset, seed_offline_presets
 OLIVE_OIL_URL = "https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil"
 from mooltrace.seed import load_demo_fixtures
 from mooltrace.graph import Graph
-from mooltrace.trace import check_answer
+from mooltrace.trace import check_answer, recheck_affected
 
 
 def test_offline_presets_match_ui_and_skip_http(tmp_path: Path, monkeypatch):
@@ -133,6 +133,30 @@ def test_public_demo_rejects_oversized_draft(monkeypatch):
     )
     assert response.status_code == 413
     assert "too large" in response.json()["detail"].lower()
+
+
+def test_public_demo_recheck_affected_replays_olive_oil_block(tmp_path: Path, monkeypatch):
+    """URL-only presets must recheck as block, not warn/incomplete.
+
+    Injecting first-hop work DOIs as draft text mints a new answer_id, so
+    the public-demo replay misses the seeded graph.
+    """
+    monkeypatch.setenv("MOOLTRACE_PUBLIC_DEMO", "1")
+    monkeypatch.delenv("MOOLTRACE_PUBLIC_LIVE", raising=False)
+    graph = Graph(tmp_path / "demo.db")
+    seed_offline_presets(graph)
+    block = load_demo_fixtures()[0]
+    checked = check_answer(block["text"], block["urls"], block["engine"], 3, graph=graph)
+    assert checked["decision"] == "block"
+    assert checked["exit_code"] == 1
+    out = recheck_affected("10.1056/nejmc1806491", graph=graph, depth=3)
+    assert out["affected"] >= 1
+    assert out["rechecks"], out
+    rec = out["rechecks"][0]
+    assert rec["decision"] == "block", rec
+    assert rec["exit_code"] == 1
+    assert "incomplete" not in (rec.get("summary") or "").lower()
+    graph.close()
 
 
 def test_entrypoint_documents_offline_seed():
