@@ -503,9 +503,8 @@ export function PreShip() {
           <CardHeader>
             <CardTitle>Rewritten draft</CardTitle>
             <CardDescription>
-              {rewrite.method === "azure-foundry"
-                ? "Azure AI Foundry drafted this. Code stripped flagged citations, then rechecked."
-                : "Template rewrite. Only flagged sentences changed. Untouched sentences stayed the same, then the check ran again."}
+              Template rewrite. Only flagged sentences changed. Untouched
+              sentences stayed the same, then the check ran again.
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -4,7 +4,7 @@ Only sentences whose citations reach a flagged study change. Every other
 sentence stays byte-identical. Replacement DOIs come from unflagged
 siblings already in this answer's graph. If none exist, the claim is
 disclosed, not replaced with an off-topic paper. The graph decides.
-Azure AI Foundry is optional; the template always works.
+Rewrite is the deterministic template only.
 """
 
 from __future__ import annotations
@@ -12,7 +12,6 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from mooltrace.clients import MoolTraceError
 from mooltrace.ids import clean_doi, extract_identifiers, site_of, strip_disclosures, valid_doi
 from mooltrace.trace import check_answer
 
@@ -363,56 +362,6 @@ def template_rewrite(
     }
 
 
-def _azure_rewrite(
-    text: str,
-    urls: list[str],
-    payload: dict[str, Any],
-    graph=None,
-) -> dict[str, Any] | None:
-    from mooltrace.foundry import complete
-
-    dois, flagged_urls = _flagged(payload)
-    label, notice_doi, date = _notice_label(payload)
-    prompt = (
-        "Rewrite ONLY the sentences whose citations reach these flagged "
-        "URLs or DOIs. Keep every other sentence byte-identical.\n"
-        f"{sorted(dois | flagged_urls)}\n"
-        f"Publisher notice type: {label} date {date}\n"
-        "Name the flagged study as first author plus year. "
-        "Never write RETRACTED:. Never cite the notice DOI "
-        f"{notice_doi}.\n"
-        "If you cannot name an on-topic replacement already in the draft's "
-        "own citation graph, replace the affected sentence with: "
-        f"{_disclose(payload, text, graph)}\n"
-        "Never invent a citation. Never cite an unrelated paper. "
-        "Never say a retraction is under review. "
-        "Do not call an Expression of Concern a retraction.\n\n"
-        f"Draft:\n{text}\n\nCited URLs:\n" + "\n".join(urls)
-    )
-    try:
-        drafted = complete(prompt)
-    except MoolTraceError:
-        return None
-    kept_urls = [url for url in urls if url.rstrip("/") not in flagged_urls]
-    proposal = {
-        "text": drafted,
-        "urls": kept_urls,
-        "method": "azure-foundry",
-        "dropped": sorted(dois | flagged_urls),
-    }
-    if still_cites(proposal["text"], proposal["urls"], payload):
-        return None
-    if "RETRACTED:" in drafted:
-        return None
-    if valid_doi(notice_doi) and notice_doi.lower() in drafted.lower():
-        return None
-    dois, urls_set = _flagged(payload)
-    for span in _join_citation_tails(_split_spans(text), dois, urls_set):
-        if not _span_hits(span, dois, urls_set) and span not in drafted:
-            return None
-    return proposal
-
-
 def propose_rewrite(
     text: str,
     urls: list[str] | None,
@@ -420,9 +369,6 @@ def propose_rewrite(
     graph=None,
 ) -> dict[str, Any]:
     url_list = [url.strip() for url in (urls or []) if url and url.strip()]
-    azure = _azure_rewrite(text, url_list, payload, graph)
-    if azure is not None:
-        return azure
     return template_rewrite(payload, text, url_list, graph)
 
 

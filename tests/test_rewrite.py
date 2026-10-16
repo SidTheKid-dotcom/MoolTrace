@@ -89,8 +89,6 @@ def test_template_rewrite_replaces_healthline_named_claim():
 
 
 def test_rewrite_unchanged_text_sets_rewritten_false(monkeypatch):
-    monkeypatch.delenv("AZURE_INFERENCE_ENDPOINT", raising=False)
-
     def fake_check(text, urls=None, engine="draft", depth=2, graph=None):
         return {**_warn_payload(), "exit_code": 2}
 
@@ -148,10 +146,7 @@ def test_template_rewrite_drops_flagged_url():
     assert HEALTHLINE_CINNAMON_URL not in (out.get("urls") or [])
 
 
-def test_propose_rewrite_falls_back_without_azure(monkeypatch):
-    monkeypatch.delenv("AZURE_INFERENCE_ENDPOINT", raising=False)
-    monkeypatch.delenv("AZURE_INFERENCE_API_KEY", raising=False)
-    monkeypatch.delenv("AZURE_INFERENCE_MODEL", raising=False)
+def test_propose_rewrite_is_template(monkeypatch):
     payload = _warn_payload()
     out = propose_rewrite(HEALTHLINE_TEXT, [HEALTHLINE_CINNAMON_URL], payload)
     assert out["method"] == "template"
@@ -160,8 +155,6 @@ def test_propose_rewrite_falls_back_without_azure(monkeypatch):
 
 
 def test_rewrite_answer_clean_draft_is_unchanged(monkeypatch):
-    monkeypatch.delenv("AZURE_INFERENCE_ENDPOINT", raising=False)
-
     def fake_check(text, urls=None, engine="draft", depth=2, graph=None):
         return {"decision": "pass", "exit_code": 0, "reasons": []}
 
@@ -174,8 +167,6 @@ def test_rewrite_answer_clean_draft_is_unchanged(monkeypatch):
 
 
 def test_rewrite_exit_code_matches_recheck_pass(monkeypatch):
-    monkeypatch.delenv("AZURE_INFERENCE_ENDPOINT", raising=False)
-
     def fake_check(text, urls=None, engine="draft", depth=2, graph=None):
         if "under review" in (text or ""):
             return {"decision": "pass", "exit_code": 0, "reasons": []}
@@ -303,7 +294,6 @@ def _fake_check_for(payload: dict):
 
 
 def test_rewrite_hcq_mehra_2020_only_flagged_sentence(monkeypatch):
-    monkeypatch.delenv("AZURE_INFERENCE_ENDPOINT", raising=False)
     payload = _hcq_payload()
     monkeypatch.setattr("mooltrace.rewrite.check_answer", _fake_check_for(payload))
     out = rewrite_answer(LANCET_TEXT, [], "lancet-hcq", 1)
@@ -320,7 +310,6 @@ def test_rewrite_hcq_mehra_2020_only_flagged_sentence(monkeypatch):
 
 
 def test_rewrite_healthline_with_text_keeps_other_sentences(monkeypatch):
-    monkeypatch.delenv("AZURE_INFERENCE_ENDPOINT", raising=False)
     claim = f"Cinnamon may help blood sugar ({HEALTHLINE_CINNAMON_URL})."
     text = HEALTHLINE_CLEAN_SENTENCE + claim
     payload = _healthline_payload()
@@ -339,8 +328,6 @@ def test_rewrite_healthline_with_text_keeps_other_sentences(monkeypatch):
 
 
 def test_rewrite_clean_answer_byte_identical(monkeypatch):
-    monkeypatch.delenv("AZURE_INFERENCE_ENDPOINT", raising=False)
-
     def fake_check(text, urls=None, engine="draft", depth=2, graph=None):
         return {"decision": "pass", "exit_code": 0, "reasons": []}
 
@@ -353,7 +340,6 @@ def test_rewrite_clean_answer_byte_identical(monkeypatch):
 
 
 def test_rewrite_multi_claim_only_flagged_sentence(monkeypatch):
-    monkeypatch.delenv("AZURE_INFERENCE_ENDPOINT", raising=False)
     flagged = (
         "A draft patient note says a 2020 Lancet registry analysis by Mehra and "
         f"colleagues reported outcomes for hydroxychloroquine (DOI {LANCET_HCQ_DOI}). "

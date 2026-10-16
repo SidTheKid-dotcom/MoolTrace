@@ -127,11 +127,10 @@ def trace_answer(
     description=(
         "After check_answer returns warn or block, rewrite only the sentences "
         "whose citations reach the flagged study, then re-run the check. "
-        "Keeps every other sentence. Uses Azure AI Foundry when configured; "
-        "otherwise discloses the publisher notice or an on-topic sibling "
-        "already in this answer's graph. Never invents a citation. "
-        "Returns the first check, the rewritten text, the recheck, and "
-        "exit_code matching the recheck."
+        "Keeps every other sentence. Discloses the publisher notice or an "
+        "on-topic sibling already in this answer's graph. Never invents a "
+        "citation. Returns the first check, the rewritten text, the recheck, "
+        "and exit_code matching the recheck."
     )
 )
 def rewrite_answer(
