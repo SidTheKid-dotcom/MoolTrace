@@ -33,6 +33,10 @@ NO_SOURCES_SUMMARY = (
     "No verifiable citation or source was provided. "
     "MoolTrace cannot inspect this answer's evidence chain."
 )
+NOT_IN_GRAPH_SUMMARY = (
+    "Nothing in the graph connects this answer to a study. "
+    "This is not proof it is safe; the source may not be modelled."
+)
 
 EXIT_PASS = 0
 EXIT_BLOCK = 1
@@ -252,6 +256,14 @@ def independent_sources(paths: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return list(found.values())
 
 
+def coverage_line(expanded: int | None, cited: int | None, depth: int) -> str:
+    """Always-visible coverage. Not a verdict. Missing counts keep depth_N."""
+    if cited is None:
+        return f"depth_{depth}"
+    done = 0 if expanded is None else int(expanded)
+    return f"expanded {done} of {int(cited)} cited works"
+
+
 def decide(
     paths: list[dict[str, Any]],
     *,
@@ -259,6 +271,9 @@ def decide(
     depth: int,
     has_sources: bool = True,
     sp_cost: dict[str, float] | None = None,
+    works_cited: int | None = None,
+    works_expanded: int | None = None,
+    named_study: bool = False,
 ) -> dict[str, Any]:
     """Classify algo.SPpaths rows into pass, warn, or block.
 
@@ -355,6 +370,19 @@ def decide(
                 "sentence": None,
             }
         )
+    elif works_cited == 0 and not named_study:
+        decision = "warn"
+        summary = NOT_IN_GRAPH_SUMMARY
+        reasons.append(
+            {
+                "code": "not_in_graph",
+                "root_doi": None,
+                "notice_doi": None,
+                "hops": None,
+                "steps": [],
+                "sentence": None,
+            }
+        )
     else:
         decision = "pass"
         if discounted:
@@ -392,9 +420,11 @@ def decide(
         "weight_floor": WEIGHT_FLOOR,
         "path_rule": PATH_RULE,
         "decided_by": "algo.SPpaths",
-        "coverage": f"depth_{depth}",
+        "coverage": coverage_line(works_expanded, works_cited, depth),
         "not_shown": "beyond requested depth",
     }
     if any(reason.get("code") == "no_sources" for reason in reasons):
         payload["error_code"] = "no_sources"
+    if any(reason.get("code") == "not_in_graph" for reason in reasons):
+        payload["error_code"] = "not_in_graph"
     return payload

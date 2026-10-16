@@ -36,7 +36,7 @@ remote_server = MCPServer(
     title="MoolTrace",
     instructions=(
         f"{TAGLINE} Read-only public MCP. Tools: check_answer, what_rests_on, "
-        "recheck_affected. The hosted demo only runs the three recorded presets "
+        "recheck_affected. The hosted demo only runs the four recorded presets "
         "and their notice DOIs. Flag reliance on a publisher notice. Do not call "
         "the draft wrong, and do not call an Expression of Concern a retraction. "
         "Depth is 1..3."
@@ -58,7 +58,7 @@ def _guarded(fn, **kwargs):
         "Call this before shipping a health-AI draft. Pass the draft text and "
         "cited URLs. Returns pass (ships), warn (human review), or block "
         "(fail the build), plus the FalkorDB algo.SPpaths route and Cypher. "
-        "The public endpoint only runs the three recorded presets unless live "
+        "The public endpoint only runs the four recorded presets unless live "
         "fetch is on. Depth 1-3."
     )
 )
@@ -86,7 +86,7 @@ def check_answer(
         "Reverse impact after a notice changes. Given a notice DOI or a study "
         "DOI, return 'This Expression of Concern affects N stored answers' "
         "plus the counted answer ids. The public endpoint only looks up notice "
-        "DOIs from the three recorded presets unless live fetch is on."
+        "DOIs from the four recorded presets unless live fetch is on."
     )
 )
 def what_rests_on(
@@ -100,7 +100,7 @@ def what_rests_on(
     description=(
         "After what_rests_on, re-run check_answer on just the counted answers "
         "that rest on this notice. The public endpoint only accepts notice DOIs "
-        "from the three recorded presets unless live fetch is on."
+        "from the four recorded presets unless live fetch is on."
     )
 )
 def recheck_affected(

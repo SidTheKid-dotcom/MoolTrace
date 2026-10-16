@@ -1,5 +1,5 @@
 {
-  "note": "Hero hops recorded from live MoolTrace runs on throwaway graphs (2026-10-16 UTC). data/mooltrace.db was not opened. Hosted demo replays these hops. Live olive-oil depth 2/3 also reached other notices after expanding more cites; the demo seeds only the deciding Estruch 2013 path. Live cinnamon depth 3 likewise reached extra notices; the demo seeds only Silva 2022 -> Khan 2003.",
+  "note": "Hero hops recorded from live MoolTrace runs on throwaway graphs (2026-10-16 UTC). data/mooltrace.db was not opened. Hosted demo replays these hops. Live olive-oil depth 2/3 also reached other notices after expanding more cites; the demo seeds only the deciding Estruch 2013 path. Live cinnamon depth 3 likewise reached extra notices; the demo seeds only Silva 2022 -> Khan 2003. The NHS handwashing page (not-in-graph) was fetched 2026-10-16T20:22:08+00:00 with 0 scholarly identifiers and 0 Work nodes.",
   "presets": [
     {
       "id": "nutrition-olive-oil",
@@ -291,6 +291,66 @@
           "live_wall_s": 0.1,
           "live_incomplete": false,
           "live_api_calls": 0
+        }
+      }
+    },
+    {
+      "id": "not-in-graph",
+      "decision": "warn",
+      "fetch_date": "2026-10-16",
+      "label": "recorded live run on 2026-10-16, content hash 5c015843460b0e872bd9a0b01bf0c5bf91a810a04a9f21b72b0574b525495329",
+      "content_hash": "5c015843460b0e872bd9a0b01bf0c5bf91a810a04a9f21b72b0574b525495329",
+      "sources": [
+        {
+          "url": "https://www.nhs.uk/live-well/best-way-to-wash-your-hands/",
+          "title": "How to wash your hands - NHS",
+          "site": "nhs.uk",
+          "fetched_at": "2026-10-16T20:22:08+00:00",
+          "content_hash": "5c015843460b0e872bd9a0b01bf0c5bf91a810a04a9f21b72b0574b525495329"
+        }
+      ],
+      "works": [],
+      "hops": [],
+      "notices": [],
+      "by_depth": {
+        "1": {
+          "decision": "warn",
+          "exit_code": 2,
+          "notice_paths": 0,
+          "strength": null,
+          "recorded_at": "2026-10-16T20:22:08+00:00",
+          "fetch_date": "2026-10-16",
+          "live_wall_s": 0.9,
+          "live_incomplete": false,
+          "live_api_calls": 1,
+          "live_works_cited": 0,
+          "live_coverage": "expanded 0 of 0 cited works"
+        },
+        "2": {
+          "decision": "warn",
+          "exit_code": 2,
+          "notice_paths": 0,
+          "strength": null,
+          "recorded_at": "2026-10-16T20:22:08+00:00",
+          "fetch_date": "2026-10-16",
+          "live_wall_s": 0.0,
+          "live_incomplete": false,
+          "live_api_calls": 0,
+          "live_works_cited": 0,
+          "live_coverage": "expanded 0 of 0 cited works"
+        },
+        "3": {
+          "decision": "warn",
+          "exit_code": 2,
+          "notice_paths": 0,
+          "strength": null,
+          "recorded_at": "2026-10-16T20:22:08+00:00",
+          "fetch_date": "2026-10-16",
+          "live_wall_s": 0.0,
+          "live_incomplete": false,
+          "live_api_calls": 0,
+          "live_works_cited": 0,
+          "live_coverage": "expanded 0 of 0 cited works"
         }
       }
     }

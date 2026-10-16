@@ -1,4 +1,4 @@
-"""Public demo: three presets, no live HTTP, no arbitrary URLs."""
+"""Public demo: four presets, no live HTTP, no arbitrary URLs."""
 
 from pathlib import Path
 
@@ -23,8 +23,9 @@ def test_offline_presets_match_ui_and_skip_http(tmp_path: Path, monkeypatch):
         "nutrition-olive-oil",
         "nutrition-healthline",
         "clean-jsps",
+        "not-in-graph",
     }
-    block, warn, clean = load_demo_fixtures()
+    block, warn, clean, missing = load_demo_fixtures()
     assert block["id"] == "nutrition-olive-oil"
     assert block["text"] == ""
     assert block["urls"] == [OLIVE_OIL_URL]
@@ -33,6 +34,8 @@ def test_offline_presets_match_ui_and_skip_http(tmp_path: Path, monkeypatch):
     assert is_preset(block["engine"], block["text"], block["urls"])
     assert is_preset(warn["engine"], warn["text"], warn["urls"])
     assert is_preset(clean["engine"], clean["text"], clean["urls"])
+    assert missing["id"] == "not-in-graph"
+    assert is_preset(missing["engine"], missing["text"], missing["urls"])
     assert not is_preset("nutrition-coach", "", ["https://example.com/not-a-preset"])
 
     blocked = check_answer(block["text"], block["urls"], block["engine"], 3, graph=graph)

@@ -59,6 +59,10 @@ def _headline(payload: dict[str, Any]) -> str:
         return f"WARN (exit {code}) — a cited flagged study has unverified reliance"
     if kind == "no_sources":
         return f"WARN (exit {code}) — no verifiable citation or source was provided"
+    if kind == "not_in_graph":
+        return (
+            f"WARN (exit {code}) — nothing in the graph connects this answer to a study"
+        )
     return f"WARN (exit {code}) — {payload.get('summary') or 'review this draft before shipping'}"
 
 
@@ -89,6 +93,11 @@ def _flag_line(payload: dict[str, Any]) -> str:
 
 def _advice(payload: dict[str, Any]) -> str:
     decision = payload.get("decision")
+    kind = next((item.get("code") for item in payload.get("reasons") or [] if item.get("code")), "")
+    if kind == "not_in_graph":
+        return (
+            "What to do: this is not proof it is safe; the source may not be modelled."
+        )
     if decision == "pass":
         return "What to do: pass is not a medical-accuracy check. Coverage stops at this depth."
     if decision == "block":
@@ -121,7 +130,7 @@ def format_summary(payload: dict[str, Any]) -> str:
     reason = next((item for item in payload.get("reasons") or [] if item.get("steps")), None)
     if reason is None and payload.get("reasons"):
         reason = payload["reasons"][0]
-    if reason:
+    if reason and (reason.get("steps") or reason.get("notice_doi") or reason.get("root_doi")):
         lines.append(_path_line(reason))
     flag = _flag_line(payload)
     if flag:
@@ -135,4 +144,7 @@ def format_summary(payload: dict[str, Any]) -> str:
         strength = algo.get("strength")
         strength_txt = f"{strength:.2f}" if isinstance(strength, float) else "n/a"
         lines.append(f"Decided by: {algo.get('name')}, path strength {strength_txt}")
+    coverage = str(payload.get("coverage") or "")
+    if coverage.startswith("expanded "):
+        lines.append(f"Coverage: {coverage}")
     return "\n".join(lines) + "\n"

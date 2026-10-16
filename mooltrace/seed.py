@@ -18,6 +18,7 @@ from mooltrace.config import (
     CLEAN_REWRITE_DOI,
     HEALTHLINE_CINNAMON_URL,
     HEALTHLINE_OLIVE_OIL_URL,
+    NHS_HANDWASH_URL,
     ROOT,
 )
 from mooltrace.graph import Graph, get_graph
@@ -27,12 +28,14 @@ SHARED_DB = (ROOT / "data" / "mooltrace.db").resolve()
 BLOCK_ID = "nutrition-olive-oil"
 WARN_ID = "nutrition-healthline"
 CLEAN_ID = "clean-jsps"
+NOT_IN_GRAPH_ID = "not-in-graph"
 LANCET_ID = "lancet-hcq"
 HERO_ID = BLOCK_ID
 DEMO_FILES = (
     ROOT / "examples" / "olive_oil.jsonl",
     ROOT / "examples" / "healthline.jsonl",
     ROOT / "examples" / "clean.jsonl",
+    ROOT / "examples" / "not_in_graph.jsonl",
 )
 
 
@@ -62,7 +65,7 @@ def _load_jsonl(path: Path) -> list[dict[str, Any]]:
 
 
 def load_demo_fixtures() -> list[dict[str, Any]]:
-    wanted = {BLOCK_ID, WARN_ID, CLEAN_ID}
+    wanted = {BLOCK_ID, WARN_ID, CLEAN_ID, NOT_IN_GRAPH_ID}
     found: dict[str, dict[str, Any]] = {}
     for path in DEMO_FILES:
         for item in _load_jsonl(path):
@@ -87,7 +90,12 @@ def load_demo_fixtures() -> list[dict[str, Any]]:
     clean = found[CLEAN_ID]
     if CLEAN_REWRITE_DOI not in str(clean.get("text") or ""):
         raise SystemExit("clean fixture must name the clean rewrite DOI")
-    return [block, warn, clean]
+    missing = found[NOT_IN_GRAPH_ID]
+    if missing.get("text"):
+        raise SystemExit("not-in-graph fixture must be URL-only (empty text)")
+    if missing.get("urls") != [NHS_HANDWASH_URL]:
+        raise SystemExit("not-in-graph fixture must cite the NHS handwashing URL only")
+    return [block, warn, clean, missing]
 
 
 def _urls(row: dict[str, Any]) -> list[str]:

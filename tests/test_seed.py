@@ -23,7 +23,7 @@ def test_demo_db_path_refuses_shared_file(monkeypatch, tmp_path):
 
 
 def test_demo_fixtures_are_url_only_olive_oil_block_and_cinnamon_warn():
-    block, warn, clean = load_demo_fixtures()
+    block, warn, clean, missing = load_demo_fixtures()
     assert block["id"] == BLOCK_ID
     assert block["text"] == ""
     assert block["urls"] == ["https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil"]
@@ -33,7 +33,10 @@ def test_demo_fixtures_are_url_only_olive_oil_block_and_cinnamon_warn():
     assert warn["urls"] == [HEALTHLINE_CINNAMON_URL]
     assert clean["id"] == CLEAN_ID
     assert CLEAN_REWRITE_DOI in clean["text"]
-    joined = block["text"] + warn["text"] + clean["text"]
+    assert missing["id"] == "not-in-graph"
+    assert missing["text"] == ""
+    assert missing["urls"] == ["https://www.nhs.uk/live-well/best-way-to-wash-your-hands/"]
+    joined = block["text"] + warn["text"] + clean["text"] + missing["text"]
     assert "Introduction" not in joined
     assert "<html" not in joined.lower()
 

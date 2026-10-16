@@ -96,6 +96,16 @@ def test_recorded_presets_match_docs_and_captions(tmp_path: Path, monkeypatch):
     for spec in recorded["presets"]:
         assert spec.get("fetch_date"), spec["id"]
         assert str(spec.get("label") or "").startswith("recorded live run on "), spec["id"]
+        if spec["id"] == "not-in-graph":
+            assert spec.get("hops") in ([], None)
+            digest = str(
+                (spec.get("sources") or [{}])[0].get("content_hash")
+                or spec.get("content_hash")
+                or ""
+            )
+            assert len(digest) == 64, spec["id"]
+            assert set(digest) <= set("0123456789abcdef"), spec["id"]
+            continue
         assert spec["hops"], spec["id"]
         assert all(hop.get("recorded_at") for hop in spec["hops"]), spec["id"]
         for hop in spec["hops"]:

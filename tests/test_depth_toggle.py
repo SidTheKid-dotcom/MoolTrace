@@ -51,6 +51,11 @@ EXPECTED = {
         2: {"decision": "pass", "exit_code": 0, "notice_paths": 0},
         3: {"decision": "pass", "exit_code": 0, "notice_paths": 0},
     },
+    "not-in-graph": {
+        1: {"decision": "warn", "exit_code": 2, "notice_paths": 0},
+        2: {"decision": "warn", "exit_code": 2, "notice_paths": 0},
+        3: {"decision": "warn", "exit_code": 2, "notice_paths": 0},
+    },
 }
 
 

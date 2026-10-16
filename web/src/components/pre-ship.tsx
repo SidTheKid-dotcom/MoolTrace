@@ -116,6 +116,15 @@ const PRESETS = [
     text: "10.1016/j.jsps.2015.03.013",
     urls: [] as string[],
   },
+  {
+    id: "not-in-graph",
+    label: "Not in the graph",
+    hint: "NHS how-to page with no scholarly citations. The graph cannot connect it to a study.",
+    engine: "nutrition-coach",
+    depth: 2,
+    text: "",
+    urls: ["https://www.nhs.uk/live-well/best-way-to-wash-your-hands/"],
+  },
 ]
 
 const DEPTHS = [1, 2, 3] as const
@@ -143,6 +152,9 @@ function plainVerdict(result: Check): string {
   }
   if (kind === "no_sources") {
     return `WARN (exit ${code ?? 2}) — no verifiable citation or source was provided`
+  }
+  if (kind === "not_in_graph") {
+    return `WARN (exit ${code ?? 2}) — nothing in the graph connects this answer to a study`
   }
   return result.summary
 }
@@ -176,6 +188,9 @@ function ResultCard({
         </div>
         <CardTitle className="text-xl leading-snug">{plainVerdict(result)}</CardTitle>
         <CardDescription>{result.summary}</CardDescription>
+        {result.coverage && result.coverage.startsWith("expanded ") ? (
+          <CardDescription>Coverage: {result.coverage}</CardDescription>
+        ) : null}
         {result.pitch ? <CardDescription>{result.pitch}</CardDescription> : null}
         {result.notices_checked_ago ? (
           <CardDescription>Notices checked {result.notices_checked_ago}.</CardDescription>
@@ -324,7 +339,7 @@ export function PreShip() {
     const startDepth = DEPTHS.includes(requested as (typeof DEPTHS)[number])
       ? requested
       : undefined
-    if (id === "olive-oil" || id === "healthline" || id === "clean") {
+    if (id === "olive-oil" || id === "healthline" || id === "clean" || id === "not-in-graph") {
       applyPreset(id, startDepth)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -567,10 +582,12 @@ export function PreShip() {
           <CardHeader>
             <CardTitle>Nothing checked yet</CardTitle>
             <CardDescription>
-              Three presets: Healthline olive oil (block), Healthline cinnamon (warn), Clean study
-              (pass). Toggle depth 1 / 2 / 3 on the same question. Olive oil depth 1 is PASS (0 notice
-              paths); depth 3 is BLOCK with the path. A warn or a block shows the deciding path, the
-              sentence at each hop, and the FalkorDB algo.SPpaths call.
+              Four presets: Healthline olive oil (block), Healthline cinnamon (warn), Clean study
+              (pass), and Not in the graph (NHS how-to with no scholarly citations). Toggle depth 1 /
+              2 / 3 on the same question. Olive oil depth 1 is PASS (0 notice paths); depth 3 is BLOCK
+              with the path. Not in the graph says so plainly: nothing connects that page to a study.
+              This is not proof it is safe; the source may not be modelled. Coverage is expanded X of
+              Y cited works on every verdict.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -579,6 +596,13 @@ export function PreShip() {
       {loading && !result ? (
         <p className="text-sm text-muted-foreground" role="status">
           Fetching the cited page, walking reviews, then checking publisher notices…
+        </p>
+      ) : null}
+
+      {presetId === "not-in-graph" ? (
+        <p className="text-sm leading-6 text-muted-foreground" data-testid="not-in-graph-note">
+          Nothing in the graph connects this answer to a study. This is not proof it is safe; the
+          source may not be modelled. Coverage: expanded 0 of 0 cited works.
         </p>
       ) : null}
 

@@ -1,4 +1,4 @@
-"""Read-only hosted demo: three presets, no live HTTP, no arbitrary URLs.
+"""Read-only hosted demo: four presets, no live HTTP, no arbitrary URLs.
 
 Set MOOLTRACE_PUBLIC_DEMO=1. Live catalog calls stay off. Arbitrary URL
 fetching stays off unless MOOLTRACE_PUBLIC_LIVE=1, and then only with the
@@ -130,15 +130,15 @@ def guard_public_check(engine: str, text: str, urls: list[str] | None) -> None:
         for url in urls or []:
             public_http_url(url, reason="url")
     if rate_limited():
-        raise PublicDemoRejected(429, "Public demo rate limit. Try the three presets.")
+        raise PublicDemoRejected(429, "Public demo rate limit. Try the four presets.")
     if public_live_enabled():
         return
     raise PublicDemoRejected(
         400,
         (
-            "This public demo only runs the three presets (Healthline olive oil block, "
-            "Healthline cinnamon warn, clean pass) with no live page fetch. Clone the repo "
-            "to check other URLs."
+            "This public demo only runs the four presets (Healthline olive oil block, "
+            "Healthline cinnamon warn, clean pass, NHS not-in-the-graph) with no live "
+            "page fetch. Clone the repo to check other URLs."
         ),
     )
 
@@ -167,12 +167,12 @@ def guard_remote_doi(doi: str) -> None:
     if is_preset_doi(doi):
         return
     if rate_limited():
-        raise PublicDemoRejected(429, "Public demo rate limit. Try the three presets.")
+        raise PublicDemoRejected(429, "Public demo rate limit. Try the four presets.")
     if public_live_enabled():
         return
     raise PublicDemoRejected(
         400,
-        "This public demo only looks up notice DOIs from the three presets. Clone the repo for the full graph.",
+        "This public demo only looks up notice DOIs from the four presets. Clone the repo for the full graph.",
     )
 
 
@@ -199,7 +199,7 @@ def _source_url(spec: dict[str, Any], answer_id: str) -> str:
 
 
 def seed_offline_presets(graph: Any) -> list[dict[str, str]]:
-    """Write the three UI presets from recorded fetches, with no HTTP."""
+    """Write the four UI presets from recorded fetches, with no HTTP."""
     from mooltrace.trace import _answer_id, _text_hash
 
     recorded = {row["id"]: row for row in load_recorded_presets()["presets"]}

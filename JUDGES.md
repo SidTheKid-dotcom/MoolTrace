@@ -10,6 +10,10 @@ Click **Healthline olive oil (block)**. You should see **BLOCK** (exit 1), path 
 
 Click **Healthline cinnamon (warn)** for an Expression of Concern (`relies` 1.0, path strength **0.55**). Depth 1 is PASS; depth 2/3 is WARN. An Expression of Concern is not a retraction.
 
+Click **Not in the graph**. This is the NHS page “How to wash your hands” (`https://www.nhs.uk/live-well/best-way-to-wash-your-hands/`), fetched 2026-10-16T20:22:08+00:00, content hash `5c015843460b0e872bd9a0b01bf0c5bf91a810a04a9f21b72b0574b525495329`. The page has no scholarly citations. You should see **WARN** and “Nothing in the graph connects this answer to a study. This is not proof it is safe; the source may not be modelled.” Coverage: **expanded 0 of 0 cited works**. That is not a pass, and it is not proof the page is safe.
+
+Every verdict also prints a coverage line (`expanded X of Y cited works`) instead of treating leftover expansion as a scary incomplete flag when a notice path already decides.
+
 ## 2. One CLI command (90 s)
 
 ```bash

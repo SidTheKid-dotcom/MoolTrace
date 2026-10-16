@@ -32,7 +32,7 @@ from mooltrace.clients import (
     reference_dois,
 )
 from mooltrace import cypher as C
-from mooltrace.decision import EXIT_INFRA, EXIT_PASS, EXIT_WARN, decide, path_score
+from mooltrace.decision import EXIT_INFRA, EXIT_PASS, EXIT_WARN, coverage_line, decide, path_score
 from mooltrace.evidence import attach_hop_trail
 from mooltrace.reliance import WEIGHT_FLOOR
 from mooltrace.graph import Graph, get_graph
@@ -606,6 +606,33 @@ def _seed_resolved(row: dict[str, Any] | None) -> bool:
     )
 
 
+def _coverage_counts(graph: Graph, answer_id: str) -> tuple[int, int]:
+    """How many cited seed works were expanded. Coverage, not a verdict."""
+    seeds = graph.seed_dois(answer_id)
+    expanded = 0
+    for doi in seeds:
+        row = graph.work_row(doi)
+        if row and row.get("expanded"):
+            expanded += 1
+    return expanded, len(seeds)
+
+
+def _named_study(text: str, urls: list[str] | None) -> bool:
+    found = extract_identifiers("\n".join([text or "", *(urls or [])]))
+    return bool(found.dois or found.pmids or found.pmcids or found.diabetes_care)
+
+
+def _notice_reason(reason: dict[str, Any]) -> bool:
+    return (reason.get("code") or "") not in {
+        None,
+        "",
+        "incomplete",
+        "no_sources",
+        "not_in_graph",
+        "infra",
+    }
+
+
 def _unresolved_seeds(graph: Graph, answer_id: str, errors: list[str]) -> bool:
     missing = [
         doi for doi in graph.seed_dois(answer_id) if not _seed_resolved(graph.work_row(doi))
@@ -843,10 +870,12 @@ def trace_answer(
     if skip_http:
         incomplete = False
         if not graph.seed_dois(answer_id):
-            errors.append(
-                "public demo graph has no seeds for this preset; run mooltrace seed --offline"
-            )
-            incomplete = True
+            sourced = bool((graph.answer_inputs(answer_id).get("urls") or []))
+            if not sourced:
+                errors.append(
+                    "public demo graph has no seeds for this preset; run mooltrace seed --offline"
+                )
+                incomplete = True
     else:
         if pages:
             progress(f"Fetching {len(pages)} page{'s' if len(pages) != 1 else ''}…")
@@ -941,13 +970,21 @@ def _removed_claims_check(*, text: str, urls: list[str], engine: str, depth: int
         "cypher": None,
         "elapsed_ms": 0,
         "limits": _LIMITS,
+        "coverage": coverage_line(0, 0, depth),
     }
 
 
 def _no_sources_check(*, text: str, urls: list[str], engine: str, depth: int) -> dict[str, Any]:
     """Warn when the draft named nothing MoolTrace can inspect."""
     engine = (engine or "draft").strip()[:64] or "draft"
-    verdict = decide([], incomplete=False, depth=depth, has_sources=False)
+    verdict = decide(
+        [],
+        incomplete=False,
+        depth=depth,
+        has_sources=False,
+        works_cited=0,
+        works_expanded=0,
+    )
     return {
         "product": "MoolTrace",
         "tagline": TAGLINE,
@@ -983,6 +1020,7 @@ def _no_sources_check(*, text: str, urls: list[str], engine: str, depth: int) ->
         "cypher": None,
         "elapsed_ms": 0,
         "limits": _LIMITS,
+        "coverage": verdict.get("coverage") or coverage_line(0, 0, depth),
     }
 
 
@@ -1045,12 +1083,20 @@ def check_answer(
     # algo.SPpaths must succeed (else exit 3). Classify only those rows.
     # Zero rows is a pass here: PATHS_TO_NOTICE is the trace listing, not
     # a second verdict. Strength is the product of RESTS_ON weights.
+    expanded, cited = _coverage_counts(graph, traced["answer_id"])
+    traced_cited = int(traced.get("works_cited") or 0)
+    if cited == 0 and traced_cited:
+        cited = traced_cited
+        expanded = max(expanded, traced_cited)
     verdict = decide(
         list(sp_paths),
-        incomplete=traced["incomplete"],
+        incomplete=bool(traced.get("incomplete")),
         depth=traced["depth"],
         has_sources=True,
         sp_cost=costs,
+        works_cited=cited,
+        works_expanded=expanded,
+        named_study=_named_study(text or "", url_list),
     )
     counted = any(
         reason.get("code") not in {None, "incomplete", "no_sources"}
@@ -1150,7 +1196,7 @@ def check_answer(
         "strength_floor": verdict.get("strength_floor"),
         "path_rule": verdict.get("path_rule"),
         "decided_by": verdict.get("decided_by"),
-        "coverage": verdict.get("coverage"),
+        "coverage": verdict.get("coverage") or coverage_line(expanded, cited, traced["depth"]),
         "not_shown": verdict.get("not_shown"),
         "remediation_clusters": clusters,
         "algorithm": algorithm,
@@ -1174,6 +1220,11 @@ def check_answer(
     }
     if verdict.get("error_code"):
         payload["error_code"] = verdict["error_code"]
+    if any(_notice_reason(reason) for reason in verdict["reasons"]):
+        payload["incomplete"] = False
+        payload["errors"] = [
+            err for err in (payload.get("errors") or []) if not str(err).startswith("expanded ")
+        ]
     return payload
 
 

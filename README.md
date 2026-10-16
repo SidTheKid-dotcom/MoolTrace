@@ -130,7 +130,7 @@ jobs:
 
 ## MCP
 
-**Remote MCP** (read-only, no sign-up): `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/mcp` — streamable HTTP. Tools: `check_answer`, `what_rests_on`, `recheck_affected`. Same three presets as the demo; presets never 429. Copy-paste for Cursor or Claude Desktop (`mcp.http.example.json`):
+**Remote MCP** (read-only, no sign-up): `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/mcp` — streamable HTTP. Tools: `check_answer`, `what_rests_on`, `recheck_affected`. Same four presets as the demo; presets never 429. Copy-paste for Cursor or Claude Desktop (`mcp.http.example.json`):
 
 ```json
 {
