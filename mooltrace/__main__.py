@@ -11,7 +11,7 @@ from pathlib import Path
 from mooltrace.clients import InfraError, MoolTraceError
 from mooltrace.ssrf import UnsafeURL
 from mooltrace.rewrite import rewrite_answer
-from mooltrace.summary import format_summary
+from mooltrace.summary import format_rewrite_summary, format_summary
 from mooltrace.trace import (
     check_answer,
     check_study,
@@ -92,6 +92,16 @@ def main(argv: list[str] | None = None) -> int:
     rewrite.add_argument("--urls-file", help="File of cited URLs, one per line.")
     rewrite.add_argument("--engine", default="draft", help="Engine or fixture name.")
     rewrite.add_argument("--depth", type=int, default=2, help="Hop budget from 1 to 3.")
+    rewrite.add_argument(
+        "--summary",
+        action="store_true",
+        help="Print a plain-English rewrite + recheck verdict instead of JSON.",
+    )
+    rewrite.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the full JSON payload (default when stdout is not a TTY).",
+    )
 
     study = sub.add_parser("check-study", help="notices on one DOI or PMID")
     study.add_argument("doi_or_pmid", help="DOI or PubMed id of one study.")
@@ -167,7 +177,11 @@ def main(argv: list[str] | None = None) -> int:
                 args.engine,
                 args.depth,
             )
-            _print(payload)
+            want_summary = args.summary or (sys.stdout.isatty() and not args.json)
+            if want_summary and not args.json:
+                sys.stdout.write(format_rewrite_summary(payload))
+            else:
+                _print(payload)
             code = payload.get("exit_code")
             if code is None:
                 recheck = payload.get("recheck") or {}

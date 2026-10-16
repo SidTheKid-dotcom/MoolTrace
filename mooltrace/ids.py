@@ -23,6 +23,15 @@ DIABETES_CARE_RE = re.compile(
 )
 URL_RE = re.compile(r"https?://[^\s\"'<>]+", re.I)
 DOI_FULL_RE = re.compile(r"10\.\d{4,9}/\S+")
+_EOC_DISCLOSE = re.compile(
+    r"Evidence for this claim is under review \([^)]{0,240}\)\.?",
+    re.I,
+)
+_RETRACT_DISCLOSE = re.compile(
+    r"the study this relied on \((?:[^()]|\([^()]*\))*\) was retracted on "
+    r"[^.]*? \(notice (?:[^()]|\([^()]*\))*\)\. This claim has been removed\.?",
+    re.I,
+)
 _PUBLISHER_SUFFIXES = (
     "/full.pdf",
     "/full.html",
@@ -122,10 +131,31 @@ def diabetes_care_doi(volume: str, issue: str, page: str) -> str:
     return f"10.2337/diacare.{volume}.{issue}.{page}".lower()
 
 
+def strip_disclosures(text: str) -> str:
+    """Drop rewrite disclosure sentences so their DOIs are not re-ingested."""
+    out = text or ""
+    out = _EOC_DISCLOSE.sub(" ", out)
+    out = _RETRACT_DISCLOSE.sub(" ", out)
+    return out
+
+
+def is_disclosure_only(text: str, urls: list[str] | None = None) -> bool:
+    """True when the draft is only a rewrite disclosure and has no live URLs."""
+    if any(str(url).strip() for url in (urls or [])):
+        return False
+    blob = text or ""
+    if not blob.strip():
+        return False
+    if not (_EOC_DISCLOSE.search(blob) or _RETRACT_DISCLOSE.search(blob)):
+        return False
+    found = extract_identifiers(blob)
+    return not (found.dois or found.pmids or found.pmcids or found.urls or found.diabetes_care)
+
+
 def extract_identifiers(text: str) -> Identifiers:
     if not text:
         return Identifiers()
-    raw = unicodedata.normalize("NFKC", html.unescape(text))
+    raw = unicodedata.normalize("NFKC", html.unescape(strip_disclosures(text)))
     raw = unquote(unquote(raw))
     raw = re.sub(
         r"(10\.\d{4,9}/[^\s]*?[./\-(])\n+\s*([A-Za-z0-9])",

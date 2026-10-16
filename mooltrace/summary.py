@@ -102,6 +102,20 @@ def _advice(payload: dict[str, Any]) -> str:
     )
 
 
+def format_rewrite_summary(payload: dict[str, Any]) -> str:
+    rewritten = bool(payload.get("rewritten"))
+    code = payload.get("exit_code")
+    recheck = payload.get("recheck") or {}
+    if code is None:
+        code = recheck.get("exit_code")
+    lines = [
+        f"REWRITE (exit {code}) — rewritten={'true' if rewritten else 'false'}"
+    ]
+    if recheck:
+        lines.append(format_summary(recheck).rstrip())
+    return "\n".join(lines) + "\n"
+
+
 def format_summary(payload: dict[str, Any]) -> str:
     lines = [_headline(payload)]
     reason = next((item for item in payload.get("reasons") or [] if item.get("steps")), None)

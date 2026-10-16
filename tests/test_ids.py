@@ -3,6 +3,7 @@ from mooltrace.ids import (
     diabetes_care_doi,
     extract_identifiers,
     has_verifiable_source,
+    is_disclosure_only,
     is_publisher_flag,
 )
 
@@ -106,3 +107,21 @@ def test_has_verifiable_source_accepts_inline_and_explicit_ids():
         "",
         ["https://www.everydayhealth.com/diabetes/cinnamon-for-diabetes/"],
     )
+
+
+def test_extract_skips_rewrite_disclosures():
+    text = (
+        "Hydroxychloroquine outcomes: the study this relied on "
+        "(Mehra 2020, 10.1016/s0140-6736(20)31180-6) was retracted on "
+        "2020-06-05 (notice 10.1016/s0140-6736(20)31324-6). This claim has been removed."
+    )
+    found = extract_identifiers(text)
+    assert found.dois == []
+    assert is_disclosure_only(text, [])
+    assert not has_verifiable_source(text)
+    eoc = (
+        "Evidence for this claim is under review "
+        "(Expression of Concern, 10.2337/dc25-ec09, 2025-08-20)."
+    )
+    assert extract_identifiers(eoc).dois == []
+    assert is_disclosure_only(eoc, [])

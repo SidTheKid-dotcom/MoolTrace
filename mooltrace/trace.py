@@ -30,7 +30,7 @@ from mooltrace.clients import (
     reference_dois,
 )
 from mooltrace import cypher as C
-from mooltrace.decision import EXIT_INFRA, EXIT_WARN, decide, path_score
+from mooltrace.decision import EXIT_INFRA, EXIT_PASS, EXIT_WARN, decide, path_score
 from mooltrace.reliance import WEIGHT_FLOOR
 from mooltrace.graph import Graph, get_graph
 from mooltrace.reliance import PATH_RULE
@@ -40,6 +40,7 @@ from mooltrace.ids import (
     clean_doi,
     extract_identifiers,
     has_verifiable_source,
+    is_disclosure_only,
     is_publisher_flag,
     normalize_update_type,
     site_of,
@@ -813,6 +814,50 @@ def trace_answer(
     }
 
 
+def _removed_claims_check(*, text: str, urls: list[str], engine: str, depth: int) -> dict[str, Any]:
+    """Pass when the draft is only a rewrite disclosure (no live citations)."""
+    engine = (engine or "draft").strip()[:64] or "draft"
+    return {
+        "product": "MoolTrace",
+        "tagline": TAGLINE,
+        "decision": "pass",
+        "exit_code": EXIT_PASS,
+        "summary": (
+            "Flagged claims were removed. Pass is not a medical-accuracy check. "
+            "Coverage is not shown beyond this depth."
+        ),
+        "pitch": None,
+        "reasons": [],
+        "discounted": [],
+        "unjudged_paths": 0,
+        "unverified_paths": 0,
+        "independent_sources": [],
+        "independent_source_count": 0,
+        "weight_floor": WEIGHT_FLOOR,
+        "remediation_clusters": {
+            "algorithm": "algo.WCC",
+            "clusters": [],
+            "note": "No live citation graph remains after the rewrite disclosure.",
+        },
+        "algorithm": None,
+        "answer_id": _answer_id(engine, text, urls),
+        "engine": engine,
+        "depth": depth,
+        "paths": [],
+        "works_cited": 0,
+        "api_calls": 0,
+        "cache_hits": 0,
+        "reused_graph": False,
+        "incomplete": False,
+        "errors": [],
+        "context_notes": [],
+        "queries": [],
+        "cypher": None,
+        "elapsed_ms": 0,
+        "limits": _LIMITS,
+    }
+
+
 def _no_sources_check(*, text: str, urls: list[str], engine: str, depth: int) -> dict[str, Any]:
     """Warn when the draft named nothing MoolTrace can inspect."""
     engine = (engine or "draft").strip()[:64] or "draft"
@@ -866,6 +911,10 @@ def check_answer(
     depth = config.clamp_depth(depth)
     url_list = [url.strip() for url in (urls or []) if url and url.strip()]
     if not has_verifiable_source(text or "", url_list):
+        if is_disclosure_only(text or "", url_list):
+            return _removed_claims_check(
+                text=text or "", urls=url_list, engine=engine, depth=depth
+            )
         return _no_sources_check(text=text or "", urls=url_list, engine=engine, depth=depth)
     try:
         traced = trace_answer(text=text, urls=urls, engine=engine, depth=depth, graph=graph)
