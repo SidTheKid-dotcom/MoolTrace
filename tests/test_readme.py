@@ -49,7 +49,7 @@ def test_readme_names_no_sources_and_fixture_recheck():
     assert "no_sources" in text
     assert "fresh fixture recheck" in text
     assert "not persistent monitoring" in text
-    assert text.splitlines()[2].startswith("Track 1 agent that acts on connected data")
+    assert text.splitlines()[2].startswith("MoolTrace catches when your health AI's sources quietly rest")
     assert "rewrite_answer" in text
     assert "algo.SPpaths" in text
     assert "Azure AI Foundry" in text

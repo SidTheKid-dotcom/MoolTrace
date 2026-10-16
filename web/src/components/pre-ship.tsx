@@ -47,8 +47,17 @@ type Impact = {
   cypher?: string
   summary?: string
 }
+type Algorithm = {
+  name?: string
+  weight_prop?: string
+  cost_formula?: string
+  strength?: number | null
+  explanation?: string
+  cypher?: string
+}
 type Check = {
   decision: "pass" | "warn" | "block"
+  exit_code?: number
   summary: string
   pitch?: string | null
   reasons: Reason[]
@@ -65,6 +74,8 @@ type Check = {
   errors?: string[]
   context_notes?: string[]
   impact?: Impact | null
+  algorithm?: Algorithm | null
+  notices_checked_ago?: string | null
 }
 type Rewrite = {
   rewritten?: boolean
@@ -77,8 +88,8 @@ type Rewrite = {
 const PRESETS = [
   {
     id: "healthline",
-    label: "Healthline cinnamon",
-    hint: "URL-only page, counted 2-hop",
+    label: "Healthline cinnamon (warn)",
+    hint: "URL-only page, counted 2-hop to an Expression of Concern",
     engine: "nutrition-coach",
     depth: 2,
     text: "",
@@ -86,7 +97,7 @@ const PRESETS = [
   },
   {
     id: "lancet",
-    label: "Lancet 2020",
+    label: "Lancet 2020 HCQ (block)",
     hint: "Retracted registry paper",
     engine: "patient-chatbot",
     depth: 1,
@@ -95,7 +106,7 @@ const PRESETS = [
   },
   {
     id: "clean",
-    label: "No notice in range",
+    label: "Clean study (pass)",
     hint: "No flagged ancestor at depth 2; not shown beyond",
     engine: "clean-check",
     depth: 2,
@@ -108,6 +119,27 @@ function decisionVariant(decision: string): "default" | "secondary" | "destructi
   if (decision === "block") return "destructive"
   if (decision === "warn") return "secondary"
   return "default"
+}
+
+function plainVerdict(result: Check): string {
+  const code = result.exit_code
+  const kind = (result.reasons || []).find((item) => item.code)?.code
+  if (result.decision === "block") {
+    return `BLOCK (exit ${code ?? 1}) — your answer rests on a retracted study`
+  }
+  if (result.decision === "pass") {
+    return `PASS (exit ${code ?? 0}) — no counted path to a flagged study within this depth. Pass is not a medical-accuracy check.`
+  }
+  if (kind === "expression_of_concern") {
+    return `WARN (exit ${code ?? 2}) — your answer rests on a study flagged with an Expression of Concern`
+  }
+  if (kind === "unverified") {
+    return `WARN (exit ${code ?? 2}) — a cited flagged study has unverified reliance`
+  }
+  if (kind === "no_sources") {
+    return `WARN (exit ${code ?? 2}) — no verifiable citation or source was provided`
+  }
+  return result.summary
 }
 
 function ResultCard({
@@ -128,15 +160,21 @@ function ResultCard({
           <Badge variant={decisionVariant(result.decision)}>{result.decision}</Badge>
           <span className="text-xs text-muted-foreground">
             {result.independent_source_count ?? 0} independent source
-            {(result.independent_source_count ?? 0) === 1 ? "" : "s"} at weight ≥{" "}
-            {result.weight_floor ?? 0.5}
+            {(result.independent_source_count ?? 0) === 1 ? "" : "s"} at{" "}
+            <span title="Reliance weight: how strongly this hop uses the next work. included is 1.0; background is 0.2.">
+              weight ≥ {result.weight_floor ?? 0.5}
+            </span>
             {result.path_rule ? ` · ${result.path_rule}` : ""}
             {result.coverage ? ` · ${result.coverage.replace("_", " ")}` : ""}
             {result.elapsed_ms != null ? ` · ${result.elapsed_ms} ms` : ""}
           </span>
         </div>
-        <CardTitle className="text-xl leading-snug">{result.summary}</CardTitle>
+        <CardTitle className="text-xl leading-snug">{plainVerdict(result)}</CardTitle>
+        <CardDescription>{result.summary}</CardDescription>
         {result.pitch ? <CardDescription>{result.pitch}</CardDescription> : null}
+        {result.notices_checked_ago ? (
+          <CardDescription>Notices checked {result.notices_checked_ago}.</CardDescription>
+        ) : null}
         {result.impact?.summary ? (
           <CardDescription>{result.impact.summary}</CardDescription>
         ) : null}
@@ -155,7 +193,17 @@ function ResultCard({
           <article key={`${reason.notice_doi}-${reason.root_doi}-${index}`} className="flex flex-col gap-3">
             {index > 0 ? <Separator /> : null}
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              <span>{reason.label || reason.notice_type || reason.code}</span>
+              <span
+                title={
+                  reason.code === "expression_of_concern"
+                    ? "An Expression of Concern is a publisher notice that a paper's reliability is under review. It is not a retraction."
+                    : reason.code === "retraction"
+                      ? "The publisher withdrew the paper. A counted path to one blocks."
+                      : "Publisher notice on the root study."
+                }
+              >
+                {reason.label || reason.notice_type || reason.code}
+              </span>
               {reason.notice_doi ? <span>{reason.notice_doi}</span> : null}
               {reason.notice_date ? <span>{reason.notice_date}</span> : null}
               {reason.reliance ? (
@@ -222,10 +270,16 @@ function ResultCard({
         ) : null}
         {result.cypher ? (
           <div className="flex flex-col gap-2">
-            <p className="text-xs text-muted-foreground">
-              FalkorDB algo.SPpaths on this answer&apos;s graph. Lower cost is stronger reliance.
+            <p
+              className="text-xs text-muted-foreground"
+              title="algo.SPpaths walks RESTS_ON with cost −ln(weight). Lower cost is stronger reliance. PATH_RULE still classifies every path so a weak short hop cannot hide a counted retraction."
+            >
+              {result.algorithm?.explanation ||
+                "FalkorDB algo.SPpaths on this answer's graph. Lower cost is stronger reliance."}
             </p>
-            <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs leading-5">{result.cypher}</pre>
+            <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs leading-5">
+              {result.algorithm?.cypher || result.cypher}
+            </pre>
           </div>
         ) : null}
         {result.impact?.cypher ? (
@@ -315,11 +369,11 @@ export function PreShip() {
       <header className="flex flex-col gap-3">
         <p className="text-sm font-medium tracking-wide text-primary">MoolTrace</p>
         <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-          Trace your AI&apos;s answer to its root, and see if that root is flagged.
+          Is your AI&apos;s answer built on a flagged study?
         </h1>
         <p className="text-base leading-7 text-muted-foreground">
-          Paste a draft and the pages it cites. MoolTrace follows those citations in FalkorDB and
-          returns pass, warn, or block. It does not say the draft is wrong.
+          Paste an answer and the links it cites. We follow every citation — page → review → trial —
+          and show you the exact path to any retraction or Expression of Concern.
         </p>
       </header>
 
@@ -332,7 +386,7 @@ export function PreShip() {
             disabled={loading}
             onClick={() => applyPreset(preset.id)}
           >
-            {preset.label}
+            <span title={preset.hint}>{preset.label}</span>
           </Button>
         ))}
       </div>
@@ -389,7 +443,7 @@ export function PreShip() {
                 })
               }
             >
-              {loading ? "Checking citation paths…" : "Check before shipping"}
+              {loading ? "Fetching pages and checking notices…" : "Check before shipping"}
             </Button>
           </div>
         </CardContent>
@@ -409,15 +463,18 @@ export function PreShip() {
           <CardHeader>
             <CardTitle>Nothing checked yet</CardTitle>
             <CardDescription>
-              Choose Healthline cinnamon, Lancet 2020, or the clean DOI. A warn or a block shows
-              the deciding path, hop weights, and the FalkorDB query.
+              Three presets: Healthline cinnamon (warn), Lancet 2020 HCQ (block), Clean study
+              (pass). A warn or a block shows the deciding path, the sentence at each hop, and the
+              FalkorDB algo.SPpaths call.
             </CardDescription>
           </CardHeader>
         </Card>
       ) : null}
 
       {loading && !result ? (
-        <p className="text-sm text-muted-foreground">Checking citation paths…</p>
+        <p className="text-sm text-muted-foreground" role="status">
+          Fetching the cited page, walking reviews, then checking publisher notices…
+        </p>
       ) : null}
 
       {result ? (
@@ -431,7 +488,7 @@ export function PreShip() {
             <CardDescription>
               {rewrite.method === "azure-foundry"
                 ? "Azure AI Foundry drafted this. Code stripped flagged citations, then rechecked."
-                : "Template rewrite. Flagged citations were dropped, then the check ran again."}
+                : "Template rewrite. Only flagged sentences changed. Untouched sentences stayed the same, then the check ran again."}
             </CardDescription>
           </CardHeader>
           <CardContent>

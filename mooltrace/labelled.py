@@ -23,7 +23,17 @@ from mooltrace.graph import Graph
 from mooltrace.ssrf import UnsafeURL
 from mooltrace.trace import check_answer
 
-FAMILIES = ("eoc", "retraction", "hedged", "clean", "no_sources", "depth")
+FAMILIES = (
+    "eoc",
+    "retraction",
+    "hedged",
+    "clean",
+    "no_sources",
+    "depth",
+    "page",
+    "identifier",
+    "i18n",
+)
 DECISIONS = ("pass", "warn", "block")
 DEFAULT_FILE = config.ROOT / "examples" / "labelled.jsonl"
 POSITIVE = frozenset({"warn", "block"})

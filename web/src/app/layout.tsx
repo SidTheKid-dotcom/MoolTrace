@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MoolTrace",
+  title: "MoolTrace — Is your AI's answer built on a flagged study?",
   description:
-    "Pre-merge check for health-AI answer fixtures. Trace a citation path to a publisher notice.",
+    "Paste an answer and the links it cites. We follow every citation — page → review → trial — and show you the exact path to any retraction or Expression of Concern.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
