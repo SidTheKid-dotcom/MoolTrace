@@ -34,3 +34,22 @@ jobs:
           .venv/bin/pip install -e .
           .venv/bin/python -m mooltrace batch examples/answers.jsonl --fail-on block
         # To fail on warn too: add `--fail-on warn`.
+
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Unit tests with the network namespace unshared
+        env:
+          MOOLTRACE_MAILTO: mooltrace-ci@example.com
+        run: |
+          set -euo pipefail
+          python3 -m venv .venv
+          .venv/bin/pip install -U pip
+          .venv/bin/pip install -e ".[dev]"
+          if unshare --net --map-root-user true >/dev/null 2>&1; then
+            unshare --net --map-root-user .venv/bin/python -m pytest -q
+          else
+            sudo unshare -n -- .venv/bin/python -m pytest -q
+          fi

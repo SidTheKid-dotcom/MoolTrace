@@ -78,12 +78,23 @@ def _seed(graph: Graph) -> None:
 def _offline():
     import mooltrace.trace as trace
 
-    originals = {
-        "judge_citation_edges": trace.judge_citation_edges,
-        "expand_work": trace.expand_work,
-        "notice_check": trace.notice_check,
-        "fetch_page": trace.fetch_page,
-    }
+    def no_http(*_a, **_k):
+        raise AssertionError("agent_loop is offline")
+
+    names = (
+        "judge_citation_edges",
+        "expand_work",
+        "notice_check",
+        "fetch_page",
+        "crossref_work",
+        "crossref_works",
+        "datacite_work",
+        "doi_org_csl",
+        "openalex_work_doi",
+        "openalex_work_pmid",
+        "openalex_by_ids",
+    )
+    originals = {name: getattr(trace, name) for name in names if hasattr(trace, name)}
 
     def restore() -> None:
         for name, fn in originals.items():
@@ -92,9 +103,15 @@ def _offline():
     trace.judge_citation_edges = lambda *a, **k: None  # type: ignore[assignment]
     trace.expand_work = lambda *a, **k: None  # type: ignore[assignment]
     trace.notice_check = lambda *a, **k: None  # type: ignore[assignment]
-    trace.fetch_page = lambda *a, **k: (_ for _ in ()).throw(  # type: ignore[assignment]
-        AssertionError("agent_loop is offline")
-    )
+    for name in names:
+        if name in {
+            "judge_citation_edges",
+            "expand_work",
+            "notice_check",
+        }:
+            continue
+        if hasattr(trace, name):
+            setattr(trace, name, no_http)
     return restore
 
 

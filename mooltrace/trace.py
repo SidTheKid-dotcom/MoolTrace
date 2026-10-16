@@ -332,6 +332,8 @@ def expand_work(graph: Graph, doi: str, stats: CallStats) -> None:
         cr_failed = True
     datacite = None
     csl = None
+    if oa_failed and cr_failed:
+        raise MoolTraceError(f"could not expand {doi}: OpenAlex and Crossref both failed")
     if not openalex and not crossref:
         try:
             datacite = datacite_work(doi, stats)
@@ -1160,7 +1162,13 @@ def what_rests_on(doi: str, graph: Graph | None = None, depth: int | None = None
     if not valid_doi(target):
         raise MoolTraceError(f"not a DOI: {doi!r}")
     row = graph.work_row(target)
-    if not _notice_fresh(row):
+    known = graph.run(
+        "notice_present",
+        "MATCH (n:Notice {doi: $doi}) RETURN n.doi AS doi LIMIT 1",
+        {"doi": target},
+        read_only=True,
+    )
+    if not known.rows and not _notice_fresh(row):
         message = crossref_work(target, stats)
         _apply_notices(graph, target, message)
         title = None
