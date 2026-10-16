@@ -1,0 +1,998 @@
+{
+  "product": "MoolTrace",
+  "kind": "vitality_frozen_set",
+  "frozen_at": "2026-10-17",
+  "labels_frozen_at": "2026-10-16",
+  "never_relabelled": true,
+  "paper": "Xu et al. Investigating the impact of trial retractions on the healthcare evidence ecosystem (VITALITY Study I). BMJ 2025;389:e082068.",
+  "pmc": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12015725/",
+  "doi": "10.1136/bmj-2024-082068",
+  "osf": "https://osf.io/7eazq/",
+  "list_source": {
+    "paper": "Xu et al. Investigating the impact of trial retractions on the healthcare evidence ecosystem (VITALITY Study I). BMJ 2025;389:e082068.",
+    "pmc": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12015725/",
+    "doi": "10.1136/bmj-2024-082068",
+    "how_68_identified": "Main text 'Contaminated evidence in clinical practice guidelines': 218 substantially impacted meta-analyses (both direction and P-value significance changed; n=218 in Results) from 68 systematic reviews, cited as references 23-90 (19 Cochrane, 49 non-Cochrane).",
+    "osf_core_named_in_paper": "https://osf.io/ukg3j (404 as of 2026-10-15; node not public)",
+    "osf_used": "https://osf.io/7eazq/ files: 'All in one final - 30_Dec updated 3.xlsx' and 'Baseline information of 1330_R_RCT.xlsx'",
+    "bmj_supplement": "xuch082068.ww1.pdf (protocol + tables S1-S5 in extracted text; S6-S8 not in the 1e6-char WebFetch extract)",
+    "contact_not_used": "Paper says whole datasets from first author on request; not contacted per protocol."
+  },
+  "sampling": {
+    "positives": "Up to 40 non-retracted reviews from paper refs 23-90. First 15 are the 16 Oct 2026 sealed sample (high-signal then Cochrane/non-Cochrane mix). Remaining slots fill in paper-ref order. Carlisle 2006 Cochrane PONV (ref 45, 10.1002/14651858.cd004125.pub2) excluded because Crossref/OpenAlex mark the review itself retracted. Ref 82 had no DOI.",
+    "controls": "10 journal-year matched reviews frozen on 16 Oct 2026 for 10 of the 15 sampled positives. Five sampled positives (refs 87, 41, 84, 56, 64) and the 25 extra frozen positives are unpaired. n_pos=40, n_ctrl=10 is a partial equal-n set; do not invent extra controls after seeing MoolTrace verdicts."
+  },
+  "control_check": "Same OpenAlex primary_location.source.id and publication_year as a sampled distorted review; OpenAlex type=review (two documented replacements); DOI not in VITALITY OSF All-sheet (805 unique review DOIs from 'All in one final - 30_Dec updated 3.xlsx' on osf.io/7eazq); OpenAlex is_retracted=false on the review; none of the first 80 OpenAlex referenced_works had is_retracted=true. Two replacements: PRISMA 2020 reporting guideline swapped for JCE 2021 exercise-for-LBP SR (10.1016/j.jclinepi.2021.05.020); CD007768.pub3 (634 refs) swapped for CD011231 (20 refs). OpenAlex is_retracted can miss notices; the OSF All-sheet exclusion is the primary check that the control did not include one of the 1330 VITALITY retracted RCTs. First author was not emailed. Control matching was frozen on 16 Oct 2026 (prior partial run) and was not relabelled after seeing MoolTrace verdicts.",
+  "draft_template": "This health-information draft cites a single systematic review (DOI {doi}) and no other papers. It is not medical advice.",
+  "excluded_retracted_reviews": [
+    {
+      "ref": 45,
+      "doi": "10.1002/14651858.cd004125.pub2",
+      "reason": "review itself retracted (Crossref/OpenAlex)"
+    }
+  ],
+  "n_positives": 40,
+  "n_controls": 10,
+  "n_sampled_positives": 15,
+  "positives": [
+    {
+      "id": "pos-ref-87",
+      "kind": "positive",
+      "ref": 87,
+      "doi": "10.1001/jama.2013.430",
+      "first_author": "Zarychanski",
+      "year": 2013,
+      "title": "Association of hydroxyethyl starch administration with mortality and acute kidney injury in critically ill patients requiring volume resuscitation: a systematic review and meta-analysis",
+      "journal": "JAMA",
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": true,
+      "retracted_trials": [
+        {
+          "doi": "10.1007/bf01699231",
+          "rct_id": 1,
+          "title": "Influence of different volume therapies on platelet function in the critically ill",
+          "journal": "Intensive Care Med",
+          "reason": "Data",
+          "retraction_date": "2023-04-11"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-27",
+      "kind": "positive",
+      "ref": 27,
+      "doi": "10.1111/jog.12393",
+      "first_author": "Liu",
+      "year": 2014,
+      "title": "Letrozole versus clomiphene citrate for unexplained infertility: a systematic review and meta-analysis",
+      "journal": "Journal of obstetrics and gynaecology research",
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": true,
+      "retracted_trials": [
+        {
+          "doi": "10.1016/j.fertnstert.2020.08.1409",
+          "rct_id": 144,
+          "title": "Clomiphene citrate or aromatase inhibitors for superovulation in women with unexplained infertility undergoing intrauterine insemination: a prospective randomized trial",
+          "journal": "Fertil Steril",
+          "reason": "Data",
+          "retraction_date": "2020-09-08"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-41",
+      "kind": "positive",
+      "ref": 41,
+      "doi": "10.1097/mjt.0000000000000011",
+      "first_author": "Barrons",
+      "year": 2016,
+      "title": "The roles of ACE inhibitors in lower extremity peripheral artery disease",
+      "journal": "American Journal of Therapeutics",
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": true,
+      "retracted_trials": [
+        {
+          "doi": "10.1001/jama.2012.216237",
+          "rct_id": 332,
+          "title": "Effect of ramipril on walking times and quality of life among patients with peripheral artery disease and intermittent claudication",
+          "journal": "JAMA",
+          "reason": "Data",
+          "retraction_date": "2015-10-13"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-35",
+      "kind": "positive",
+      "ref": 35,
+      "doi": "10.3390/jcm10112503",
+      "first_author": "Hernandez",
+      "year": 2021,
+      "title": "Efficacy and safety of hydroxychloroquine for hospitalized COVID-19 patients: a systematic review and meta-analysis",
+      "journal": "Journal of Clinical Medicine",
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": true,
+      "retracted_trials": [
+        {
+          "doi": "10.4269/ajtmh.20-0873",
+          "rct_id": 28,
+          "title": "Hydroxychloroquine in the treatment of COVID-19: a multicenter randomized controlled study",
+          "journal": "Am J Trop Med Hyg",
+          "reason": "Data",
+          "retraction_date": "2022-09-02"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-36",
+      "kind": "positive",
+      "ref": 36,
+      "doi": "10.1371/journal.pone.0248132",
+      "first_author": "Juul",
+      "year": 2021,
+      "title": "Interventions for treatment of COVID-19: Second edition of a living systematic review with meta-analyses and trial sequential analyses (The LIVING Project)",
+      "journal": "PLoS ONE",
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": true,
+      "retracted_trials": [
+        {
+          "doi": "10.4269/ajtmh.20-0873",
+          "rct_id": 28,
+          "title": "Hydroxychloroquine in the treatment of COVID-19: a multicenter randomized controlled study",
+          "journal": "Am J Trop Med Hyg",
+          "reason": "Data",
+          "retraction_date": "2022-09-02"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-46",
+      "kind": "positive",
+      "ref": 46,
+      "doi": "10.1016/j.jclinepi.2021.12.018",
+      "first_author": "Izcovich",
+      "year": 2022,
+      "title": "Bias as a source of inconsistency in ivermectin trials for COVID-19: A systematic review",
+      "journal": "Journal of Clinical Epidemiology",
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": true,
+      "retracted_trials": [
+        {
+          "doi": "10.1016/j.toxrep.2021.03.003",
+          "rct_id": 46,
+          "title": "Use of ivermectin in the treatment of Covid-19: a pilot trial",
+          "journal": "Use of ivermectin in the treatment of Covid-19: a pilot trial",
+          "reason": "Data",
+          "retraction_date": "2022-05-02"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-30",
+      "kind": "positive",
+      "ref": 30,
+      "doi": "10.1002/14651858.cd007470.pub3",
+      "first_author": "Bjelakovic",
+      "year": 2014,
+      "title": "Vitamin D supplementation for prevention of mortality in adults",
+      "journal": "Cochrane Database of Systematic Reviews",
+      "cochrane": true,
+      "review_is_retracted": false,
+      "sampled": true,
+      "retracted_trials": [
+        {
+          "doi": "10.1161/01.str.28.4.736",
+          "rct_id": 201,
+          "title": "Amelioration of hemiplegia-associated osteopenia more than 4 years after stroke by 1\u03b1-hydroxyvitamin D 3 and calcium supplementation",
+          "journal": "Stroke",
+          "reason": "Data",
+          "retraction_date": "2019-04-22"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-25",
+      "kind": "positive",
+      "ref": 25,
+      "doi": "10.1007/s00228-011-1008-5",
+      "first_author": "Shi",
+      "year": 2011,
+      "title": "Hydroxyethyl starch for cardiovascular surgery: a systematic review of randomized controlled trials",
+      "journal": "European Journal of Clinical Pharmacology",
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": true,
+      "retracted_trials": [
+        {
+          "doi": "10.1213/00000539-199376060-00002",
+          "rct_id": 133,
+          "title": "Influence of different intravascular volume therapies on platelet function in patients undergoing cardiopulmonary bypass",
+          "journal": "Anesth Analg",
+          "reason": "N",
+          "retraction_date": "2020-11-01"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-86",
+      "kind": "positive",
+      "ref": 86,
+      "doi": "10.1016/j.jemermed.2013.05.018",
+      "first_author": "Zhong",
+      "year": 2013,
+      "title": "Colloid solutions for fluid resuscitation in patients with sepsis: systematic review of randomized controlled trials",
+      "journal": "Journal of Emergency Medicine",
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": true,
+      "retracted_trials": [
+        {
+          "doi": "10.1093/bja/75.6.740",
+          "rct_id": 148,
+          "title": "Does the type of volume therapy influence endothelial-related coagulation in the critically ill?",
+          "journal": "Br J Anaesth",
+          "reason": "Data",
+          "retraction_date": "2020-09-01"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-28",
+      "kind": "positive",
+      "ref": 28,
+      "doi": "10.1002/14651858.cd004734.pub4",
+      "first_author": "de Jong",
+      "year": 2014,
+      "title": "Aspirin and/or heparin for women with unexplained recurrent miscarriage with or without inherited thrombophilia",
+      "journal": "Cochrane Database of Systematic Reviews",
+      "cochrane": true,
+      "review_is_retracted": false,
+      "sampled": true,
+      "retracted_trials": [
+        {
+          "doi": "10.1080/01443610802042688",
+          "rct_id": 18,
+          "title": "Low-molecular weight heparin in patients with recurrent early miscarriages of unknown aetiology",
+          "journal": "J Obstet Gynaecol (Lahore)",
+          "reason": "Data",
+          "retraction_date": "2022-11-11"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-38",
+      "kind": "positive",
+      "ref": 38,
+      "doi": "10.1002/14651858.cd010287.pub3",
+      "first_author": "Franik",
+      "year": 2018,
+      "title": "Aromatase inhibitors (letrozole) for subfertile women with polycystic ovary syndrome",
+      "journal": "Cochrane Database of Systematic Reviews",
+      "cochrane": true,
+      "review_is_retracted": false,
+      "sampled": true,
+      "retracted_trials": [
+        {
+          "doi": "10.1007/s00404-010-1566-2",
+          "rct_id": 2,
+          "title": "Letrozole versus laparoscopic ovarian diathermy for ovulation induction in clomiphene-resistant women with polycystic ovary syndrome: a randomized controlled trial",
+          "journal": "Arch Gynecol Obstet",
+          "reason": "Data",
+          "retraction_date": "2023-03-31"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-71",
+      "kind": "positive",
+      "ref": 71,
+      "doi": "10.1016/j.fertnstert.2018.04.040",
+      "first_author": "Vitagliano",
+      "year": 2018,
+      "title": "Endometrial scratch injury for women with one or more previous failed embryo transfers: a systematic review and meta-analysis of randomized controlled trials",
+      "journal": "Fertility and Sterility",
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": true,
+      "retracted_trials": [
+        {
+          "doi": "10.1016/j.ejogrb.2012.06.029",
+          "rct_id": 1129,
+          "title": "Does a single endometrial biopsy regimen (s-ebr) improve icsi outcome in patients with repeated implantation failure? A randomised controlled trial",
+          "journal": "European journal of obstetrics",
+          "reason": "Data",
+          "retraction_date": "2023-09-14"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-84",
+      "kind": "positive",
+      "ref": 84,
+      "doi": "10.1371/journal.pone.0152829",
+      "first_author": "Geng",
+      "year": 2016,
+      "title": "The Influence of Perioperative Dexmedetomidine on Patients Undergoing Cardiac Surgery: A Meta-Analysis",
+      "journal": "PLoS ONE",
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": true,
+      "retracted_trials": [
+        {
+          "doi": "10.1177/1089253212463969",
+          "rct_id": 1286,
+          "title": "The impact of dexmedetomidine infusion in sparing morphine consumption in off-pump coronary artery bypass grafting",
+          "journal": "Semin Cardiothorac Vasc Anesth",
+          "reason": "Data",
+          "retraction_date": "2023-05-30"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-56",
+      "kind": "positive",
+      "ref": 56,
+      "doi": "10.1192/bjp.2019.234",
+      "first_author": "Deane",
+      "year": 2021,
+      "title": "Omega-3 and polyunsaturated fat for prevention of depression and anxiety symptoms: systematic review and meta-analysis of randomised trials",
+      "journal": "The British Journal of Psychiatry",
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": true,
+      "retracted_trials": [
+        {
+          "doi": "10.1056/nejmoa1200303",
+          "rct_id": 711,
+          "title": "Primary prevention of cardiovascular disease with a Mediterranean diet",
+          "journal": "N Engl J Med",
+          "reason": "N",
+          "retraction_date": "2018-06-13"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-64",
+      "kind": "positive",
+      "ref": 64,
+      "doi": "10.1002/14651858.cd008873.pub4",
+      "first_author": "Palacios",
+      "year": 2019,
+      "title": "Vitamin D supplementation for women during pregnancy",
+      "journal": "Cochrane Database of Systematic Reviews",
+      "cochrane": true,
+      "review_is_retracted": false,
+      "sampled": true,
+      "retracted_trials": [
+        {
+          "doi": "10.3945/jn.113.177550",
+          "rct_id": 93,
+          "title": "Vitamin D supplementation affects serum high-sensitivity C-reactive protein, insulin resistance, and biomarkers of oxidative stress in pregnant women",
+          "journal": "J Nutr",
+          "reason": "Data",
+          "retraction_date": "2021-05-11"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-23",
+      "kind": "positive",
+      "ref": 23,
+      "doi": "10.31083/j.ceog4901027",
+      "first_author": "Lin",
+      "year": 2022,
+      "title": "The impact of endometrial mechanical stimulation in women with normal hysteroscopic findings undergoing IVF/ICSI: a meta-analysis",
+      "journal": null,
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": []
+    },
+    {
+      "id": "pos-ref-24",
+      "kind": "positive",
+      "ref": 24,
+      "doi": "10.1007/s11695-019-04288-3",
+      "first_author": "Jia",
+      "year": 2020,
+      "title": "One Anastomosis Gastric Bypass Versus Roux-en-Y Gastric Bypass for Obesity: a Systematic Review and Meta-Analysis of Randomized Clinical Trials",
+      "journal": null,
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1007/s00464-018-6307-9"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-26",
+      "kind": "positive",
+      "ref": 26,
+      "doi": "10.1080/13625187.2019.1706079",
+      "first_author": "Tassi",
+      "year": 2020,
+      "title": "Misoprostol administration prior to intrauterine contraceptive device insertion: a systematic review and meta-analysis of randomised controlled trials",
+      "journal": null,
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1080/13625187.2018.1428297"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-29",
+      "kind": "positive",
+      "ref": 29,
+      "doi": "10.1186/cc6812",
+      "first_author": "Jacob",
+      "year": 2008,
+      "title": "Small-volume resuscitation with hyperoncotic albumin: a systematic review of randomized clinical trials",
+      "journal": null,
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1007/bf01699231"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-31",
+      "kind": "positive",
+      "ref": 31,
+      "doi": "10.12659/msm.890102",
+      "first_author": "Zhang",
+      "year": 2014,
+      "title": "Efficacy and safety of flurbiprofen axetil in the prevention of pain on propofol injection: a systematic review and meta-analysis",
+      "journal": null,
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1016/j.clinthera.2005.05.003"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-32",
+      "kind": "positive",
+      "ref": 32,
+      "doi": "10.1155/2018/5209108",
+      "first_author": "Mohamed",
+      "year": 2018,
+      "title": "Augmentation versus No Augmentation for Immediate Postextraction Implants",
+      "journal": null,
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1902/jop.2012.120396"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-33",
+      "kind": "positive",
+      "ref": 33,
+      "doi": "10.1002/14651858.cd007146.pub2",
+      "first_author": "Gillespie",
+      "year": 2009,
+      "title": "Interventions for preventing falls in older people living in the community",
+      "journal": null,
+      "cochrane": true,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1136/jnnp.66.1.64"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-34",
+      "kind": "positive",
+      "ref": 34,
+      "doi": "10.1016/j.cmi.2017.08.019",
+      "first_author": "Plantinga",
+      "year": 2018,
+      "title": "Selective digestive and oropharyngeal decontamination in medical and surgical ICU patients: individual patient data meta-analysis",
+      "journal": null,
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1001/jama.2014.7247"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-37",
+      "kind": "positive",
+      "ref": 37,
+      "doi": "10.1002/14651858.cd009526.pub2",
+      "first_author": "Lepine",
+      "year": 2017,
+      "title": "Ovarian surgery for symptom relief in women with polycystic ovary syndrome",
+      "journal": null,
+      "cochrane": true,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1007/s00404-010-1566-2"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-39",
+      "kind": "positive",
+      "ref": 39,
+      "doi": "10.3389/fonc.2021.644341",
+      "first_author": "Li",
+      "year": 2021,
+      "title": "Novel visualization methods assisted transurethral resection for bladder cancer: an updated survival-based systematic review and meta-analysis",
+      "journal": null,
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1016/j.eururo.2014.06.049"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-40",
+      "kind": "positive",
+      "ref": 40,
+      "doi": "10.1016/j.atherosclerosis.2013.09.037",
+      "first_author": "Shahin",
+      "year": 2013,
+      "title": "Meta-analysis of angiotensin converting enzyme inhibitors effect on walking ability and ankle brachial pressure index in patients with intermittent claudication",
+      "journal": null,
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1001/jama.2012.216237"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-42",
+      "kind": "positive",
+      "ref": 42,
+      "doi": "10.1002/14651858.cd003557.pub5",
+      "first_author": "O'Meara",
+      "year": 2014,
+      "title": "Antibiotics and antiseptics for venous leg ulcers",
+      "journal": null,
+      "cochrane": true,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1111/j.1365-2702.2008.02558.x"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-43",
+      "kind": "positive",
+      "ref": 43,
+      "doi": "10.1017/s2045796019000027",
+      "first_author": "Turrini",
+      "year": 2019,
+      "title": "Efficacy and acceptability of psychosocial interventions in asylum seekers and refugees: systematic review and meta-analysis",
+      "journal": null,
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1111/j.1526-4637.2010.01040.x"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-44",
+      "kind": "positive",
+      "ref": 44,
+      "doi": "10.1002/14651858.cd012534.pub2",
+      "first_author": "Bala",
+      "year": 2018,
+      "title": "Antiplatelet and anticoagulant agents for primary prevention of thrombosis in individuals with antiphospholipid antibodies",
+      "journal": null,
+      "cochrane": true,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1016/j.ijgo.2015.09.004"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-47",
+      "kind": "positive",
+      "ref": 47,
+      "doi": "10.4103/0973-1482.188434",
+      "first_author": "Yu",
+      "year": 2018,
+      "title": "Gemcitabine/cisplatin versus methotrexate/vinblastine/doxorubicin/cisplatin for muscle-invasive bladder cancer: A systematic review and meta-analysis",
+      "journal": null,
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1093/annonc/mdj965"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-48",
+      "kind": "positive",
+      "ref": 48,
+      "doi": "10.1002/14651858.cd012799.pub2",
+      "first_author": "Sathianathen",
+      "year": 2021,
+      "title": "Selective serotonin re-uptake inhibitors for premature ejaculation in adult men",
+      "journal": null,
+      "cochrane": true,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1097/jcp.0b013e31814b98d4"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-49",
+      "kind": "positive",
+      "ref": 49,
+      "doi": "10.3310/hta19210",
+      "first_author": "Cooper",
+      "year": 2015,
+      "title": "Interventions to treat premature ejaculation: a systematic review short report",
+      "journal": null,
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1097/jcp.0b013e31814b98d4"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-50",
+      "kind": "positive",
+      "ref": 50,
+      "doi": "10.1016/j.urology.2012.05.035",
+      "first_author": "Wu",
+      "year": 2012,
+      "title": "Efficacy and safety of tramadol for premature ejaculation: a systematic review and meta-analysis",
+      "journal": null,
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1097/01.jcp.0000195110.79027.3f"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-51",
+      "kind": "positive",
+      "ref": 51,
+      "doi": "10.18240/ijo.2019.07.20",
+      "first_author": "Zhao",
+      "year": 2019,
+      "title": "Intravenous glucocorticoids therapy in the treatment of Graves\u2019 ophthalmopathy: a systematic review and Meta-analysis",
+      "journal": null,
+      "cochrane": false,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1111/cen.13170"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-52",
+      "kind": "positive",
+      "ref": 52,
+      "doi": "10.1002/14651858.cd013397.pub2",
+      "first_author": "Shi",
+      "year": 2021,
+      "title": "Compression bandages or stockings versus no compression for treating venous leg ulcers",
+      "journal": null,
+      "cochrane": true,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1016/j.jvs.2011.12.019"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-53",
+      "kind": "positive",
+      "ref": 53,
+      "doi": "10.1002/14651858.cd005355.pub5",
+      "first_author": "Kongnyuy",
+      "year": 2014,
+      "title": "Interventions to reduce haemorrhage during myomectomy for fibroids",
+      "journal": null,
+      "cochrane": true,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1016/j.ejogrb.2012.09.014"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-54",
+      "kind": "positive",
+      "ref": 54,
+      "doi": "10.1002/14651858.cd000333.pub2",
+      "first_author": "Howe",
+      "year": 2011,
+      "title": "Exercise for preventing and treating osteoporosis in postmenopausal women",
+      "journal": null,
+      "cochrane": true,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": []
+    },
+    {
+      "id": "pos-ref-55",
+      "kind": "positive",
+      "ref": 55,
+      "doi": "10.1002/14651858.cd001233.pub3",
+      "first_author": "de Vaan",
+      "year": 2019,
+      "title": "Mechanical methods for induction of labour",
+      "journal": null,
+      "cochrane": true,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1111/jog.13354"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-57",
+      "kind": "positive",
+      "ref": 57,
+      "doi": "10.1002/14651858.cd003511.pub5",
+      "first_author": "Haas",
+      "year": 2019,
+      "title": "Progestogen for preventing miscarriage in women with recurrent miscarriage of unclear etiology",
+      "journal": null,
+      "cochrane": true,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1016/j.fertnstert.2014.07.1251"
+        }
+      ]
+    },
+    {
+      "id": "pos-ref-58",
+      "kind": "positive",
+      "ref": 58,
+      "doi": "10.1002/14651858.cd005472.pub2",
+      "first_author": "Cheuk",
+      "year": 2007,
+      "title": "Acupuncture for insomnia",
+      "journal": null,
+      "cochrane": true,
+      "review_is_retracted": false,
+      "sampled": false,
+      "retracted_trials": [
+        {
+          "doi": "10.1046/j.1365-2648.2003.02596.x"
+        }
+      ]
+    }
+  ],
+  "controls": [
+    {
+      "id": "ctrl-01",
+      "kind": "control",
+      "n": 1,
+      "doi": "10.1111/jog.12333",
+      "title": "Efficacy and safety of intravaginal misoprostol versus intracervical dinoprostone for labor induction at term: A systematic review and meta\u2010analysis",
+      "year": 2014,
+      "journal": "Journal of obstetrics and gynaecology research",
+      "matched_to_positive_id": "pos-ref-27",
+      "matched_to_positive_ref": 27,
+      "referenced_works_checked": 37,
+      "referenced_works_total": 37,
+      "openalex_retracted_refs": [],
+      "in_vitality_all_sheet": false,
+      "openalex_is_retracted": false,
+      "control_note": null
+    },
+    {
+      "id": "ctrl-02",
+      "kind": "control",
+      "n": 2,
+      "doi": "10.3390/jcm10143178",
+      "title": "Gender and Sex Are Key Determinants in Osteoarthritis Not Only Confounding Variables. A Systematic Review of Clinical Data",
+      "year": 2021,
+      "journal": "Journal of Clinical Medicine",
+      "matched_to_positive_id": "pos-ref-35",
+      "matched_to_positive_ref": 35,
+      "referenced_works_checked": 80,
+      "referenced_works_total": 100,
+      "openalex_retracted_refs": [],
+      "in_vitality_all_sheet": false,
+      "openalex_is_retracted": false,
+      "control_note": null
+    },
+    {
+      "id": "ctrl-03",
+      "kind": "control",
+      "n": 3,
+      "doi": "10.1371/journal.pone.0247461",
+      "title": "Population risk factors for severe disease and mortality in COVID-19: A global systematic review and meta-analysis",
+      "year": 2021,
+      "journal": "PLoS ONE",
+      "matched_to_positive_id": "pos-ref-36",
+      "matched_to_positive_ref": 36,
+      "referenced_works_checked": 80,
+      "referenced_works_total": 120,
+      "openalex_retracted_refs": [],
+      "in_vitality_all_sheet": false,
+      "openalex_is_retracted": false,
+      "control_note": null
+    },
+    {
+      "id": "ctrl-04",
+      "kind": "control",
+      "n": 4,
+      "doi": "10.1016/j.jclinepi.2021.05.020",
+      "title": "Exercise interventions for low back pain are poorly reported: a systematic review",
+      "year": 2021,
+      "journal": "Journal of Clinical Epidemiology",
+      "matched_to_positive_id": "pos-ref-46",
+      "matched_to_positive_ref": 46,
+      "referenced_works_checked": 28,
+      "referenced_works_total": 28,
+      "openalex_retracted_refs": [],
+      "in_vitality_all_sheet": false,
+      "openalex_is_retracted": false,
+      "control_note": "Replaced PRISMA 2020 reporting guideline with a 2021 JCE systematic review of exercise interventions for low back pain."
+    },
+    {
+      "id": "ctrl-05",
+      "kind": "control",
+      "n": 5,
+      "doi": "10.1002/14651858.mr000035.pub2",
+      "title": "Bias due to selective inclusion and reporting of outcomes and analyses in systematic reviews of randomised trials of healthcare interventions",
+      "year": 2014,
+      "journal": "Cochrane Database of Systematic Reviews",
+      "matched_to_positive_id": "pos-ref-30",
+      "matched_to_positive_ref": 30,
+      "referenced_works_checked": 80,
+      "referenced_works_total": 112,
+      "openalex_retracted_refs": [],
+      "in_vitality_all_sheet": false,
+      "openalex_is_retracted": false,
+      "control_note": null
+    },
+    {
+      "id": "ctrl-06",
+      "kind": "control",
+      "n": 6,
+      "doi": "10.1007/s00228-011-1097-1",
+      "title": "Off-label and unlicensed medicine use and adverse drug reactions in children: a narrative review of the literature",
+      "year": 2011,
+      "journal": "European Journal of Clinical Pharmacology",
+      "matched_to_positive_id": "pos-ref-25",
+      "matched_to_positive_ref": 25,
+      "referenced_works_checked": 19,
+      "referenced_works_total": 19,
+      "openalex_retracted_refs": [],
+      "in_vitality_all_sheet": false,
+      "openalex_is_retracted": false,
+      "control_note": null
+    },
+    {
+      "id": "ctrl-07",
+      "kind": "control",
+      "n": 7,
+      "doi": "10.1016/j.jemermed.2013.05.065",
+      "title": "A Systematic Review of Emergency Department Interventions for College Drinkers",
+      "year": 2013,
+      "journal": "Journal of Emergency Medicine",
+      "matched_to_positive_id": "pos-ref-86",
+      "matched_to_positive_ref": 86,
+      "referenced_works_checked": 14,
+      "referenced_works_total": 14,
+      "openalex_retracted_refs": [],
+      "in_vitality_all_sheet": false,
+      "openalex_is_retracted": false,
+      "control_note": null
+    },
+    {
+      "id": "ctrl-08",
+      "kind": "control",
+      "n": 8,
+      "doi": "10.1002/14651858.cd011231",
+      "title": "Airway clearance techniques for cystic fibrosis: an overview of Cochrane systematic reviews",
+      "year": 2014,
+      "journal": "Cochrane Database of Systematic Reviews",
+      "matched_to_positive_id": "pos-ref-28",
+      "matched_to_positive_ref": 28,
+      "referenced_works_checked": 20,
+      "referenced_works_total": 20,
+      "openalex_retracted_refs": [],
+      "in_vitality_all_sheet": false,
+      "openalex_is_retracted": false,
+      "control_note": "Replaced CD007768.pub3 (634 OpenAlex refs) with a smaller 2014 Cochrane overview (20 refs), same journal/year."
+    },
+    {
+      "id": "ctrl-09",
+      "kind": "control",
+      "n": 9,
+      "doi": "10.1002/14651858.cd012505.pub2",
+      "title": "Interventions during pregnancy to prevent preterm birth: an overview of Cochrane systematic reviews",
+      "year": 2018,
+      "journal": "Cochrane Database of Systematic Reviews",
+      "matched_to_positive_id": "pos-ref-38",
+      "matched_to_positive_ref": 38,
+      "referenced_works_checked": 80,
+      "referenced_works_total": 179,
+      "openalex_retracted_refs": [],
+      "in_vitality_all_sheet": false,
+      "openalex_is_retracted": false,
+      "control_note": null
+    },
+    {
+      "id": "ctrl-10",
+      "kind": "control",
+      "n": 10,
+      "doi": "10.1016/j.fertnstert.2018.03.017",
+      "title": "Effects of chronic endometritis therapy on in vitro fertilization outcome in women with repeated implantation failure: a systematic review and meta-analysis",
+      "year": 2018,
+      "journal": "Fertility and Sterility",
+      "matched_to_positive_id": "pos-ref-71",
+      "matched_to_positive_ref": 71,
+      "referenced_works_checked": 43,
+      "referenced_works_total": 43,
+      "openalex_retracted_refs": [],
+      "in_vitality_all_sheet": false,
+      "openalex_is_retracted": false,
+      "control_note": null
+    }
+  ]
+}

@@ -162,6 +162,35 @@ def main(argv: list[str] | None = None) -> int:
         help="Call Crossref instead of the recorded catalog.",
     )
 
+    vitality = sub.add_parser(
+        "vitality",
+        help="sealed VITALITY Study I eval vs no-graph direct-DOI",
+        description=(
+            "Sealed VITALITY Study I eval. Direct-DOI (no graph) vs MoolTrace "
+            "depth 2 on drafts that cite only a review DOI. Default is offline "
+            "from recorded Crossref and recorded MoolTrace fixtures. --live "
+            "walks one throwaway graph at a time, OpenAlex RPS<=3, shared HTTP "
+            "cache, and resumes on 429."
+        ),
+    )
+    vitality.add_argument("--frozen", default=None, help="Frozen VITALITY JSON.")
+    vitality.add_argument("--crossref", default=None, help="Recorded Crossref catalog JSON.")
+    vitality.add_argument("--snapshot", default=None, help="Recorded MoolTrace snapshot JSON.")
+    vitality.add_argument("--out", default=None, help="Write the report JSON here.")
+    vitality.add_argument("--md", default=None, help="Write the report markdown here.")
+    vitality.add_argument("--limit", type=int, default=None, help="Live-run only the first N cases.")
+    vitality.add_argument("--depth", type=int, default=2, help="Hop budget. Default 2.")
+    vitality.add_argument(
+        "--live",
+        action="store_true",
+        help="Run MoolTrace on throwaway graphs (writes the snapshot).",
+    )
+    vitality.add_argument(
+        "--record-crossref",
+        action="store_true",
+        help="Fetch Crossref for every frozen DOI into the catalog.",
+    )
+
     sub.add_parser("mcp", help="run the MCP server on stdio")
     sub.add_parser("api", help="run the demo HTTP API")
     sub.add_parser("gate", help="run the seeded live regression on throwaway graphs")
@@ -284,6 +313,29 @@ def main(argv: list[str] | None = None) -> int:
             if args.live_crossref:
                 argv_baseline.append("--live-crossref")
             return baseline_main(argv_baseline)
+        if args.cmd == "vitality":
+            from mooltrace.vitality import main as vitality_main
+
+            argv_vitality: list[str] = []
+            if args.frozen:
+                argv_vitality.extend(["--frozen", args.frozen])
+            if args.crossref:
+                argv_vitality.extend(["--crossref", args.crossref])
+            if args.snapshot:
+                argv_vitality.extend(["--snapshot", args.snapshot])
+            if args.out:
+                argv_vitality.extend(["--out", args.out])
+            if args.md:
+                argv_vitality.extend(["--md", args.md])
+            if args.limit is not None:
+                argv_vitality.extend(["--limit", str(args.limit)])
+            if args.depth != 2:
+                argv_vitality.extend(["--depth", str(args.depth)])
+            if args.live:
+                argv_vitality.append("--live")
+            if args.record_crossref:
+                argv_vitality.append("--record-crossref")
+            return vitality_main(argv_vitality)
         if args.cmd == "gate":
             from mooltrace.gate import main as gate_main
 
