@@ -1,0 +1,612 @@
+{
+  "kind": "direct_doi_crossref_catalog",
+  "fetched_at": "2026-10-16T15:31:06+00:00",
+  "source": "https://api.crossref.org/works/{doi}",
+  "mailto": "siddhant.m.vishnu@gmail.com",
+  "n": 17,
+  "api_calls": 17,
+  "cache_hits": 0,
+  "works": {
+    "10.1370/afm.1517": {
+      "status": 200,
+      "message": {
+        "DOI": "10.1370/afm.1517",
+        "title": [
+          "Cinnamon Use in Type 2 Diabetes: An Updated Systematic Review and Meta-Analysis"
+        ],
+        "type": "journal-article",
+        "issued": {
+          "date-parts": [
+            [
+              2013,
+              9,
+              1
+            ]
+          ]
+        },
+        "author": [
+          {
+            "given": "R. W.",
+            "family": "Allen",
+            "sequence": "first"
+          }
+        ],
+        "updated-by": [],
+        "update-to": []
+      }
+    },
+    "10.1016/j.diabres.2019.107815": {
+      "status": 200,
+      "message": {
+        "DOI": "10.1016/j.diabres.2019.107815",
+        "title": [
+          "Efficacy and safety of cinnamon in type 2 diabetes mellitus and pre-diabetes patients: A meta-analysis and meta-regression"
+        ],
+        "type": "journal-article",
+        "issued": {
+          "date-parts": [
+            [
+              2019,
+              10
+            ]
+          ]
+        },
+        "author": [
+          {
+            "given": "Serawit",
+            "family": "Deyno",
+            "sequence": "first"
+          }
+        ],
+        "updated-by": [],
+        "update-to": []
+      }
+    },
+    "10.1016/j.ctim.2020.102571": {
+      "status": 200,
+      "message": {
+        "DOI": "10.1016/j.ctim.2020.102571",
+        "title": [
+          "The effect of cinnamon supplementation on lipid profiles in patients with type 2 diabetes: A systematic review and meta-analysis of clinical trials"
+        ],
+        "type": "journal-article",
+        "issued": {
+          "date-parts": [
+            [
+              2020,
+              12
+            ]
+          ]
+        },
+        "author": [
+          {
+            "given": "Navid",
+            "family": "Jamali",
+            "sequence": "first"
+          }
+        ],
+        "updated-by": [],
+        "update-to": []
+      }
+    },
+    "10.1002/ptr.8026": {
+      "status": 200,
+      "message": {
+        "DOI": "10.1002/ptr.8026",
+        "title": [
+          "The effect of cinnamon supplementation on glycemic control in patients with type 2 diabetes mellitus: An updated systematic review and dose\u2010response meta\u2010analysis of randomized controlled trials"
+        ],
+        "type": "journal-article",
+        "issued": {
+          "date-parts": [
+            [
+              2023,
+              10,
+              11
+            ]
+          ]
+        },
+        "author": [
+          {
+            "given": "Amir Hossein",
+            "family": "Moridpour",
+            "sequence": "first"
+          }
+        ],
+        "updated-by": [],
+        "update-to": []
+      }
+    },
+    "10.1002/14651858.cd007170.pub2": {
+      "status": 200,
+      "message": {
+        "DOI": "10.1002/14651858.cd007170.pub2",
+        "title": [
+          "Cinnamon for diabetes mellitus"
+        ],
+        "type": "journal-article",
+        "issued": {
+          "date-parts": [
+            [
+              2012,
+              9,
+              12
+            ]
+          ]
+        },
+        "author": [
+          {
+            "given": "Matthew J",
+            "family": "Leach",
+            "sequence": "first"
+          }
+        ],
+        "updated-by": [],
+        "update-to": [
+          {
+            "DOI": "10.1002/14651858.cd007170",
+            "type": "new_version",
+            "label": "New version",
+            "source": "publisher",
+            "updated": {
+              "date-parts": [
+                [
+                  2012,
+                  9,
+                  12
+                ]
+              ],
+              "date-time": "2012-09-12T00:00:00Z",
+              "timestamp": 1347408000000
+            }
+          }
+        ]
+      }
+    },
+    "10.2337/diacare.26.12.3215": {
+      "status": 200,
+      "message": {
+        "DOI": "10.2337/diacare.26.12.3215",
+        "title": [
+          "Cinnamon Improves Glucose and Lipids of People With Type 2 Diabetes"
+        ],
+        "type": "journal-article",
+        "issued": {
+          "date-parts": [
+            [
+              2003,
+              12,
+              1
+            ]
+          ]
+        },
+        "author": [
+          {
+            "given": "Alam",
+            "family": "Khan",
+            "sequence": "first"
+          }
+        ],
+        "updated-by": [
+          {
+            "DOI": "10.2337/dc25-ec09",
+            "type": "expression_of_concern",
+            "label": "Expression of concern",
+            "source": "publisher",
+            "updated": {
+              "date-parts": [
+                [
+                  2025,
+                  8,
+                  20
+                ]
+              ],
+              "date-time": "2025-08-20T00:00:00Z",
+              "timestamp": 1755648000000
+            }
+          }
+        ],
+        "update-to": []
+      }
+    },
+    "10.1016/s0140-6736(20)31180-6": {
+      "status": 200,
+      "message": {
+        "DOI": "10.1016/s0140-6736(20)31180-6",
+        "title": [
+          "RETRACTED: Hydroxychloroquine or chloroquine with or without a macrolide for treatment of COVID-19: a multinational registry analysis"
+        ],
+        "type": "journal-article",
+        "issued": {
+          "date-parts": [
+            [
+              2020,
+              5
+            ]
+          ]
+        },
+        "author": [
+          {
+            "given": "Mandeep R",
+            "family": "Mehra",
+            "sequence": "first"
+          }
+        ],
+        "updated-by": [
+          {
+            "DOI": "10.1016/s0140-6736(20)31290-3",
+            "type": "expression_of_concern",
+            "label": "Expression of concern",
+            "source": "retraction-watch",
+            "updated": {
+              "date-parts": [
+                [
+                  2020,
+                  6,
+                  3
+                ]
+              ],
+              "date-time": "2020-06-03T00:00:00Z",
+              "timestamp": 1591142400000
+            },
+            "record-id": "23527"
+          },
+          {
+            "DOI": "10.1016/s0140-6736(20)31249-6",
+            "type": "correction",
+            "label": "Correction",
+            "source": "retraction-watch",
+            "updated": {
+              "date-parts": [
+                [
+                  2020,
+                  5,
+                  30
+                ]
+              ],
+              "date-time": "2020-05-30T00:00:00Z",
+              "timestamp": 1590796800000
+            },
+            "record-id": "23528"
+          },
+          {
+            "DOI": "10.1016/s0140-6736(20)31324-6",
+            "type": "retraction",
+            "label": "Retraction",
+            "source": "retraction-watch",
+            "updated": {
+              "date-parts": [
+                [
+                  2020,
+                  6,
+                  5
+                ]
+              ],
+              "date-time": "2020-06-05T00:00:00Z",
+              "timestamp": 1591315200000
+            },
+            "record-id": "23529"
+          },
+          {
+            "DOI": "10.1016/s0140-6736(20)31174-0",
+            "type": "retraction",
+            "label": "Retraction",
+            "source": "publisher",
+            "updated": {
+              "date-parts": [
+                [
+                  2020,
+                  5,
+                  22
+                ]
+              ],
+              "date-time": "2020-05-22T00:00:00Z",
+              "timestamp": 1590105600000
+            }
+          },
+          {
+            "DOI": "10.1016/s0140-6736(20)31324-6",
+            "type": "erratum",
+            "label": "Erratum",
+            "source": "publisher",
+            "updated": {
+              "date-parts": [
+                [
+                  2020,
+                  6,
+                  13
+                ]
+              ],
+              "date-time": "2020-06-13T00:00:00Z",
+              "timestamp": 1592006400000
+            }
+          },
+          {
+            "DOI": "10.1016/s0140-6736(20)31528-2",
+            "type": "erratum",
+            "label": "Erratum",
+            "source": "publisher",
+            "updated": {
+              "date-parts": [
+                [
+                  2020,
+                  7,
+                  18
+                ]
+              ],
+              "date-time": "2020-07-18T00:00:00Z",
+              "timestamp": 1595030400000
+            }
+          },
+          {
+            "DOI": "10.1016/s0140-6736(20)31249-6",
+            "type": "erratum",
+            "label": "Erratum",
+            "source": "publisher",
+            "updated": {
+              "date-parts": [
+                [
+                  2020,
+                  5,
+                  30
+                ]
+              ],
+              "date-time": "2020-05-30T00:00:00Z",
+              "timestamp": 1590796800000
+            }
+          }
+        ],
+        "update-to": [
+          {
+            "DOI": "10.1016/s0140-6736(20)31174-0",
+            "type": "retraction",
+            "label": "Retraction",
+            "source": "publisher",
+            "updated": {
+              "date-parts": [
+                [
+                  2020,
+                  5,
+                  22
+                ]
+              ],
+              "date-time": "2020-05-22T00:00:00Z",
+              "timestamp": 1590105600000
+            }
+          },
+          {
+            "DOI": "10.1016/s0140-6736(20)31290-3",
+            "type": "retraction",
+            "label": "Retraction",
+            "source": "publisher",
+            "updated": {
+              "date-parts": [
+                [
+                  2020,
+                  5,
+                  22
+                ]
+              ],
+              "date-time": "2020-05-22T00:00:00Z",
+              "timestamp": 1590105600000
+            }
+          },
+          {
+            "DOI": "10.1016/s0140-6736(20)31324-6",
+            "type": "retraction",
+            "label": "Retraction",
+            "source": "publisher",
+            "updated": {
+              "date-parts": [
+                [
+                  2020,
+                  5,
+                  22
+                ]
+              ],
+              "date-time": "2020-05-22T00:00:00Z",
+              "timestamp": 1590105600000
+            }
+          },
+          {
+            "DOI": "10.1016/s0140-6736(20)31528-2",
+            "type": "retraction",
+            "label": "Retraction",
+            "source": "publisher",
+            "updated": {
+              "date-parts": [
+                [
+                  2020,
+                  5,
+                  22
+                ]
+              ],
+              "date-time": "2020-05-22T00:00:00Z",
+              "timestamp": 1590105600000
+            }
+          }
+        ]
+      }
+    },
+    "10.1016/j.jsps.2015.03.013": {
+      "status": 200,
+      "message": {
+        "DOI": "10.1016/j.jsps.2015.03.013",
+        "title": [
+          "Diabetes mellitus and oxidative stress\u2014A concise review"
+        ],
+        "type": "journal-article",
+        "issued": {
+          "date-parts": [
+            [
+              2016,
+              9
+            ]
+          ]
+        },
+        "author": [
+          {
+            "given": "Ullah",
+            "family": "Asmat",
+            "sequence": "first"
+          }
+        ],
+        "updated-by": [],
+        "update-to": []
+      }
+    },
+    "10.14252/foodsafetyfscj.d-21-00015": {
+      "status": 200,
+      "message": {
+        "DOI": "10.14252/foodsafetyfscj.d-21-00015",
+        "title": [
+          "Combined Risk Assessment of Food-derived Coumarin with &lt;i&gt;in            Silico&lt;/i&gt; Approaches"
+        ],
+        "type": "journal-article",
+        "issued": {
+          "date-parts": [
+            [
+              2022
+            ]
+          ]
+        },
+        "author": [
+          {
+            "given": "Takashi",
+            "family": "Yamada",
+            "sequence": "first"
+          }
+        ],
+        "updated-by": [],
+        "update-to": []
+      }
+    },
+    "10.3390/foods12030452": {
+      "status": 200,
+      "message": {
+        "DOI": "10.3390/foods12030452",
+        "title": [
+          "Antioxidant and Anti-Inflammatory Effect of Cinnamon (Cinnamomum verum J. Presl) Bark Extract after In Vitro Digestion Simulation"
+        ],
+        "type": "journal-article",
+        "issued": {
+          "date-parts": [
+            [
+              2023,
+              1,
+              18
+            ]
+          ]
+        },
+        "author": [
+          {
+            "given": "Stefania",
+            "family": "Pagliari",
+            "sequence": "first"
+          }
+        ],
+        "updated-by": [],
+        "update-to": []
+      }
+    },
+    "10.1136/bmj.327.7414.557": {
+      "status": 200,
+      "message": {
+        "DOI": "10.1136/bmj.327.7414.557",
+        "title": [
+          "Measuring inconsistency in meta-analyses"
+        ],
+        "type": "journal-article",
+        "issued": {
+          "date-parts": [
+            [
+              2003,
+              9,
+              4
+            ]
+          ]
+        },
+        "author": [
+          {
+            "given": "Julian P T",
+            "family": "Higgins",
+            "sequence": "first"
+          }
+        ],
+        "updated-by": [],
+        "update-to": []
+      }
+    },
+    "10.1016/0197-2456(86)90046-2": {
+      "status": 200,
+      "message": {
+        "DOI": "10.1016/0197-2456(86)90046-2",
+        "title": [
+          "Meta-analysis in clinical trials"
+        ],
+        "type": "journal-article",
+        "issued": {
+          "date-parts": [
+            [
+              1986,
+              9
+            ]
+          ]
+        },
+        "author": [
+          {
+            "given": "Rebecca",
+            "family": "DerSimonian",
+            "sequence": "first"
+          }
+        ],
+        "updated-by": [],
+        "update-to": []
+      }
+    },
+    "10.1136/bmj.d5928": {
+      "status": 200,
+      "message": {
+        "DOI": "10.1136/bmj.d5928",
+        "title": [
+          "The Cochrane Collaboration's tool for assessing risk of bias in randomised trials"
+        ],
+        "type": "journal-article",
+        "issued": {
+          "date-parts": [
+            [
+              2011,
+              10,
+              18
+            ]
+          ]
+        },
+        "author": [
+          {
+            "given": "J. P. T.",
+            "family": "Higgins",
+            "sequence": "first"
+          }
+        ],
+        "updated-by": [],
+        "update-to": []
+      }
+    },
+    "10.9999/not-a-real-doi": {
+      "status": 404,
+      "message": null
+    },
+    "10.48550/arxiv.1706.03762": {
+      "status": 404,
+      "message": null
+    },
+    "10.5281/zenodo.3242074": {
+      "status": 404,
+      "message": null
+    },
+    "10.48550/arxiv.1810.04805": {
+      "status": 404,
+      "message": null
+    }
+  }
+}

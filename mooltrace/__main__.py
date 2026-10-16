@@ -143,6 +143,25 @@ def main(argv: list[str] | None = None) -> int:
     labelled.add_argument("--limit", type=int, default=None, help="Run only the first N cases.")
     labelled.add_argument("--family", default=None, help="Run one family only.")
 
+    baseline = sub.add_parser(
+        "baseline",
+        help="no-graph direct-DOI baseline vs labelled set (recorded Crossref)",
+        description=(
+            "No-graph direct-DOI baseline vs MoolTrace on the labelled set. "
+            "Uses recorded Crossref so the comparison reproduces offline."
+        ),
+    )
+    baseline.add_argument("--file", default=None, help="JSONL of labelled cases.")
+    baseline.add_argument("--crossref", default=None, help="Recorded Crossref catalog JSON.")
+    baseline.add_argument("--mooltrace", default=None, help="Recorded MoolTrace labelled JSON.")
+    baseline.add_argument("--previous", default=None, help="Prior labelled JSON for verdict diffs.")
+    baseline.add_argument("--out", default=None, help="Write the report JSON here.")
+    baseline.add_argument(
+        "--live-crossref",
+        action="store_true",
+        help="Call Crossref instead of the recorded catalog.",
+    )
+
     sub.add_parser("mcp", help="run the MCP server on stdio")
     sub.add_parser("api", help="run the demo HTTP API")
     sub.add_parser("gate", help="run the seeded live regression on throwaway graphs")
@@ -248,6 +267,23 @@ def main(argv: list[str] | None = None) -> int:
             if args.family:
                 argv_labelled.extend(["--family", args.family])
             return labelled_main(argv_labelled)
+        if args.cmd == "baseline":
+            from mooltrace.baseline import main as baseline_main
+
+            argv_baseline: list[str] = []
+            if args.file:
+                argv_baseline.extend(["--file", args.file])
+            if args.crossref:
+                argv_baseline.extend(["--crossref", args.crossref])
+            if args.mooltrace:
+                argv_baseline.extend(["--mooltrace", args.mooltrace])
+            if args.previous:
+                argv_baseline.extend(["--previous", args.previous])
+            if args.out:
+                argv_baseline.extend(["--out", args.out])
+            if args.live_crossref:
+                argv_baseline.append("--live-crossref")
+            return baseline_main(argv_baseline)
         if args.cmd == "gate":
             from mooltrace.gate import main as gate_main
 
