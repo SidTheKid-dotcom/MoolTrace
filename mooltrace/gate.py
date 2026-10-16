@@ -98,6 +98,13 @@ def _fresh_graph() -> Graph:
     return Graph(Path(tempfile.mkdtemp(prefix="mooltrace-gate-")) / "mooltrace.db")
 
 
+def is_caught(claim: dict, decision: str | None) -> bool:
+    """A positive fixture counts only when the verdict is warn or block."""
+    if claim.get("expect_retraction"):
+        return decision == "block"
+    return decision in {"warn", "block"}
+
+
 def _reaches_khan(payload: dict) -> dict | None:
     for path in payload.get("paths") or []:
         root = (path.get("root") or {}).get("doi")
@@ -120,6 +127,7 @@ def _run_case(claim: dict) -> dict:
         )
         hit = None if claim.get("expect_retraction") else _reaches_khan(payload)
         wall_ms = round((time.perf_counter() - t0) * 1000, 1)
+        decision = payload.get("decision")
         warm = check_answer(
             text=claim.get("text", ""),
             urls=claim.get("urls"),
@@ -136,10 +144,8 @@ def _run_case(claim: dict) -> dict:
             "n": claim["n"],
             "name": claim["name"],
             "engine": claim["engine"],
-            "caught": bool(hit) or (
-                claim.get("expect_retraction") and payload.get("decision") == "block"
-            ),
-            "decision": payload.get("decision"),
+            "caught": is_caught(claim, decision),
+            "decision": decision,
             "exit_code": payload.get("exit_code"),
             "hops": None if hit is None else hit.get("hops"),
             "api_calls": payload.get("api_calls"),
@@ -241,9 +247,10 @@ def run_gate() -> dict:
             "alarms": alarms,
             "clean": len(CLEAN),
             "rule": (
-                "Seeded regression, not accuracy. caught = flagged ancestor "
-                "found on a positive fixture. alarm = warn/review/block on a "
-                "clean fixture at the same default depth."
+                "Seeded regression, not accuracy. caught = warn or block on a "
+                "positive fixture (block required for the retraction case). "
+                "alarm = warn/review/block on a clean fixture at the same "
+                "default depth."
             ),
         },
         "positives": positive_rows,

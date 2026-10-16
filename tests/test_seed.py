@@ -39,8 +39,8 @@ def test_demo_fixtures_are_url_only_hero_and_lancet_block():
 def test_compose_documents_ports_and_demo_db():
     compose = (ROOT / "docker-compose.yml").read_text()
     dockerfile = (ROOT / "Dockerfile").read_text()
-    assert "4317:4317" in compose
-    assert "4318:4318" in compose
+    assert "127.0.0.1:4317:4317" in compose
+    assert "127.0.0.1:4318:4318" in compose
     assert "MOOLTRACE_DB: /data/demo.db" in compose
     assert "mooltrace-demo:/data" in compose
     assert "./data" not in compose

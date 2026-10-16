@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import html
 import re
+import unicodedata
 from dataclasses import dataclass, field
+from urllib.parse import unquote
 
 DOI_RE = re.compile(r"\b(10\.\d{4,9}/[^\s\"'<>\\]+)", re.I)
 PMID_URL_RE = re.compile(
@@ -44,11 +46,17 @@ def is_publisher_flag(update_type: str | None) -> bool:
     return "retract" in raw or "withdraw" in raw
 
 
+def _strip_invisible(text: str) -> str:
+    """Drop format/control characters so a hidden ZWSP cannot mint a new DOI."""
+    return "".join(ch for ch in text if unicodedata.category(ch) not in {"Cf", "Cc", "Zl", "Zp"})
+
+
 def clean_doi(raw: str) -> str:
-    text = html.unescape(raw or "").strip()
+    text = _strip_invisible(html.unescape(raw or "")).strip()
+    text = unquote(text)
     text = re.sub(r"^https?://(?:dx\.)?doi\.org/", "", text, flags=re.I)
     text = text.split("?")[0].split("#")[0]
-    text = text.rstrip(".,;:)]}>\"'")
+    text = text.rstrip(".,;:)]}>\"'\u0964\u0965")
     # HTML pages often append &amp; to a DOI inside an href.
     text = re.sub(r"&(?:amp;)?$", "", text, flags=re.I)
     return text.lower()
@@ -94,9 +102,9 @@ def extract_identifiers(text: str) -> Identifiers:
     if not text:
         return Identifiers()
     raw = html.unescape(text)
-    dois = _dedupe(
-        [doi for match in DOI_RE.findall(raw) if valid_doi(doi := clean_doi(match))]
-    )
+    dois = [
+        doi for match in DOI_RE.findall(raw) if valid_doi(doi := clean_doi(match))
+    ]
     pmids = _dedupe(PMID_URL_RE.findall(raw) + PMID_LABEL_RE.findall(raw))
     pmcids = _dedupe([pmc.upper() for pmc in PMC_RE.findall(raw)])
     diabetes_care: list[tuple[str, str, str]] = []
@@ -107,7 +115,11 @@ def extract_identifiers(text: str) -> Identifiers:
             seen_dc.add(key)
             diabetes_care.append(key)
     urls = _dedupe([url.rstrip(".,);]") for url in URL_RE.findall(raw)])
-    return Identifiers(dois, pmids, pmcids, diabetes_care, urls)
+    for url in urls:
+        doi = clean_doi(url)
+        if valid_doi(doi):
+            dois.append(doi)
+    return Identifiers(_dedupe(dois), pmids, pmcids, diabetes_care, urls)
 
 
 def has_verifiable_source(text: str, urls: list[str] | None = None) -> bool:

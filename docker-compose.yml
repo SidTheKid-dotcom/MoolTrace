@@ -19,7 +19,7 @@ services:
     volumes:
       - mooltrace-demo:/data
     ports:
-      - "4317:4317"
+      - "127.0.0.1:4317:4317"
     healthcheck:
       test:
         [
@@ -42,7 +42,7 @@ services:
     environment:
       MOOLTRACE_API_ORIGIN: http://api:4317
     ports:
-      - "4318:4318"
+      - "127.0.0.1:4318:4318"
     depends_on:
       api:
         condition: service_healthy

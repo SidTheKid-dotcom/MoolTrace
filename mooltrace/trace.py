@@ -240,23 +240,20 @@ def notice_check(graph: Graph, dois: list[str], stats: CallStats) -> None:
     checked_at = _now()
     for doi in pending:
         item = found.get(doi)
-        title = None
-        family = None
-        year = None
-        if item:
-            titles = item.get("title") or []
-            title = titles[0] if titles else None
-            family = _family_name(item)
-            year = _issued_year(item)
-            _apply_notices(graph, doi, item)
+        if not item:
+            # A 404 is not "checked, no notice". Leave it retryable so the
+            # pre-ship check warns instead of passing.
+            continue
+        titles = item.get("title") or []
         graph.merge_work(
             doi,
-            title=title,
-            first_author=family,
-            year=year,
+            title=titles[0] if titles else None,
+            first_author=_family_name(item),
+            year=_issued_year(item),
             notice_checked=True,
             notice_checked_at=checked_at,
         )
+        _apply_notices(graph, doi, item)
 
 
 def expand_work(graph: Graph, doi: str, stats: CallStats) -> None:
@@ -282,6 +279,8 @@ def expand_work(graph: Graph, doi: str, stats: CallStats) -> None:
         cr_failed = True
     if oa_failed and cr_failed:
         raise MoolTraceError(f"could not expand {doi}: OpenAlex and Crossref both failed")
+    if not openalex and not crossref:
+        raise MoolTraceError(f"could not resolve {doi}")
     family = _family_name(crossref) or (_openalex_family(openalex) if openalex else None)
     if openalex:
         _store_openalex(graph, openalex, first_author=family)
@@ -445,6 +444,28 @@ def _ingest_text(
         graph.source_rests_on(paste, doi)
 
 
+def _seed_resolved(row: dict[str, Any] | None) -> bool:
+    """True when Crossref or OpenAlex actually returned the work.
+
+    notice_checked with no title/year is a leftover 404 stamp, not a pass.
+    """
+    if not row or not _notice_fresh(row):
+        return False
+    return bool(
+        row.get("title") or row.get("year") or row.get("openalex_id") or row.get("expanded")
+    )
+
+
+def _unresolved_seeds(graph: Graph, answer_id: str, errors: list[str]) -> bool:
+    missing = [
+        doi for doi in graph.seed_dois(answer_id) if not _seed_resolved(graph.work_row(doi))
+    ]
+    if not missing:
+        return False
+    errors.append(f"unresolved {missing[0]}")
+    return True
+
+
 def _deepen(graph: Graph, answer_id: str, depth: int, stats: CallStats, errors: list[str]) -> bool:
     """Return True when the walk stopped before the requested depth."""
     incomplete = False
@@ -457,7 +478,7 @@ def _deepen(graph: Graph, answer_id: str, depth: int, stats: CallStats, errors: 
         except MoolTraceError as exc:
             errors.append(str(exc))
             incomplete = True
-        return incomplete
+        return incomplete or _unresolved_seeds(graph, answer_id, errors)
     expandable: list[str] = []
     stale: list[str] = []
     for doi in seeds:
@@ -499,7 +520,7 @@ def _deepen(graph: Graph, answer_id: str, depth: int, stats: CallStats, errors: 
             except MoolTraceError as exc:
                 errors.append(f"{doi}: {exc}")
                 incomplete = True
-    return incomplete
+    return incomplete or _unresolved_seeds(graph, answer_id, errors)
 
 
 def _public_path(row: dict[str, Any]) -> dict[str, Any]:

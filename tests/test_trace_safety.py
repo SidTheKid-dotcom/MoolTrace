@@ -60,8 +60,10 @@ def test_stale_notice_is_rechecked(tmp_path: Path, monkeypatch):
         notice_check(graph, ["10.1234/stale"], CallStats())
         assert called == [["10.1234/stale"]]
         row = graph.work_row("10.1234/stale")
-        assert row and row.get("notice_checked_at")
-        assert not str(row.get("notice_checked_at")).startswith("2000-")
+        assert row
+        # Empty Crossref is not a resolved check. Keep the stale stamp so a
+        # later run retries instead of treating the DOI as clean.
+        assert str(row.get("notice_checked_at")).startswith("2000-")
     finally:
         graph.close()
 
@@ -433,5 +435,80 @@ def test_loopback_url_warns_and_does_not_pass(tmp_path: Path):
         assert payload.get("errors")
         joined = " ".join(payload["errors"]).lower()
         assert "not public" in joined or "refused" in joined
+    finally:
+        graph.close()
+
+
+def test_notice_check_leaves_missing_doi_unchecked(tmp_path: Path, monkeypatch):
+    graph = Graph(tmp_path / "mooltrace.db")
+    monkeypatch.setattr("mooltrace.trace.crossref_works", lambda dois, stats: [])
+    try:
+        graph.merge_work("10.9999/does-not-exist")
+        notice_check(graph, ["10.9999/does-not-exist"], CallStats())
+        row = graph.work_row("10.9999/does-not-exist")
+        assert row is None or not row.get("notice_checked")
+    finally:
+        graph.close()
+
+
+def test_expand_work_rejects_unresolved_doi(tmp_path: Path, monkeypatch):
+    graph = Graph(tmp_path / "mooltrace.db")
+    monkeypatch.setattr("mooltrace.trace.openalex_work_doi", lambda *a, **k: None)
+    monkeypatch.setattr("mooltrace.trace.crossref_work", lambda *a, **k: None)
+    try:
+        try:
+            expand_work(graph, "10.9999/does-not-exist", CallStats())
+        except MoolTraceError as exc:
+            assert "could not resolve" in str(exc)
+        else:
+            raise AssertionError("unresolved DOI should not expand")
+        row = graph.work_row("10.9999/does-not-exist")
+        assert row is None or not row.get("expanded")
+    finally:
+        graph.close()
+
+
+def test_unresolved_doi_is_warn_not_pass(tmp_path: Path, monkeypatch):
+    graph = Graph(tmp_path / "mooltrace.db")
+    monkeypatch.setattr("mooltrace.trace.openalex_work_doi", lambda *a, **k: None)
+    monkeypatch.setattr("mooltrace.trace.crossref_work", lambda *a, **k: None)
+    monkeypatch.setattr("mooltrace.trace.crossref_works", lambda dois, stats: [])
+    monkeypatch.setattr("mooltrace.trace.openalex_work_pmid", lambda *a, **k: None)
+    monkeypatch.setattr("mooltrace.trace.pmc_to_doi", lambda *a, **k: {})
+    monkeypatch.setattr("mooltrace.trace.judge_citation_edges", lambda *a, **k: None)
+    try:
+        payload = check_answer(
+            text="DOI 10.9999/does-not-exist-xyz999",
+            engine="fake-doi",
+            depth=1,
+            graph=graph,
+        )
+        assert payload["decision"] == "warn"
+        assert payload["exit_code"] == 2
+        assert payload.get("incomplete") or any(
+            "unresolved" in str(err) for err in payload.get("errors") or []
+        )
+    finally:
+        graph.close()
+
+
+def test_empty_checked_work_does_not_pass(tmp_path: Path, monkeypatch):
+    graph = Graph(tmp_path / "mooltrace.db")
+    monkeypatch.setattr("mooltrace.trace.crossref_works", lambda dois, stats: [])
+    monkeypatch.setattr("mooltrace.trace.judge_citation_edges", lambda *a, **k: None)
+    try:
+        graph.merge_work(
+            "10.9999/does-not-exist-xyz999",
+            notice_checked=True,
+            notice_checked_at=datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        )
+        payload = check_answer(
+            text="DOI 10.9999/does-not-exist-xyz999",
+            engine="stale-404",
+            depth=1,
+            graph=graph,
+        )
+        assert payload["decision"] == "warn"
+        assert payload["exit_code"] == 2
     finally:
         graph.close()

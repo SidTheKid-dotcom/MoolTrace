@@ -29,6 +29,18 @@ def test_new_version_and_correction_are_not_flags():
 def test_doi_cleanup():
     assert clean_doi("https://doi.org/10.2337/diacare.26.12.3215.") == "10.2337/diacare.26.12.3215"
     assert clean_doi("10.1016/0197-2456(86)90046-2&amp;") == "10.1016/0197-2456(86)90046-2"
+    assert clean_doi("https://doi.org/10.2337%2Fdiacare.26.12.3215") == "10.2337/diacare.26.12.3215"
+    assert clean_doi("10.2337/diacare.26.12.3215\u200b") == "10.2337/diacare.26.12.3215"
+    assert clean_doi("10.2337/diacare.26.12.3215।") == "10.2337/diacare.26.12.3215"
+
+
+def test_extract_encoded_and_noisy_dois():
+    encoded = extract_identifiers("See https://doi.org/10.2337%2Fdiacare.26.12.3215")
+    assert "10.2337/diacare.26.12.3215" in encoded.dois
+    zwsp = extract_identifiers("DOI 10.2337/diacare.26.12.3215\u200b is cited.")
+    assert zwsp.dois == ["10.2337/diacare.26.12.3215"]
+    danda = extract_identifiers("DOI 10.2337/diacare.26.12.3215।")
+    assert danda.dois == ["10.2337/diacare.26.12.3215"]
 
 
 def test_extract_page_identifiers():
