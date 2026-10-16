@@ -23,7 +23,7 @@ export MOOLTRACE_MAILTO=you@example.com
 .venv/bin/python -m mooltrace check --url https://www.healthline.com/nutrition/cinnamon-and-diabetes --summary
 ```
 
-Expect **WARN (exit 2)** and `Decided by: algo.SPpaths`. Then:
+Expect **WARN (exit 2)** and `Decided by: algo.SPpaths, path strength 0.55` (Healthline page `mention` × Silva→Khan `relies`, recorded 16 Oct 2026 / 15 Oct 2026). Then:
 
 ```bash
 .venv/bin/python -m mooltrace batch examples/lancet.jsonl --fail-on block; echo $?

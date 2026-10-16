@@ -47,23 +47,25 @@ def _seed(graph: Graph) -> None:
     )
     graph.source_rests_on(URL, SILVA)
     graph.rest_on(SILVA, KHAN)
+    # URL is a synthetic example. Hop classes and weights are the recorded
+    # Healthline → Silva mention and Silva → Khan relies hops.
     graph.set_reliance(
         None,
         URL,
         SILVA,
-        reliance="uses_data_or_method",
-        weight=0.85,
-        sentence="The page cites Silva 2022 on cinnamon and blood sugar.",
+        reliance="mention",
+        weight=0.55,
+        sentence="Cinnamon as a complementary therapeutic approach for dysglycemia and dyslipidemia control in type 2 diabetes mellitus and its molecular mechanism of action: A review.",
         evidence_from="page",
     )
     graph.set_reliance(
         SILVA,
         None,
         KHAN,
-        reliance="uses_data_or_method",
-        weight=0.85,
-        sentence="Silva included Khan 2003 among the reviewed trials.",
-        evidence_from="pmc",
+        reliance="relies",
+        weight=1.0,
+        sentence="Khan et al. demonstrated that the administration of either 1, 3, or 6 g for 40 days of C. cassia decreased triglycerides (TG) levels and total cholesterol (TC) levels [ 15 ].",
+        evidence_from="europepmc_xml",
     )
     graph.merge_notice(
         EOC,

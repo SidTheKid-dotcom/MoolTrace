@@ -6,7 +6,9 @@ Health chatbots cite web pages. Those pages cite reviews, which cite trials — 
 
 ![Healthline cinnamon WARN path](assets/healthline-warn.png)
 
-Headless Chrome 1280×900 capture, 16 Oct 2026: Healthline URL-only path page → Silva 2022 → Khan 2003 Expression of Concern, plus `Decided by: algo.SPpaths, path strength 0.72`. This PNG was rendered from demo-UI copy (not a running Next server). Re-capture from `http://127.0.0.1:4318/?preset=healthline` on video day if you want the live DOM.
+Headless Chrome 1280×900 capture, 16 Oct 2026. The PNG is a synthetic example rendered from demo-UI copy (it still prints path strength 0.72; not a running Next server).
+
+Recorded Healthline replay (page fetched 16 Oct 2026 13:43 UTC; Silva→Khan hop judged 15 Oct 2026 from Europe PMC XML): page → Silva 2022 → Khan 2003 Expression of Concern. `Decided by: algo.SPpaths, path strength 0.55`. The review→trial hop class is `relies`. Re-capture from `http://127.0.0.1:4318/?preset=healthline` on video day if you want the live DOM.
 
 Example `--summary` from a cold Healthline check on 16 Oct 2026:
 
@@ -148,7 +150,7 @@ Demo hero: Healthline URL only, no Khan DOI in the pasted text. See `examples/he
 | block | 1 | A counted path reaches a retraction, withdrawal, or removal. | Fail the build. Disclose or replace the source. |
 | error | 3 | Graph timeout or exhausted upstream. | Retry later. Not a silent pass and not a block. |
 
-A **counted path** is the strongest `algo.SPpaths` route from the answer to a flagged Work (depth ≤ 3) whose path strength — the product of `RESTS_ON` weights, equal to `exp(−Σ −ln(w))` — is ≥ 0.5 and whose every hop has a stored sentence. Counted + retraction → **block**. Counted + Expression of Concern → **warn**. Flagged but an unverified hop → **warn** (can't verify). Strength < 0.5 → **pass** with "cites a flagged study only in passing". `--summary` and the UI print `Decided by: algo.SPpaths, path strength 0.72` plus the Cypher. If `algo.SPpaths` errors, the check returns exit 3, not a verdict. Unweighted `shortestPath` is not the verdict. Unverified hops warn; they never silently pass. The draft cannot hedge-bypass: naming an Expression of Concern or writing "we excluded" in the pasted answer does not turn a cited flagged study into a pass. A scholarly review can still set a study aside. Depth is 1–3. Depth 4 is not implemented. `pass` means no counted or unverified notice was found within that depth. Coverage is **not shown** beyond it. Seeds past the expand cap are still notice-checked.
+A **counted path** is the strongest `algo.SPpaths` route from the answer to a flagged Work (depth ≤ 3) whose path strength — the product of `RESTS_ON` weights, equal to `exp(−Σ −ln(w))` — is ≥ 0.5 and whose every hop has a stored sentence. Counted + retraction → **block**. Counted + Expression of Concern → **warn**. Flagged but an unverified hop → **warn** (can't verify). Strength < 0.5 → **pass** with "cites a flagged study only in passing". `--summary` and the UI print `Decided by: algo.SPpaths, path strength 0.55` plus the Cypher. If `algo.SPpaths` errors, the check returns exit 3, not a verdict. Unweighted `shortestPath` is not the verdict. Unverified hops warn; they never silently pass. The draft cannot hedge-bypass: naming an Expression of Concern or writing "we excluded" in the pasted answer does not turn a cited flagged study into a pass. A scholarly review can still set a study aside. Depth is 1–3. Depth 4 is not implemented. `pass` means no counted or unverified notice was found within that depth. Coverage is **not shown** beyond it. Seeds past the expand cap are still notice-checked.
 
 ## Graph model
 

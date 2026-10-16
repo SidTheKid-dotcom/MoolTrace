@@ -16,15 +16,15 @@ Paste into the UI (or CLI):
 
 Say:
 
-> The page cites Silva 2022, a review. The review included Khan 2003, a trial. Diabetes Care posted an Expression of Concern on that trial in 2025. That is not a retraction. MoolTrace warns.
+> The page cites Silva 2022, a review. The review relies on Khan 2003, a trial. Diabetes Care posted an Expression of Concern on that trial in 2025. That is not a retraction. MoolTrace warns.
 
 Point at the red EoC badge. Point at the path: Healthline → Silva 2022 → Khan 2003.
 
 **Algorithm (1:20–1:45).** Open the Cypher panel.
 
-> The verdict is not a Python if-statement. FalkorDB `algo.SPpaths` walks this answer's subgraph with cost minus ln of the hop weight. Path strength is the product of those weights. Strength 0.72, counted, Expression of Concern, so WARN. If that algorithm errors, we return exit 3. We do not invent a verdict.
+> The verdict is not a Python if-statement. FalkorDB `algo.SPpaths` walks this answer's subgraph with cost minus ln of the hop weight. Path strength is the product of those weights. Strength 0.55, counted, Expression of Concern, so WARN. The review→trial hop is `relies`. If that algorithm errors, we return exit 3. We do not invent a verdict.
 
-On-screen text must include: `Decided by: algo.SPpaths, path strength 0.72`.
+On-screen text must include: `Decided by: algo.SPpaths, path strength 0.55`.
 
 **Retraction + CI (1:45–2:15).** Click preset **Lancet 2020 HCQ (block)**. Then terminal:
 
@@ -64,6 +64,7 @@ Stop before 3:00. Do not claim medical correctness. Do not call an Expression of
 
 ## Numbers allowed on 16 Oct 2026 (this checkout)
 
+- Recorded Healthline path strength: 0.55 (`mention` × `relies`)
 - Cold Healthline `--summary`: 47.09 s / 49.18 s / 49.10 s, all WARN, EoC `10.2337/dc25-ec09`
 - Warm Healthline: 23.16 s
 - Flip test: weight 0.85 → warn, 0.2 → pass; algorithm disabled → exit 3

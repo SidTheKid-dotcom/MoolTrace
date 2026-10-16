@@ -7,22 +7,16 @@ SSRF guard plus the in-process rate limit.
 
 from __future__ import annotations
 
+import json
 import os
 import threading
 import time
 from typing import Any
 
-from mooltrace.config import (
-    CLEAN_REWRITE_DOI,
-    HEALTHLINE_CINNAMON_URL,
-    KHAN_DOI,
-    LANCET_HCQ_DOI,
-    LANCET_RETRACTION_DOI,
-    EOC_DOI,
-)
-NOW = "2026-10-16T08:00:00+00:00"
-SILVA = "10.3390/nu14132773"
+from mooltrace.config import ROOT
+
 PUBLIC_LIVE_PER_MIN = int(os.environ.get("MOOLTRACE_PUBLIC_LIVE_PER_MIN", "10"))
+RECORDED_PRESETS = ROOT / "examples" / "presets_recorded.json"
 
 _lock = threading.Lock()
 _hits: list[float] = []
@@ -54,6 +48,13 @@ def load_preset_rows() -> list[dict[str, Any]]:
     return load_demo_fixtures()
 
 
+def load_recorded_presets() -> dict[str, Any]:
+    payload = json.loads(RECORDED_PRESETS.read_text())
+    if not isinstance(payload, dict) or not payload.get("presets"):
+        raise SystemExit(f"recorded presets missing in {RECORDED_PRESETS}")
+    return payload
+
+
 def is_preset(engine: str, text: str, urls: list[str] | None) -> bool:
     key = preset_key(engine, text, urls)
     for row in load_preset_rows():
@@ -73,123 +74,96 @@ def rate_limited() -> bool:
         return False
 
 
+def _paste_url(answer_id: str) -> str:
+    return f"urn:mooltrace:paste:{answer_id}"
+
+
+def _source_url(spec: dict[str, Any], answer_id: str) -> str:
+    raw = str(spec.get("url") or "")
+    if raw == "paste":
+        return _paste_url(answer_id)
+    return raw
+
+
 def seed_offline_presets(graph: Any) -> list[dict[str, str]]:
-    """Write the three UI presets into graph with no HTTP."""
+    """Write the three UI presets from recorded fetches, with no HTTP."""
     from mooltrace.trace import _answer_id, _text_hash
 
-    rows = load_preset_rows()
+    recorded = {row["id"]: row for row in load_recorded_presets()["presets"]}
     seeded: list[dict[str, str]] = []
-    for row in rows:
+    for row in load_preset_rows():
         engine = str(row.get("engine") or "draft")
         text = str(row.get("text") or "")
         urls = _norm_urls(row.get("urls") or [])
         ident = str(row.get("id") or engine)
+        spec = recorded.get(ident)
+        if spec is None:
+            raise SystemExit(f"recorded preset missing id {ident}")
         answer_id = _answer_id(engine, text, urls)
-        graph.merge_answer(answer_id, engine, _text_hash(text), NOW)
-        if ident == "nutrition-healthline":
-            url = urls[0] if urls else HEALTHLINE_CINNAMON_URL
-            graph.merge_source(url, "Cinnamon and Diabetes", "healthline.com", True, fetched_at=NOW)
+        created = str(spec.get("fetch_date") or "")
+        for source in spec.get("sources") or []:
+            created = str(source.get("fetched_at") or created)
+            break
+        graph.merge_answer(answer_id, engine, _text_hash(text), created)
+        for source in spec.get("sources") or []:
+            url = _source_url(source, answer_id)
+            graph.merge_source(
+                url,
+                str(source.get("title") or ""),
+                str(source.get("site") or ""),
+                True,
+                fetched_at=str(source.get("fetched_at") or created),
+            )
             graph.cite(answer_id, url)
-            graph.merge_work(
-                SILVA,
-                title="Cinnamon as a Complementary Therapeutic Approach",
-                year=2022,
-                expanded=True,
-                notice_checked=True,
-                notice_checked_at=NOW,
-            )
-            graph.merge_work(
-                KHAN_DOI,
-                title="Cinnamon Improves Glucose and Lipids of People with Type 2 Diabetes",
-                year=2003,
-                expanded=True,
-                notice_checked=True,
-                notice_checked_at=NOW,
-            )
-            graph.source_rests_on(url, SILVA)
-            graph.rest_on(SILVA, KHAN_DOI)
+        for work in spec.get("works") or []:
+            fields = {
+                key: work[key]
+                for key in (
+                    "title",
+                    "year",
+                    "first_author",
+                    "expanded",
+                    "notice_checked",
+                    "notice_checked_at",
+                )
+                if key in work
+            }
+            graph.merge_work(str(work["doi"]), **fields)
+        for hop in spec.get("hops") or []:
+            target = str(hop["to_doi"])
+            source_doi = hop.get("from_doi")
+            if source_doi:
+                graph.rest_on(str(source_doi), target)
+                graph.set_reliance(
+                    str(source_doi),
+                    None,
+                    target,
+                    reliance=str(hop["reliance"]),
+                    weight=float(hop["weight"]),
+                    sentence=str(hop.get("sentence") or ""),
+                    evidence_from=str(hop.get("evidence_from") or ""),
+                )
+                continue
+            url = _source_url({"url": hop.get("from_url")}, answer_id)
+            graph.source_rests_on(url, target)
             graph.set_reliance(
                 None,
                 url,
-                SILVA,
-                reliance="uses_data_or_method",
-                weight=0.85,
-                sentence="The Healthline page cites Silva 2022 on cinnamon and blood sugar.",
-                evidence_from="page",
+                target,
+                reliance=str(hop["reliance"]),
+                weight=float(hop["weight"]),
+                sentence=str(hop.get("sentence") or ""),
+                evidence_from=str(hop.get("evidence_from") or ""),
             )
-            graph.set_reliance(
-                SILVA,
-                None,
-                KHAN_DOI,
-                reliance="uses_data_or_method",
-                weight=0.85,
-                sentence="Silva 2022 included Khan 2003 among the reviewed trials.",
-                evidence_from="pmc",
-            )
+        for notice in spec.get("notices") or []:
             graph.merge_notice(
-                EOC_DOI,
-                KHAN_DOI,
-                "expression_of_concern",
-                "Expression of Concern",
-                "publisher",
-                "2025-08-20",
+                str(notice["doi"]),
+                str(notice["work_doi"]),
+                str(notice["type"]),
+                str(notice["label"]),
+                str(notice.get("source") or "publisher"),
+                str(notice.get("date") or ""),
             )
-            seeded.append({"id": ident, "decision": "warn"})
-        elif ident == "lancet-hcq":
-            paste = f"urn:mooltrace:paste:{answer_id}"
-            graph.merge_source(paste, "Pasted draft", "paste", True, fetched_at=NOW)
-            graph.cite(answer_id, paste)
-            graph.merge_work(
-                LANCET_HCQ_DOI,
-                title="Hydroxychloroquine or chloroquine with or without a macrolide",
-                year=2020,
-                expanded=True,
-                notice_checked=True,
-                notice_checked_at=NOW,
-            )
-            graph.source_rests_on(paste, LANCET_HCQ_DOI)
-            graph.set_reliance(
-                None,
-                paste,
-                LANCET_HCQ_DOI,
-                reliance="relies",
-                weight=1.0,
-                sentence="A draft patient note cites the 2020 Lancet registry analysis.",
-                evidence_from="draft",
-            )
-            graph.merge_notice(
-                LANCET_RETRACTION_DOI,
-                LANCET_HCQ_DOI,
-                "retraction",
-                "Retraction",
-                "publisher",
-                "2020-06-05",
-            )
-            seeded.append({"id": ident, "decision": "block"})
-        else:
-            paste = f"urn:mooltrace:paste:{answer_id}"
-            graph.merge_source(paste, "Pasted draft", "paste", True, fetched_at=NOW)
-            graph.cite(answer_id, paste)
-            graph.merge_work(
-                CLEAN_REWRITE_DOI,
-                title="Cinnamon in glycaemic control",
-                year=2015,
-                expanded=True,
-                notice_checked=True,
-                notice_checked_at=NOW,
-            )
-            graph.source_rests_on(paste, CLEAN_REWRITE_DOI)
-            graph.set_reliance(
-                None,
-                paste,
-                CLEAN_REWRITE_DOI,
-                reliance="relies",
-                weight=1.0,
-                sentence="The draft cites 10.1016/j.jsps.2015.03.013.",
-                evidence_from="draft",
-            )
-            seeded.append({"id": ident, "decision": "pass"})
+        seeded.append({"id": ident, "decision": str(spec.get("decision") or "")})
     graph.persist()
     return seeded
-
-

@@ -49,8 +49,8 @@ def test_summary_names_sppaths_strength():
             "exit_code": 2,
             "algorithm": {
                 "name": "algo.SPpaths",
-                "strength": 0.72,
-                "explanation": "Decided by: algo.SPpaths, path strength 0.72",
+                "strength": 0.55,
+                "explanation": "Decided by: algo.SPpaths, path strength 0.55",
             },
             "reasons": [
                 {
@@ -61,7 +61,7 @@ def test_summary_names_sppaths_strength():
             ],
         }
     )
-    assert "Decided by: algo.SPpaths, path strength 0.72" in text
+    assert "Decided by: algo.SPpaths, path strength 0.55" in text
 
 
 def test_summary_block_and_pass():
