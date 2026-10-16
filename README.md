@@ -4,7 +4,9 @@ MoolTrace catches when your health AI's sources quietly rest on a flagged or ret
 
 Health chatbots cite web pages. Those pages cite reviews, which cite trials — and some of those trials have since been retracted or flagged by their journal. MoolTrace follows every citation path in a FalkorDB graph and tells you, before you ship, whether your answer rests on one, showing the exact path, the sentence at each step, and the Cypher that decided it. Run it in CI or from your agent via MCP: **pass** ships, **warn** needs a human look, **block** fails the build.
 
-*(Screenshot of the Healthline cinnamon warn path goes here. The human adds it on video day.)*
+![Healthline cinnamon WARN path](assets/healthline-warn.png)
+
+Headless Chrome 1280×900 capture, 16 Oct 2026: Healthline URL-only path page → Silva 2022 → Khan 2003 Expression of Concern, plus `Decided by: algo.SPpaths, path strength 0.72`. This PNG was rendered from demo-UI copy (not a running Next server). Re-capture from `http://127.0.0.1:4318/?preset=healthline` on video day if you want the live DOM.
 
 Example `--summary` from a cold Healthline check on 16 Oct 2026:
 
@@ -21,26 +23,19 @@ WeMakeDevs × FalkorDB Graph Hacks, **Track 1**. The verdict is `algo.SPpaths` w
 
 ## Quickstart
 
-One copy-paste from a fresh clone. The Healthline `--summary` check itself was 47–49 s cold on 16 Oct 2026 (see **Honest results**). Clone + `pip install` was not re-timed in this checkout.
-
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -e .
-export MOOLTRACE_MAILTO=you@example.com
-.venv/bin/python -m mooltrace check --url https://www.healthline.com/nutrition/cinnamon-and-diabetes --summary
-```
-
-`mooltrace check` is an alias of `check-answer`. TTY prints the 3-line verdict. `--json` prints the full payload. Non-TTY defaults to JSON.
-
-## Primary workflow: CI over answer fixtures
+Python 3.12+. Node 20+ only for the demo UI. One venv. The Healthline `--summary` check itself was 47–49 s cold on 16 Oct 2026 (see **Honest results**). Clone + `pip install` was not re-timed in this checkout.
 
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 export MOOLTRACE_MAILTO=you@example.com
+.venv/bin/python -m mooltrace check --url https://www.healthline.com/nutrition/cinnamon-and-diabetes --summary
 .venv/bin/python -m mooltrace batch examples/answers.jsonl --fail-on block
 echo $?
+.venv/bin/python -m pytest -q
 ```
+
+`mooltrace check` is an alias of `check-answer`. TTY prints the 3-line verdict. `--json` prints the full payload. Non-TTY defaults to JSON.
 
 `examples/answers.jsonl` is the CI sample (Everyday Health URL-only + Allen 2013). Those warn; they do not block. `--fail-on block` therefore exits 0. `examples/lancet.jsonl` is the retraction demo and exits 1.
 
@@ -48,7 +43,40 @@ Exit codes: **0** pass, **1** block, **2** warn/review, **3** infrastructure fai
 
 `--fail-on block` (default) fails CI on block and infra. Warn is annotated (`::warning`) and does not fail. Use `--fail-on warn` to fail on warn too.
 
-The sample workflow `.github/workflows/mooltrace-fixtures.yml` installs a venv and runs `examples/answers.jsonl` on pull requests, pushes to `main`, and manual dispatch. A daily schedule re-runs that same fixture file against live catalogs. That is a fresh fixture recheck, not persistent monitoring. The web UI is an evidence viewer for the demo, not the core claim. MCP is an editor integration for the same check.
+Local UI (optional): `docker compose up --build` then http://127.0.0.1:4318 — or `cd web && npm ci && npm run dev -- --port 4318 --hostname 127.0.0.1` with `.venv/bin/python -m mooltrace.api` on 4317. `/nw/*` rewrites to the API.
+
+MCP (Cursor or Claude Desktop). Point `command` at this venv:
+
+```json
+{
+  "mcpServers": {
+    "mooltrace": {
+      "command": "/absolute/path/to/MoolTrace/.venv/bin/python",
+      "args": ["-m", "mooltrace.mcp_server"],
+      "env": {
+        "MOOLTRACE_DB": "/absolute/path/to/MoolTrace/data/mooltrace.db",
+        "MOOLTRACE_MAILTO": "you@example.com"
+      }
+    }
+  }
+}
+```
+
+GitHub Action (same as `.github/workflows/mooltrace-fixtures.yml`). This is a sample workflow, not a reusable action. The daily schedule is a fresh fixture recheck, not persistent monitoring:
+
+```yaml
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - run: |
+          python3 -m venv .venv
+          .venv/bin/pip install -e .
+          .venv/bin/python -m mooltrace batch examples/answers.jsonl --fail-on block
+```
+
+The web UI is an evidence viewer for the demo, not the core claim. MCP is an editor integration for the same check.
 
 ## Demo
 
@@ -124,6 +152,14 @@ A **counted path** is the strongest `algo.SPpaths` route from the answer to a fl
 
 ## Graph model
 
+```mermaid
+flowchart LR
+  Answer -->|CITES| Source
+  Source -->|RESTS_ON| Work
+  Work -->|RESTS_ON| Work2[Work]
+  Notice -->|FLAGS| Work2
+```
+
 Nodes: `Answer`, `Source`, `Work`, `Notice`.
 
 Edges: `(Answer)-[:CITES]->(Source)`, `(Source)-[:RESTS_ON]->(Work)`, `(Work)-[:RESTS_ON]->(Work)`, `(Notice)-[:FLAGS]->(Work)`.
@@ -198,7 +234,7 @@ Take FalkorDB out and you lose: (1) multi-hop weighted search over a shared cita
 | citation path / hop | One `RESTS_ON` edge: page → review, or review → trial. The sentence is stored on that edge. |
 | depth | Hop budget from the cited source, 1–3. Coverage is not shown beyond it. |
 
-Reverse lookup lists every matching notice and only the answers whose sources reach that work. The Cypher `counted` flag uses the same hop rule as the forward verdict: every hop has a stored sentence and weight ≥ 0.5, and the path is one hop or has an `included` / `relies` / `uses_data_or_method` hop. Mention-only multi-hop paths do not count. It is not a monitoring or alert scheduler.
+Reverse lookup lists every matching notice and only the answers whose sources reach that work. The Cypher `counted` flag matches the forward verdict: every hop has a stored sentence and the product of `RESTS_ON` weights is ≥ 0.5. It is not a monitoring or alert scheduler.
 
 Every query the tools run is in `mooltrace/cypher.py`.
 
@@ -229,7 +265,7 @@ Live numbers are not hardcoded. Run the gate. Files under `results/` are marked 
 
 ## Labelled set
 
-`examples/labelled.jsonl` is 42 health-AI drafts with expected `pass` / `warn` / `block`: Expression of Concern, retraction, hedged wording, clean DOIs, `no_sources`, depth-1 coverage, real health-page hops, fake/preprint/dataset identifiers, and non-English drafts. Each case uses its own throwaway graph. New `page` / `identifier` / `i18n` rows were labelled on 16 Oct 2026 by Siddhant Vishnu from PATH_RULE, known publisher notices, and HTML inspection **before** the runner. Caught = warn or block. An Expression of Concern is not a retraction.
+`examples/labelled.jsonl` is 52 health-AI drafts with expected `pass` / `warn` / `block`: Expression of Concern, retraction, hedged wording, clean DOIs, `no_sources`, depth-1 coverage, real health-page hops (Healthline, Everyday Health, WebMD, Medical News Today; VerywellHealth returned HTTP 403 on 16 Oct 2026 so it is not in the set), fake/preprint/dataset identifiers, and non-English drafts. Each case uses its own throwaway graph. New rows were labelled on 16 Oct 2026 by Siddhant Vishnu from the rule block at the top of that file **before** the runner. Caught = warn or block. An Expression of Concern is not a retraction.
 
 ```bash
 .venv/bin/python -m mooltrace labelled
@@ -237,49 +273,34 @@ Live numbers are not hardcoded. Run the gate. Files under `results/` are marked 
 
 The report prints precision and recall on a binary flagged class (`warn` or `block`), exact three-way match, and wall / query timing. Infra rows are excluded from scored metrics. This is not a random sample and not a medical accuracy score. pytest checks the schema only. It does not call live catalogs.
 
-## Setup
-
-Python 3.12+. Node 20+ only for the demo UI.
-
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -e . pytest
-export MOOLTRACE_MAILTO=you@example.com
-.venv/bin/python -m pytest
-.venv/bin/python -m mooltrace.api
-```
-
-The API binds `127.0.0.1:4317` and allows CORS from the local UI. The demo UI:
-
-```bash
-cd web && npm ci && npm run dev -- --port 4318 --hostname 127.0.0.1
-```
-
-Open [http://127.0.0.1:4318](http://127.0.0.1:4318). `/nw/*` rewrites to the API.
-
-MCP: `.venv/bin/python -m mooltrace.mcp_server` (stdio). See `mcp.example.json`.
-
 ## Honest results
 
 Numbers below are from this checkout on 16 Oct 2026. Re-run the command next to each line. Do not treat them as a medical accuracy score.
 
 | Claim | Command | Result (16 Oct 2026) |
 | --- | --- | --- |
-| Full unit suite | `.venv/bin/python -m pytest -q` | 186 passed in 308 s |
+| Full unit suite | `unshare --net --map-root-user .venv/bin/python -m pytest -q` | 16 Oct 2026: 199 passed, 0 failed, 329.29 s, network namespace unshared |
 | Flip + ablation | `.venv/bin/python -m pytest tests/test_graph.py::test_sp_weight_flip_changes_verdict tests/test_graph.py::test_sp_paths_ablation_returns_exit_3 tests/test_graph.py::test_sp_paths_strength_equals_brute_force_product -q` | 16 Oct 2026: weight 0.85 → warn, 0.2 → pass; `sp_paths` raised → exit 3, no verdict; algorithm strength equals brute-force product on 3 fixtures. |
 | Agent loop | `.venv/bin/python examples/agent_loop.py` | check warn, `algo.SPpaths`, rewrite recheck pass, 1 counted answer |
 | Cold Healthline `--summary` | `MOOLTRACE_HTTP_CACHE=/tmp/mt-cold MOOLTRACE_DB=/tmp/mt-cold/mooltrace.db .venv/bin/python -m mooltrace check --url https://www.healthline.com/nutrition/cinnamon-and-diabetes --summary` | 47.09 s / 49.18 s / 49.10 s. All three: warn, EoC `10.2337/dc25-ec09`. No verdict flip. ~119–121 API calls cold. |
 | Warm Healthline (same DB+cache) | same command again | 23.16 s, 26 API calls, still warn / same EoC |
 | Gate (cold cache) | `.venv/bin/python -m mooltrace.gate` | not re-run in this session |
-| Labelled set (42 cases) | `.venv/bin/python -m mooltrace labelled` | schema tests pass; 12 new rows labelled before the runner; live 42-case cold run not finished in this session |
+| Labelled set (52 cases) | `.venv/bin/python -m mooltrace labelled` | schema tests pass (52 rows labelled before the runner). Live 52-case cold precision/recall is filled after that command finishes; do not treat a blank as a score. |
 
 ## How we differ
 
-- [Shaky Ground](https://github.com/aryangorde6/shaky-ground): retraction-only, DOI/BibTeX input, live demo; drops Expressions of Concern.
-- GhostCite: catches Expressions of Concern; no AI-answer or consumer-page input.
-- ibnweb3/bedrock: DOI bibliographies and graph claims including PageRank; not a health-AI page-hop pre-ship gate.
+Facts only. Each cell is what that public repo/docs showed as of 16 Oct 2026. Blank means this checkout did not verify the claim.
 
-MoolTrace's wedge is the **page hop plus publisher Expression of Concern** on a health-AI answer fixture, with hop-level reliance in FalkorDB. That is not a claim of unique multi-hop, unique EoC, unique MCP, or continuous monitoring.
+| | [MoolTrace](https://github.com/SidTheKid-dotcom/MoolTrace) | [shaky-ground](https://github.com/aryangorde6/shaky-ground) | [bedrock](https://github.com/ibnweb3/bedrock) | GhostCite |
+| --- | --- | --- | --- | --- |
+| Input | AI-answer text + consumer page URL | DOI / BibTeX | DOI bibliography | scholarly identifiers (EoC-aware) |
+| Expression of Concern | warn (not a retraction) | dropped (retraction-only) | not a health-AI page-hop gate | catches EoCs |
+| Web-page hop | page → review → trial | no | no | no |
+| CI / MCP gate | `mooltrace batch` + stdio MCP | UI/MCP landed 15 Oct 2026 | not this wedge | not this wedge |
+| Reverse impact | `what_rests_on` / `recheck_affected` | not claimed here | PageRank on bibliographies | not claimed here |
+| Rewrite + recheck | `rewrite_answer` then graph recheck | not claimed here | not claimed here | not claimed here |
+
+MoolTrace's wedge is the **page hop plus publisher Expression of Concern** on a health-AI answer fixture, with `algo.SPpaths` as the verdict. That is not a claim of unique multi-hop, unique EoC, unique MCP, or continuous monitoring.
 
 ## Prior art
 
@@ -306,11 +327,12 @@ MoolTrace code in this repository was written with Cursor agents (including Grok
 
 1. Fresh clone, venv, `pip install -e . pytest`, `pytest`.
 2. `python -m mooltrace batch examples/answers.jsonl --fail-on block` (exit 0; warns are annotated).
-3. URL-only Everyday Health check twice; second call should make 0 API calls while notices are fresh.
+3. URL-only Healthline `--summary` twice on the same DB. 16 Oct 2026: cold 47–49 s (~119–121 API calls), warm 23 s (26 API calls), still warn. Do not claim zero API calls on the warm path.
 4. `python -m mooltrace batch examples/lancet.jsonl --fail-on block` (exit 1) → block on the retraction notice, not the earlier EoC.
 5. UI presets are Healthline cinnamon (counted 2-hop), Lancet 2020 (block), and the clean DOI. The Cypher panel shows `algo.SPpaths`. Rewrite and recheck on a warn.
 6. `ro_cypher` with `CONTAINS 'set'` is allowed; `CREATE` is rejected; GRAPH.RO_QUERY is the write barrier.
 7. Public repo, 2:50 video, Track 1, AWS/FalkorDB shown, AI tools listed.
 8. `python -m pytest tests/test_labelled.py` (schema). Optional live: `python -m mooltrace labelled --limit 2`.
+9. Submission drafts: `SUBMISSION.md`, `VIDEO_SCRIPT.md`, `SHIP_CHECKLIST.md`. Video and public-repo flip are not done in this checkout.
 
 License: MIT. Copyright holder matches the GitHub profile name for `SidTheKid-dotcom` (Siddhant Vishnu).
