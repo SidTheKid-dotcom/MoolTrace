@@ -1,0 +1,25 @@
+# Public read-only demo. Does not run until a Render login exists.
+services:
+  - type: web
+    name: mooltrace-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: MOOLTRACE_PUBLIC_DEMO
+        value: "1"
+      - key: MOOLTRACE_SEED
+        value: "1"
+      - key: MOOLTRACE_DB
+        value: /data/demo.db
+      - key: MOOLTRACE_API_HOST
+        value: "0.0.0.0"
+      - key: MOOLTRACE_API_PORT
+        value: "4317"
+      - key: MOOLTRACE_MAILTO
+        value: mooltrace-demo@example.com
+    disk:
+      name: mooltrace-demo
+      mountPath: /data
+      sizeGB: 1

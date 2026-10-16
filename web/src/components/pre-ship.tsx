@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -303,6 +303,15 @@ export function PreShip() {
   const [result, setResult] = useState<Check | null>(null)
   const [rewrite, setRewrite] = useState<Rewrite | null>(null)
   const [rewriting, setRewriting] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const id = new URLSearchParams(window.location.search).get("preset")
+    if (id === "healthline" || id === "lancet" || id === "clean") {
+      applyPreset(id)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function runCheck(body: { text: string; urls: string[]; engine: string; depth: number }) {
     setLoading(true)

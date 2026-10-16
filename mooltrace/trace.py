@@ -780,26 +780,37 @@ def trace_answer(
     answer_id = _answer_id(engine, text or "", url_list)
     graph.merge_answer(answer_id, engine, _text_hash(text or ""), _now())
 
-    pages = _page_urls(url_list, text or "", errors)
-    if pages:
-        progress(f"Fetching {len(pages)} page{'s' if len(pages) != 1 else ''}…")
-    _ingest_pages(graph, answer_id, pages, stats, errors)
-    _ingest_text(graph, answer_id, "\n".join([text or "", *url_list]), stats, errors)
+    from mooltrace.public_demo import public_demo_enabled, public_live_enabled
 
-    incomplete = _deepen(graph, answer_id, depth, stats, errors) or bool(errors)
+    skip_http = public_demo_enabled() and not public_live_enabled()
+    pages = _page_urls(url_list, text or "", errors)
+    if skip_http:
+        incomplete = False
+        if not graph.seed_dois(answer_id):
+            errors.append(
+                "public demo graph has no seeds for this preset; run mooltrace seed --offline"
+            )
+            incomplete = True
+    else:
+        if pages:
+            progress(f"Fetching {len(pages)} page{'s' if len(pages) != 1 else ''}…")
+        _ingest_pages(graph, answer_id, pages, stats, errors)
+        _ingest_text(graph, answer_id, "\n".join([text or "", *url_list]), stats, errors)
+        incomplete = _deepen(graph, answer_id, depth, stats, errors) or bool(errors)
     context_notes: list[str] = []
-    try:
-        judge_citation_edges(
-            graph,
-            answer_id,
-            "\n".join([text or "", *url_list]),
-            stats,
-            context_notes,
-            depth,
-        )
-    except (MoolTraceError, UnsafeURL) as exc:
-        errors.append(str(exc))
-        incomplete = True
+    if not skip_http:
+        try:
+            judge_citation_edges(
+                graph,
+                answer_id,
+                "\n".join([text or "", *url_list]),
+                stats,
+                context_notes,
+                depth,
+            )
+        except (MoolTraceError, UnsafeURL) as exc:
+            errors.append(str(exc))
+            incomplete = True
     path_run = graph.paths(answer_id, depth)
     paths = [_public_path(row) for row in path_run.rows]
     flagged = bool(paths)

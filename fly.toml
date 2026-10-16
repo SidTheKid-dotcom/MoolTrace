@@ -1,0 +1,33 @@
+# Public read-only demo. Does not run until `fly launch` (needs a Fly login).
+# Presets work with MOOLTRACE_PUBLIC_DEMO=1 and no live catalog calls.
+app = "mooltrace"
+primary_region = "sin"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  MOOLTRACE_PUBLIC_DEMO = "1"
+  MOOLTRACE_SEED = "1"
+  MOOLTRACE_DB = "/data/demo.db"
+  MOOLTRACE_API_HOST = "0.0.0.0"
+  MOOLTRACE_API_PORT = "4317"
+  MOOLTRACE_MAILTO = "mooltrace-demo@example.com"
+
+[http_service]
+  internal_port = 4317
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[http_service.checks]]
+  interval = "15s"
+  timeout = "3s"
+  grace_period = "2m"
+  method = "GET"
+  path = "/health"
+
+[mounts]
+  source = "mooltrace_demo"
+  destination = "/data"

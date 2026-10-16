@@ -152,6 +152,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Skip when the demo graph already has Answer nodes.",
     )
+    seed.add_argument(
+        "--offline",
+        action="store_true",
+        help="Write the three presets with no live HTTP (public demo).",
+    )
 
     args = parser.parse_args(argv)
     try:
@@ -250,7 +255,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.cmd == "seed":
             from mooltrace.seed import main as seed_main
 
-            argv_seed = ["--if-empty"] if args.if_empty else []
+            argv_seed = []
+            if args.if_empty:
+                argv_seed.append("--if-empty")
+            if args.offline:
+                argv_seed.append("--offline")
             return seed_main(argv_seed)
     except InfraError as exc:
         print(str(exc), file=sys.stderr)

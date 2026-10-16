@@ -125,16 +125,22 @@ def seed_demo(graph: Graph) -> list[dict[str, Any]]:
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if_empty = "--if-empty" in args
+    offline = "--offline" in args or os.environ.get("MOOLTRACE_PUBLIC_DEMO", "").strip() == "1"
     path = demo_db_path()
     graph = get_graph(path)
     try:
         if if_empty and answer_count(graph) > 0:
             print(json.dumps({"seeded": False, "reason": "graph already has answers", "db": str(path)}))
             return 0
-        results = seed_demo(graph)
+        if offline:
+            from mooltrace.public_demo import seed_offline_presets
+
+            results = seed_offline_presets(graph)
+        else:
+            results = seed_demo(graph)
     finally:
         graph.persist()
-    print(json.dumps({"seeded": True, "db": str(path), "results": results}, indent=2))
+    print(json.dumps({"seeded": True, "offline": offline, "db": str(path), "results": results}, indent=2))
     return 0
 
 

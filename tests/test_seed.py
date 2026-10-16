@@ -54,3 +54,4 @@ def test_compose_documents_ports_and_demo_db():
     assert "EXPOSE 4318" in dockerfile
     entry = Path(ROOT / "scripts" / "docker-entrypoint-api.sh").read_text()
     assert "mooltrace seed" in entry
+    assert "MOOLTRACE_PUBLIC_DEMO" in entry

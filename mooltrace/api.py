@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -11,6 +11,12 @@ from mooltrace.clients import InfraError, MoolTraceError
 from mooltrace.config import API_HOST, API_PORT, CORS_ORIGINS
 from mooltrace.graph import get_graph
 from mooltrace.ssrf import UnsafeURL
+from mooltrace.public_demo import (
+    is_preset,
+    public_demo_enabled,
+    public_live_enabled,
+    rate_limited,
+)
 from mooltrace.rewrite import rewrite_answer
 from mooltrace.trace import (
     check_answer,
@@ -75,8 +81,29 @@ def stats() -> dict:
     return {"counts": run.rows, "cypher": run.cypher, "elapsed_ms": round(run.elapsed_ms, 2)}
 
 
+def _guard_public_demo(body: DraftIn) -> None:
+    if not public_demo_enabled():
+        return
+    if rate_limited():
+        raise HTTPException(status_code=429, detail="Public demo rate limit. Try the three presets.")
+    if is_preset(body.engine, body.text, body.urls):
+        return
+    if public_live_enabled():
+        return
+    raise HTTPException(
+        status_code=400,
+        detail=(
+            "This public demo only runs the three presets (Healthline warn, "
+            "Lancet block, clean pass) with no live page fetch. Clone the repo "
+            "to check other URLs."
+        ),
+    )
+
+
 @app.post("/check-answer")
-def post_check_answer(body: DraftIn) -> dict:
+def post_check_answer(body: DraftIn, request: Request) -> dict:
+    _ = request
+    _guard_public_demo(body)
     try:
         payload = check_answer(body.text, body.urls, body.engine, body.depth)
     except (MoolTraceError, UnsafeURL, InfraError) as exc:
@@ -91,6 +118,7 @@ def post_check_answer(body: DraftIn) -> dict:
 
 @app.post("/rewrite")
 def post_rewrite(body: DraftIn) -> dict:
+    _guard_public_demo(body)
     try:
         return rewrite_answer(body.text, body.urls, body.engine, body.depth)
     except (MoolTraceError, UnsafeURL, InfraError) as exc:
@@ -99,6 +127,7 @@ def post_rewrite(body: DraftIn) -> dict:
 
 @app.post("/trace")
 def post_trace(body: DraftIn) -> dict:
+    _guard_public_demo(body)
     try:
         return trace_answer(body.text, body.urls, body.engine, body.depth)
     except (MoolTraceError, UnsafeURL, InfraError) as exc:
