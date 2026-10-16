@@ -174,6 +174,18 @@ def test_readme_demo_is_compose_and_honest():
     assert "railway.app" not in demo.lower()
 
 
+def test_healthline_warn_screenshot_is_live_not_synthetic():
+    text = (ROOT / "README.md").read_text()
+    assert "](assets/healthline-warn.png)" in text
+    caption = text.split("](assets/healthline-warn.png)", 1)[1].split("\n## ", 1)[0]
+    assert "synthetic" not in caption.lower()
+    assert "0.72" not in caption
+    assert "0.55" in caption
+    assert "signed-out" in caption.lower() or "signed out" in caption.lower()
+    assert "Expression of Concern" in caption
+    assert "10.2337/dc25-ec09" in caption
+
+
 def test_clean_set_excludes_known_flagged_ancestors():
     assert "10.5114/amsad/184245" not in CLEAN
     assert "10.1093/jn/136.4.977" not in CLEAN

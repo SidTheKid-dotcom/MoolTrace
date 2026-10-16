@@ -228,9 +228,7 @@ Open [http://127.0.0.1:4318](http://127.0.0.1:4318). API health is [http://127.0
 
 ![Healthline cinnamon WARN path](assets/healthline-warn.png)
 
-Headless Chrome 1280×900 capture, 16 Oct 2026. The PNG is a synthetic example rendered from demo-UI copy (it still prints path strength 0.72; not a running Next server).
-
-Recorded Healthline replay (page fetched 16 Oct 2026 13:43 UTC; Silva→Khan hop judged 15 Oct 2026 from Europe PMC XML): page → Silva 2022 → Khan 2003 Expression of Concern. `Decided by: algo.SPpaths, path strength 0.55`. The review→trial hop class is `relies`. Re-capture from `http://127.0.0.1:4318/?preset=healthline` on video day if you want the live DOM.
+Signed-out headless Chrome 1280×2200 capture, 17 Oct 2026, of `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/?preset=healthline`. WARN (exit 2). Page `mention` 0.55 → Silva 2022 `relies` 1.0 → Khan 2003 Expression of Concern `10.2337/dc25-ec09` (2025-08-20). `Decided by: algo.SPpaths, path strength 0.55`. An Expression of Concern is not a retraction. This does not say cinnamon works or does not.
 
 Example `--summary` from a cold Healthline check on 16 Oct 2026:
 
@@ -354,7 +352,7 @@ Numbers below are from this checkout on 16 Oct 2026. Re-run the command next to 
 
 | Claim | Command | Result (16 Oct 2026) |
 | --- | --- | --- |
-| Full unit suite | `unshare --net --map-root-user .venv/bin/python -m pytest -q` | 17 Oct 2026 this checkout: 265 passed, 0 failed, 411.26 s, network namespace unshared |
+| Full unit suite | `unshare --net --map-root-user .venv/bin/python -m pytest -q` | 17 Oct 2026 this checkout: 266 passed, 0 failed, 421.76 s, network namespace unshared |
 | Flip + ablation | `.venv/bin/python -m pytest tests/test_graph.py::test_sp_weight_flip_changes_verdict tests/test_graph.py::test_sp_paths_ablation_returns_exit_3 tests/test_graph.py::test_sp_paths_strength_equals_brute_force_product -q` | 16 Oct 2026: weight 0.85 → warn, 0.2 → pass; `sp_paths` raised → exit 3, no verdict; algorithm strength equals brute-force product on 3 fixtures. |
 | Agent loop | `.venv/bin/python examples/agent_loop.py` | check warn, `algo.SPpaths`, rewrite recheck pass, 1 counted answer |
 | Fresh-clone quickstart in `/tmp` | `git clone … && python3 -m venv .venv && .venv/bin/pip install -e . && .venv/bin/python -m mooltrace check --url https://www.healthline.com/nutrition/cinnamon-and-diabetes --summary` | 16 Oct 2026: **65.06 s** (clone 3.02 s + install 9.67 s + check 52.37 s). WARN exit 2, EoC `10.2337/dc25-ec09`, `algo.SPpaths` 0.55. See [CLAIMS.md](CLAIMS.md). |

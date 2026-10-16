@@ -176,7 +176,7 @@ docker compose up --build
 unshare --net --map-root-user .venv/bin/python -m pytest -q
 ```
 
-17 Oct 2026 this checkout: 265 passed, 0 failed, 411.26 s, network namespace unshared.
+17 Oct 2026 this checkout: 266 passed, 0 failed, 421.76 s, network namespace unshared.
 
 ## Limits quoted in README (spot-checks)
 
@@ -188,7 +188,7 @@ unshare --net --map-root-user .venv/bin/python -m pytest -q
 | SSRF refuses loopback / private / credentials | `pytest tests/test_ssrf.py` | passed this session |
 | Rewrite changes only the flagged sentence; never `RETRACTED:`; never the notice DOI | `pytest tests/test_rewrite.py::test_rewrite_hcq_mehra_2020_only_flagged_sentence` | passed this session |
 | Hosted free-text is presets-only | oversize POST | 413 |
-| `assets/healthline-warn.png` still prints 0.72 | open the PNG / README caption | labeled **synthetic example**; not this run |
+| `assets/healthline-warn.png` is a signed-out live WARN capture | `/?preset=healthline` on the Lightsail demo, 17 Oct 2026 | path strength 0.55, EoC `10.2337/dc25-ec09`; not 0.72 |
 
 ## Seeded gate (T14, three runs)
 
