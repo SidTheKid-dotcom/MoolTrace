@@ -44,17 +44,109 @@ def test_ci_fixture_file_has_no_known_block_case():
     assert first["urls"] == [EVERYDAY_HEALTH_URL]
 
 
+TRACK = "Agents That Act on Connected Data"
+DEMO = "https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/"
+TAGLINE = (
+    "MoolTrace catches when your health AI's sources quietly rest on a flagged "
+    "or retracted study, even three links deep."
+)
+BASELINE_JSON = ROOT / "results" / "baseline_2026-10-16.json"
+
+
+def _first(text: str, needle: str) -> int:
+    index = text.find(needle)
+    assert index >= 0, needle
+    return index
+
+
 def test_readme_names_no_sources_and_fixture_recheck():
     text = (ROOT / "README.md").read_text()
     assert "no_sources" in text
     assert "fresh fixture recheck" in text
     assert "not persistent monitoring" in text
     assert text.splitlines()[2].startswith("MoolTrace catches when your health AI's sources quietly rest")
-    assert "https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/" in "\n".join(text.splitlines()[:8])
+    assert DEMO in "\n".join(text.splitlines()[:8])
     assert "rewrite_answer" in text
     assert "algo.SPpaths" in text
-    assert "Azure AI Foundry" in text
+    assert "Azure AI Foundry" not in text
+    assert "LLM rewrit" not in text.lower()
     assert "`cost` is `-ln(weight)`" in text
+
+
+def test_readme_top_follows_p3_13():
+    text = (ROOT / "README.md").read_text()
+    order = [
+        TAGLINE,
+        DEMO,
+        "assets/demo-olive-oil-block.png",
+        "python3 -m venv .venv",
+        "symptom checkers, nutrition coaches, patient chatbots",
+        "| pass | 0 |",
+        "| block | 1 |",
+        "| error | 3 |",
+        "```mermaid",
+        "Answer -->|CITES| Source",
+        "CALL algo.SPpaths",
+        "mooltrace batch examples/answers.jsonl --fail-on block",
+        "mooltrace.mcp_server",
+        "0.8974",
+        "## Limits",
+        "## Prior art",
+    ]
+    assert TRACK in text
+    last = -1
+    for marker in order:
+        index = _first(text, marker)
+        assert index > last, marker
+        last = index
+    assert "| warn" in text
+    assert "exit 2" in text or "| 2 |" in text
+    first_bash = text.split("```bash", 1)[1].split("```", 1)[0].strip()
+    run_lines = [line for line in first_bash.splitlines() if line.strip()]
+    assert len(run_lines) == 3, run_lines
+    assert "mention-only multi-hop paths do not count" not in text
+
+
+def test_docs_name_the_connected_data_track():
+    for name in ("README.md", "SUBMISSION.md", "JUDGES.md"):
+        body = (ROOT / name).read_text()
+        assert TRACK in body, name
+    submission = (ROOT / "SUBMISSION.md").read_text()
+    track_line = next(line for line in submission.splitlines() if line.startswith("**Track:**"))
+    assert TRACK in track_line
+    assert "01 — Context for AI Agents" not in submission
+
+
+def test_readme_baseline_matches_results_file():
+    text = (ROOT / "README.md").read_text()
+    payload = json.loads(BASELINE_JSON.read_text())
+    base = payload["baseline"]["metrics"]
+    product = payload["mooltrace"]["metrics"]
+    hops = payload["only_multihop_ids"]
+    for value in (
+        str(base["precision"]),
+        str(base["recall"]),
+        str(product["precision"]),
+        str(product["recall"]),
+        f"{base['exact_match']}/{base['n']}",
+        f"{product['exact_match']}/{product['n']}",
+        str(len(hops)),
+        "results/baseline_2026-10-16.json",
+    ):
+        assert value in text, value
+    assert ".venv/bin/python -m mooltrace baseline --out results/baseline_2026-10-16.json" in text
+
+
+def test_readme_prior_art_links_verified_repos():
+    text = (ROOT / "README.md").read_text()
+    prior = text.split("## Prior art", 1)[1]
+    assert "https://github.com/aryangorde6/shaky-ground" in prior
+    assert "shaky/retractionwatch.py" in prior
+    assert "RetractionNature" in prior
+    assert "https://github.com/ibnweb3/bedrock" in prior
+    assert "https://github.com/musharna/ghostcite" in prior
+    assert "scite.ai" in prior
+    assert "expression of concern" in prior.lower() or "Expression of Concern" in prior
 
 
 def test_readme_demo_is_compose_and_honest():

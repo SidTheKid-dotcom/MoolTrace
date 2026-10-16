@@ -6,7 +6,7 @@ Fill the video URL, public-repo URL, and hosted-demo URL on 18 Oct 2026. Do not 
 
 **Tagline:** Check the roots before you ship.
 
-**Track:** 01 — Context for AI Agents
+**Track:** 01 — Agents That Act on Connected Data
 
 **Deadline:** Sun 18 Oct 2026, 11:59 PM IST
 
@@ -37,7 +37,7 @@ Expect exit **1** (retraction). Optional UI: `docker compose up --build` → htt
 - Verdict: `algo.SPpaths` on `RESTS_ON.cost = -ln(weight)`; path strength = product of weights
 - MCP stdio server (`mooltrace.mcp_server`) wrapping the same Python tools
 - Notices: Crossref. Citation lists: OpenAlex. Sentences: Semantic Scholar contexts, PMC, page, or draft
-- Optional rewrite prose: Azure AI Foundry when those three env vars are set; otherwise a template. Code still strips flagged citations.
+- Rewrite is a deterministic template: only sentences that cite flagged work change; every other sentence stays byte-identical. Code still strips flagged citations.
 
 ## Links (paste on 18 Oct)
 
@@ -49,7 +49,7 @@ Expect exit **1** (retraction). Optional UI: `docker compose up --build` → htt
 
 ## AI-assistance disclosure
 
-MoolTrace code in this repository was written with Cursor agents (including Grok) after the Graph Hacks kickoff on 15 Oct 2026. Paths and notices come from live OpenAlex, Crossref, NCBI, Semantic Scholar, and PMC, not from the model. Optional rewrite prose can call Azure AI Foundry. Each teammate can explain the code they ship.
+MoolTrace code in this repository was written with Cursor agents (including Grok) after the Graph Hacks kickoff on 15 Oct 2026. Paths and notices come from live OpenAlex, Crossref, NCBI, Semantic Scholar, and PMC, not from the model. Rewrite is a deterministic template, not an LLM edit. Each teammate can explain the code they ship.
 
 ## Data sources and attribution
 
