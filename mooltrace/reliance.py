@@ -13,18 +13,19 @@ from dataclasses import dataclass
 
 # Counted toward warn/block and the independent-source count.
 WEIGHT_FLOOR = 0.5
-# algo.SPpaths path strength is the product of RESTS_ON weights
-# (exp(−Σ −ln(w))). Counted only at or above this floor.
+# Retired. A multiplied path-strength floor hid counted EoC/retraction
+# chains (Allen 2013 mention 0.55 × uses 0.85 = 0.4675). Hop WEIGHT_FLOOR
+# is the counted gate. Path strength is still the product of weights.
 STRENGTH_FLOOR = 0.5
-# Retired alias. STRENGTH_FLOOR is the counted gate.
 PATH_SCORE_FLOOR = 0.25
 PATH_RULE = (
     "algo.SPpaths decides: strongest path per flagged Work; counted if "
-    "path strength (product of RESTS_ON weights) ≥ 0.5 and every hop is "
-    "evidenced; counted + retraction → block; counted + EoC → warn; "
-    "flagged with an unverified hop → warn (can't verify); "
-    "strength < 0.5 → pass (cites a flagged study only in passing). "
-    "Python PATH_RULE is not a verdict. If the algorithm errors, exit 3."
+    "every hop is evidenced and each hop weight is ≥ 0.5; counted + "
+    "retraction → block; counted + EoC → warn; flagged with an "
+    "unverified hop → warn (can't verify); a hop below 0.5 → pass "
+    "(cites a flagged study only in passing). A multiplied path-strength "
+    "floor is not applied. Python PATH_RULE is not a verdict. If the "
+    "algorithm errors, exit 3."
 )
 STRONG_RELIANCE = frozenset({"included", "relies", "uses_data_or_method"})
 # Unjudged RESTS_ON hops. Higher than -ln(0.2) so a judged background hop

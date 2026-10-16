@@ -206,7 +206,7 @@ def test_weak_direct_path_does_not_mask_a_counted_longer_path():
     assert verdict["summary"] == PRESHIP_EOC
 
 
-def test_mention_only_multi_hop_does_not_count():
+def test_mention_only_multi_hop_still_warns():
     path = _path("expression_of_concern")
     path.update(
         hops=3,
@@ -235,16 +235,16 @@ def test_mention_only_multi_hop_does_not_count():
         ],
     )
     verdict = decide([path], incomplete=False, depth=3)
-    assert verdict["decision"] == "pass"
-    assert verdict["exit_code"] == EXIT_PASS
-    assert verdict["reasons"] == []
-    assert verdict["discounted"]
-    assert "not shown" in verdict["summary"]
+    assert verdict["decision"] == "warn"
+    assert verdict["exit_code"] == EXIT_WARN
+    assert verdict["reasons"][0]["code"] == "expression_of_concern"
+    assert verdict["discounted"] == []
     assert verdict["path_rule"] == PATH_RULE
     assert "path_score_floor" not in verdict or verdict.get("path_score_floor") is None
+    assert "strength_floor" not in verdict or verdict.get("strength_floor") is None
 
 
-def test_two_hop_mention_only_does_not_count():
+def test_two_hop_mention_only_still_warns():
     path = _path("expression_of_concern")
     path.update(
         hops=2,
@@ -266,8 +266,9 @@ def test_two_hop_mention_only_does_not_count():
         ],
     )
     verdict = decide([path], incomplete=False, depth=2)
-    assert verdict["decision"] == "pass"
-    assert verdict["discounted"]
+    assert verdict["decision"] == "warn"
+    assert verdict["reasons"][0]["code"] == "expression_of_concern"
+    assert verdict["discounted"] == []
 
 
 def test_mention_then_included_counts():
@@ -375,6 +376,90 @@ def test_strong_two_hop_still_counts():
     assert verdict["decision"] == "warn"
     assert verdict["reasons"][0]["path_score"] == 0.85 * 0.85
     assert verdict["decided_by"] == "algo.SPpaths"
+
+
+def test_allen_2013_eoc_chain_warns_when_product_is_under_half():
+    """Allen 2013 → Khan EoC: mention 0.55 × uses 0.85 = 0.4675.
+
+    A multiplied 0.5 floor treats that product as in-passing and passes.
+    A confirmed Expression of Concern on a counted chain must at least warn.
+    """
+    path = _path("expression_of_concern")
+    path.update(
+        hops=2,
+        hops_evidence=[
+            {
+                "weight": 0.55,
+                "judged": True,
+                "reliance": "mention",
+                "sentence": (
+                    "The review this draft relies on is Allen 2013 "
+                    "(doi 10.1370/afm.1517)."
+                ),
+                "evidence_from": "draft",
+            },
+            {
+                "weight": 0.85,
+                "judged": True,
+                "reliance": "uses_data_or_method",
+                "sentence": (
+                    "Our results suggested a high likelihood for publication "
+                    "bias on fasting plasma glucose, perhaps as a result of "
+                    "analyzing the results Khan and colleagues 6 as 3 "
+                    "separate comparisons."
+                ),
+                "evidence_from": "pmc_html",
+            },
+        ],
+        steps=[
+            {"doi": None, "url": "urn:mooltrace:paste:allen"},
+            {"doi": "10.1370/afm.1517", "title": "Allen"},
+            {"doi": "10.2337/diacare.26.12.3215", "title": "Khan"},
+        ],
+        root={"doi": "10.2337/diacare.26.12.3215", "title": "Khan"},
+        notice={
+            "doi": "10.2337/dc25-ec09",
+            "type": "expression_of_concern",
+            "label": "Expression of concern",
+            "date": "2025-08-20",
+        },
+    )
+    verdict = decide([path], incomplete=False, depth=2)
+    assert verdict["decision"] == "warn"
+    assert verdict["exit_code"] == EXIT_WARN
+    assert verdict["summary"] == PRESHIP_EOC
+    assert verdict["reasons"][0]["code"] == "expression_of_concern"
+    assert abs(verdict["reasons"][0]["path_score"] - 0.55 * 0.85) < 1e-12
+    assert verdict["reasons"][0]["status"] == "count"
+    assert verdict["discounted"] == []
+
+
+def test_counted_retraction_chain_blocks_when_product_is_under_half():
+    path = _path("retraction")
+    path.update(
+        hops=2,
+        hops_evidence=[
+            {
+                "weight": 0.55,
+                "judged": True,
+                "reliance": "mention",
+                "sentence": "This draft cites the review by DOI.",
+                "evidence_from": "draft",
+            },
+            {
+                "weight": 0.85,
+                "judged": True,
+                "reliance": "uses_data_or_method",
+                "sentence": "The review analyses the retracted trial.",
+                "evidence_from": "pmc_html",
+            },
+        ],
+    )
+    verdict = decide([path], incomplete=False, depth=2)
+    assert verdict["decision"] == "block"
+    assert verdict["exit_code"] == EXIT_BLOCK
+    assert verdict["reasons"][0]["code"] == "retraction"
+    assert abs(verdict["reasons"][0]["path_score"] - 0.55 * 0.85) < 1e-12
 
 
 def test_strength_below_floor_passes_as_in_passing():

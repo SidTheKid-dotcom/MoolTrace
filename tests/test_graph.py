@@ -643,8 +643,9 @@ def test_cli_hedged_retraction_still_blocks(tmp_path: Path):
 def test_what_rests_on_uses_the_forward_hop_rule(tmp_path: Path):
     """Reverse counted_answer_ids must match PATH_RULE, not product >= 0.25.
 
-    mention × mention is 0.55 * 0.55 = 0.3025, so the old floor counted it.
-    Forward verdicts discount that path. Reverse lookup must too.
+    mention × mention is 0.55 * 0.55 = 0.3025. A multiplied 0.5 floor
+    hid that counted chain. Forward and reverse both count it when every
+    hop is evidenced and each hop weight is >= 0.5.
     """
     graph = Graph(tmp_path / "mooltrace.db")
     try:
@@ -733,13 +734,14 @@ def test_what_rests_on_uses_the_forward_hop_rule(tmp_path: Path):
         answers = set(row.get("answer_ids") or [])
         counted = set(row.get("counted_answer_ids") or [])
         assert answers == {"a_mention", "a_included", "a_direct"}
-        assert "a_mention" not in counted
+        assert "a_mention" in counted
         assert "a_included" in counted
         assert "a_direct" in counted
         assert "shortestPath" not in reverse.cypher
         assert "path_score >= 0.25" not in reverse.cypher
+        assert "reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) >= 0.5" not in reverse.cypher
         assert "MATCH (n:Notice)-[:FLAGS]->(w:Work)" in reverse.cypher
-        assert ">= 0.5" in reverse.cypher
+        assert "coalesce(r.weight, 0.0) >= 0.5" in reverse.cypher
     finally:
         graph.close()
 

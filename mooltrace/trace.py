@@ -1256,9 +1256,10 @@ def what_rests_on(doi: str, graph: Graph | None = None, depth: int | None = None
         "note": (
             "Reverse lookup lists matching publisher notices and only the "
             "answers whose sources reach that work. counted_answer_ids uses "
-            "the same algo.SPpaths gate as forward verdicts: every hop has "
-            "a stored sentence and path strength (product of RESTS_ON "
-            "weights) ≥ 0.5. This is not a monitoring or alert scheduler."
+            "the same hop gate as forward verdicts: every hop has a "
+            "stored sentence and each hop weight is ≥ 0.5. A multiplied "
+            "path-strength floor is not applied. This is not a monitoring "
+            "or alert scheduler."
         ),
     }
 

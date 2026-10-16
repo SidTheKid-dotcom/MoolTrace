@@ -150,7 +150,7 @@ Demo hero: Healthline URL only, no Khan DOI in the pasted text. See `examples/he
 | block | 1 | A counted path reaches a retraction, withdrawal, or removal. | Fail the build. Disclose or replace the source. |
 | error | 3 | Graph timeout or exhausted upstream. | Retry later. Not a silent pass and not a block. |
 
-A **counted path** is the strongest `algo.SPpaths` route from the answer to a flagged Work (depth ≤ 3) whose path strength — the product of `RESTS_ON` weights, equal to `exp(−Σ −ln(w))` — is ≥ 0.5 and whose every hop has a stored sentence. Counted + retraction → **block**. Counted + Expression of Concern → **warn**. Flagged but an unverified hop → **warn** (can't verify). Strength < 0.5 → **pass** with "cites a flagged study only in passing". `--summary` and the UI print `Decided by: algo.SPpaths, path strength 0.55` plus the Cypher. If `algo.SPpaths` errors, the check returns exit 3, not a verdict. Unweighted `shortestPath` is not the verdict. Unverified hops warn; they never silently pass. The draft cannot hedge-bypass: naming an Expression of Concern or writing "we excluded" in the pasted answer does not turn a cited flagged study into a pass. A scholarly review can still set a study aside. Depth is 1–3. Depth 4 is not implemented. `pass` means no counted or unverified notice was found within that depth. Coverage is **not shown** beyond it. Seeds past the expand cap are still notice-checked.
+A **counted path** is the strongest `algo.SPpaths` route from the answer to a flagged Work (depth ≤ 3) whose every hop has a stored sentence and a `RESTS_ON` weight ≥ 0.5. Path strength is still the product of those weights (`exp(−Σ −ln(w))`); a multiplied floor is not applied, so a confirmed retraction or Expression of Concern in a counted or unverified chain at least warns. Counted + retraction → **block**. Counted + Expression of Concern → **warn**. Flagged but an unverified hop → **warn** (can't verify). A hop below 0.5 → **pass** with "cites a flagged study only in passing". `--summary` and the UI print `Decided by: algo.SPpaths, path strength 0.55` plus the Cypher. If `algo.SPpaths` errors, the check returns exit 3, not a verdict. Unweighted `shortestPath` is not the verdict. Unverified hops warn; they never silently pass. The draft cannot hedge-bypass: naming an Expression of Concern or writing "we excluded" in the pasted answer does not turn a cited flagged study into a pass. A scholarly review can still set a study aside. Depth is 1–3. Depth 4 is not implemented. `pass` means no counted or unverified notice was found within that depth. Coverage is **not shown** beyond it. Seeds past the expand cap are still notice-checked.
 
 ## Graph model
 
@@ -224,7 +224,7 @@ That groups answers that share a Work component containing a publisher notice. T
 
 ## Why a graph
 
-Take FalkorDB out and you lose: (1) multi-hop weighted search over a shared citation graph reused across answers; (2) `algo.SPpaths` with `cost = -ln(weight)` as the verdict (path strength ≥ 0.5 and evidenced hops); (3) reverse impact (`what_rests_on` / `recheck_affected`) in one Cypher query. A list of DOIs is not that. If the algorithm is disabled, the check returns exit 3.
+Take FalkorDB out and you lose: (1) multi-hop weighted search over a shared citation graph reused across answers; (2) `algo.SPpaths` with `cost = -ln(weight)` as the verdict (every hop evidenced and weight ≥ 0.5); (3) reverse impact (`what_rests_on` / `recheck_affected`) in one Cypher query. A list of DOIs is not that. If the algorithm is disabled, the check returns exit 3.
 
 ## Glossary
 
@@ -236,7 +236,7 @@ Take FalkorDB out and you lose: (1) multi-hop weighted search over a shared cita
 | citation path / hop | One `RESTS_ON` edge: page → review, or review → trial. The sentence is stored on that edge. |
 | depth | Hop budget from the cited source, 1–3. Coverage is not shown beyond it. |
 
-Reverse lookup lists every matching notice and only the answers whose sources reach that work. The Cypher `counted` flag matches the forward verdict: every hop has a stored sentence and the product of `RESTS_ON` weights is ≥ 0.5. It is not a monitoring or alert scheduler.
+Reverse lookup lists every matching notice and only the answers whose sources reach that work. The Cypher `counted` flag matches the forward verdict: every hop has a stored sentence and each hop weight is ≥ 0.5. It is not a monitoring or alert scheduler.
 
 Every query the tools run is in `mooltrace/cypher.py`.
 

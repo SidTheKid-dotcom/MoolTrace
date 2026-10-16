@@ -72,8 +72,8 @@ LIMIT 40
 
 # Reverse impact: only answers whose cited sources reach this flagged work.
 # Unrelated drafts in the same graph are dropped. Counted answers use the
-# same gate as the forward verdict (algo.SPpaths strength): every hop has
-# a stored sentence and the product of RESTS_ON weights is >= 0.5.
+# same hop gate as the forward verdict: every hop has a stored sentence
+# and each hop weight is >= 0.5. A multiplied product floor is not used.
 # shortestPath is not used.
 WHAT_RESTS_ON = """
 MATCH (n:Notice)-[:FLAGS]->(w:Work)
@@ -83,7 +83,7 @@ OPTIONAL MATCH (a:Answer)-[:CITES]->(s)
 WITH n, w, a, s, p, relationships(p) AS rels
 WHERE p IS NOT NULL OR a IS NULL
 WITH n, w, a, s,
-     CASE WHEN p IS NULL THEN false ELSE ALL(r IN rels WHERE coalesce(r.sentence, '') <> '') AND reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) >= 0.5 END AS counted
+     CASE WHEN p IS NULL THEN false ELSE ALL(r IN rels WHERE coalesce(r.sentence, '') <> '' AND coalesce(r.weight, 0.0) >= 0.5) END AS counted
 RETURN n.doi AS notice_doi,
        n.type AS notice_type,
        n.label AS notice_label,

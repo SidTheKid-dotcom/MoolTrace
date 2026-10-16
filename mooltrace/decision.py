@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Any
 
 from mooltrace.ids import normalize_update_type
-from mooltrace.reliance import PATH_RULE, STRENGTH_FLOOR, STRONG_RELIANCE, WEIGHT_FLOOR
+from mooltrace.reliance import PATH_RULE, STRONG_RELIANCE, WEIGHT_FLOOR
 
 PASSING_NOTE = "cites a flagged study only in passing"
 
@@ -94,30 +94,22 @@ def _worst_status(statuses: list[str]) -> str:
 def path_status(path: dict[str, Any]) -> str:
     """``count``, ``discount``, ``unverified``, or ``unknown``.
 
-    Counted when algo.SPpaths strength (product of hop weights) is at
-    least STRENGTH_FLOOR and every hop is evidenced (stored sentence).
-    An unverified hop is warn, never a silent pass. Strength below the
-    floor is discount: cites a flagged study only in passing. Decide()
-    keeps the strongest path per flagged Work, so a weak short hop
-    cannot hide a stronger counted path to the same work.
+    Counted when every hop is evidenced (stored sentence) and each hop
+    weight is at least WEIGHT_FLOOR. A multiplied path-strength floor is
+    not applied: a confirmed retraction or Expression of Concern in a
+    counted or unverified chain at least warns. An unverified hop is
+    warn, never a silent pass. A hop below WEIGHT_FLOOR is discount:
+    cites a flagged study only in passing. Decide() keeps the strongest
+    path per flagged Work, so a weak short hop cannot hide a stronger
+    counted path to the same work.
     """
     hops = path.get("hops_evidence") or []
     if hops:
-        status = _worst_status([_edge_status(edge) for edge in hops])
-        if status in {"unverified", "unknown"}:
-            return status
-        if status == "count" and path_score(path) >= STRENGTH_FLOOR:
-            return "count"
-        return "discount"
+        return _worst_status([_edge_status(edge) for edge in hops])
     weighted = "weight" in path or "judged" in path or "sentence" in path
     if not weighted:
         return "count"
-    status = _edge_status(path)
-    if status in {"unverified", "unknown"}:
-        return status
-    if status == "count" and path_score(path) >= STRENGTH_FLOOR:
-        return "count"
-    return "discount"
+    return _edge_status(path)
 
 
 def strongest_per_flagged_work(paths: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -275,8 +267,8 @@ def decide(
             flagged path is unverified, the check stopped early, or the
             draft named no verifiable source.
     pass  — cited works were checked and no counted or unverified notice
-            remains. Discounted paths (strength < 0.5) pass with
-            "cites a flagged study only in passing".
+            remains. Discounted paths (a hop below the 0.5 weight floor)
+            pass with "cites a flagged study only in passing".
             This is not a claim that the draft is medically correct.
 
     Callers must feed algo.SPpaths rows. If the algorithm errors, do not
@@ -371,7 +363,8 @@ def decide(
                 f"({PASSING_NOTE}). "
                 f"{len(discounted)} citation path"
                 f"{'s' if len(discounted) != 1 else ''} reached a notice with "
-                "path strength below 0.5. Coverage is not shown beyond this depth."
+                "a hop below the 0.5 weight floor. Coverage is not shown "
+                "beyond this depth."
             )
         else:
             summary = (
@@ -397,7 +390,6 @@ def decide(
         "independent_sources": sources,
         "independent_source_count": len(sources),
         "weight_floor": WEIGHT_FLOOR,
-        "strength_floor": STRENGTH_FLOOR,
         "path_rule": PATH_RULE,
         "decided_by": "algo.SPpaths",
         "coverage": f"depth_{depth}",
