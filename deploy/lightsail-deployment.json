@@ -2,7 +2,7 @@
   "serviceName": "mooltrace",
   "containers": {
     "api": {
-      "image": ":mooltrace.api.3",
+      "image": ":mooltrace.api.5",
       "environment": {
         "MOOLTRACE_PUBLIC_DEMO": "1",
         "MOOLTRACE_SEED": "1",
