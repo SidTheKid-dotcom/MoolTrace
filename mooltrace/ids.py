@@ -81,7 +81,9 @@ def clean_doi(raw: str) -> str:
     if embedded and ("/" in text[: embedded.start()] or text.startswith("http")):
         text = embedded.group(1)
     text = text.split("?")[0].split("#")[0]
-    text = text.rstrip(".,;:)]}>\"'\u0964\u0965")
+    text = text.rstrip(".,;:)]}>\"'`\\\u0964\u0965")
+    while text and unicodedata.category(text[-1]) in {"Po", "Pe", "Pf"}:
+        text = text[:-1]
     text = re.sub(r"&(?:amp;)?$", "", text, flags=re.I)
     text = text.lower()
     changed = True
@@ -92,6 +94,12 @@ def clean_doi(raw: str) -> str:
                 text = text[: -len(suffix)]
                 changed = True
                 break
+        else:
+            for ext in (".pdf", ".html", ".htm"):
+                if text.endswith(ext):
+                    text = text[: -len(ext)]
+                    changed = True
+                    break
     return text
 
 
@@ -157,8 +165,15 @@ def extract_identifiers(text: str) -> Identifiers:
         return Identifiers()
     raw = unicodedata.normalize("NFKC", html.unescape(strip_disclosures(text)))
     raw = unquote(unquote(raw))
+    # Newline ends a sentence. Only join a DOI broken after / or -,
+    # or after a mid-token period when the next character is a digit.
     raw = re.sub(
-        r"(10\.\d{4,9}/[^\s]*?[./\-(])\n+\s*([A-Za-z0-9])",
+        r"(10\.\d{4,9}/(?:[^\s]*[/\-])?)\n+\s*([A-Za-z0-9])",
+        r"\1\2",
+        raw,
+    )
+    raw = re.sub(
+        r"(10\.\d{4,9}/[^\s]*\.)\n+\s*(\d)",
         r"\1\2",
         raw,
     )

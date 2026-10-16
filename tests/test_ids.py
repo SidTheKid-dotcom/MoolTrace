@@ -61,6 +61,24 @@ def test_doi_cleanup():
     assert clean_doi("10.1016/s0140-6736(20)31180-6/fulltext") == "10.1016/s0140-6736(20)31180-6"
     assert clean_doi("10.1056/nejmoa012512/full.pdf") == "10.1056/nejmoa012512"
     assert clean_doi("10.1002/ptr.8026/abstract?utm=1") == "10.1002/ptr.8026"
+    assert (
+        clean_doi("https://link.springer.com/content/pdf/10.1007/s00394-019-02128-6.pdf")
+        == "10.1007/s00394-019-02128-6"
+    )
+    assert clean_doi("10.1007/s00394-019-02128-6.pdf") == "10.1007/s00394-019-02128-6"
+    assert clean_doi("10.3389/fendo.2019.00640/full\\") == "10.3389/fendo.2019.00640"
+    assert (
+        clean_doi("https://www.nejm.org/doi/full/10.1056/NEJMoa012512#sec1")
+        == "10.1056/nejmoa012512"
+    )
+    assert (
+        clean_doi("https://www.tandfonline.com/doi/full/10.1080/07315724.2006.10719518?needAccess=true")
+        == "10.1080/07315724.2006.10719518"
+    )
+    assert (
+        clean_doi("https://www.frontiersin.org/articles/10.3389/fendo.2019.00640/epdf")
+        == "10.3389/fendo.2019.00640"
+    )
 
 
 def test_extract_encoded_and_noisy_dois():
@@ -76,6 +94,11 @@ def test_extract_encoded_and_noisy_dois():
     assert "10.2337/diacare.26.12.3215" in broken.dois
     wide = extract_identifiers("DOI １０．２３３７／diacare.26.12.3215")
     assert "10.2337/diacare.26.12.3215" in wide.dois
+    slash_break = extract_identifiers("DOI 10.2337/\ndiacare.26.12.3215 is the trial.")
+    assert "10.2337/diacare.26.12.3215" in slash_break.dois
+    sentence_end = extract_identifiers("DOI 10.1056/NEJMoa012512.\nThe next sentence.")
+    assert sentence_end.dois == ["10.1056/nejmoa012512"]
+    assert "10.1056/nejmoa012512.the" not in sentence_end.dois
 
 
 def test_extract_page_identifiers():

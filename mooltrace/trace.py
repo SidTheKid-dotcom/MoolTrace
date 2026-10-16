@@ -287,8 +287,11 @@ def notice_check(graph: Graph, dois: list[str], stats: CallStats) -> None:
     for doi in pending:
         item = found.get(doi)
         if not item:
-            # A 404 is not "checked, no notice". Leave it retryable so the
-            # pre-ship check warns instead of passing.
+            row = graph.work_row(doi)
+            if row and (
+                row.get("title") or row.get("year") or row.get("openalex_id") or row.get("expanded")
+            ):
+                graph.merge_work(doi, notice_checked=True, notice_checked_at=checked_at)
             continue
         titles = item.get("title") or []
         graph.merge_work(
@@ -363,12 +366,16 @@ def expand_work(graph: Graph, doi: str, stats: CallStats) -> None:
             doi,
             title=datacite.get("title"),
             year=datacite.get("year"),
+            notice_checked=True,
+            notice_checked_at=_now(),
         )
     else:
         graph.merge_work(
             doi,
             title=(csl or {}).get("title"),
             year=(csl or {}).get("year"),
+            notice_checked=True,
+            notice_checked_at=_now(),
         )
     _apply_notices(graph, doi, crossref)
 
@@ -483,7 +490,17 @@ def _ingest_pages(
         try:
             final_url, body = fetch_page(url, stats)
         except (MoolTraceError, UnsafeURL) as exc:
-            errors.append(str(exc))
+            from_url = [
+                doi for doi in extract_identifiers(url).dois if valid_doi(doi)
+            ]
+            if from_url:
+                graph.merge_source(url, "", site_of(url), fetched=False)
+                graph.cite(answer_id, url)
+                for doi in from_url:
+                    graph.merge_work(doi)
+                    graph.source_rests_on(url, doi)
+            else:
+                errors.append(str(exc))
             continue
         title = html_title(body)
         fetched_at = _now()

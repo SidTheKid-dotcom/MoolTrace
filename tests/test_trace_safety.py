@@ -5,7 +5,7 @@ from mooltrace import config
 from mooltrace.clients import CallStats, MoolTraceError
 from mooltrace.graph import Graph
 from mooltrace.decision import NO_SOURCES_SUMMARY
-from mooltrace.trace import _page_urls, check_answer, expand_work, notice_check
+from mooltrace.trace import _page_urls, _seed_resolved, check_answer, expand_work, notice_check
 
 
 def test_page_urls_reject_loopback(monkeypatch):
@@ -577,6 +577,7 @@ def test_expand_work_resolves_arxiv_via_datacite(tmp_path: Path, monkeypatch):
         assert row.get("title") == "Attention Is All You Need"
         assert row.get("year") == 2017
         assert row.get("expanded")
+        assert _seed_resolved(row)
     finally:
         graph.close()
 
@@ -602,5 +603,55 @@ def test_expand_work_resolves_zenodo_via_doi_org(tmp_path: Path, monkeypatch):
         assert row is not None
         assert row.get("title") == "Zenodo dataset"
         assert row.get("expanded")
+        assert _seed_resolved(row)
+    finally:
+        graph.close()
+
+
+def test_notice_check_404_keeps_datacite_resolved(tmp_path: Path, monkeypatch):
+    graph = Graph(tmp_path / "mooltrace.db")
+    monkeypatch.setattr("mooltrace.trace.crossref_works", lambda dois, stats: [])
+    try:
+        graph.merge_work(
+            "10.48550/arxiv.1706.03762",
+            title="Attention Is All You Need",
+            year=2017,
+        )
+        notice_check(graph, ["10.48550/arxiv.1706.03762"], CallStats())
+        row = graph.work_row("10.48550/arxiv.1706.03762")
+        assert _seed_resolved(row)
+    finally:
+        graph.close()
+
+
+def test_unreachable_publisher_url_with_doi_is_not_incomplete(tmp_path: Path, monkeypatch):
+    graph = Graph(tmp_path / "mooltrace.db")
+    doi = "10.1056/nejmoa012512"
+    now = "2026-10-16T12:00:00+00:00"
+    url = "https://www.nejm.org/doi/pdf/10.1056/NEJMoa012512"
+
+    def boom(*_a, **_k):
+        raise MoolTraceError("publisher page unreachable")
+
+    monkeypatch.setattr("mooltrace.trace.fetch_page", boom)
+    monkeypatch.setattr("mooltrace.trace.judge_citation_edges", lambda *a, **k: None)
+    monkeypatch.setattr("mooltrace.trace.expand_work", lambda *a, **k: None)
+    monkeypatch.setattr("mooltrace.trace.notice_check", lambda *a, **k: None)
+    try:
+        graph.merge_work(
+            doi,
+            title="NEJM trial",
+            year=2002,
+            expanded=True,
+            notice_checked=True,
+            notice_checked_at=now,
+        )
+        out = check_answer("", [url], "clean-doi", 1, graph=graph)
+        assert "unresolved" not in " ".join(out.get("errors") or [])
+        assert not any(
+            (reason.get("code") or "") == "incomplete" for reason in out.get("reasons") or []
+        )
+        assert out["decision"] in {"pass", "warn", "block"}
+        assert out["exit_code"] != 3
     finally:
         graph.close()
