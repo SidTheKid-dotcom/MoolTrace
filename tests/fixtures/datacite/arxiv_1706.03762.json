@@ -1,0 +1,33 @@
+{
+  "note": "Recorded DataCite JSON:API subset (titles, year, publisher, first creator).",
+  "recorded_at": "2026-10-16T15:02:33Z",
+  "doi": "10.48550/arxiv.1706.03762",
+  "url": "https://api.datacite.org/dois/10.48550%2Farxiv.1706.03762",
+  "status": 200,
+  "body": {
+    "data": {
+      "id": "10.48550/arxiv.1706.03762",
+      "type": "dois",
+      "attributes": {
+        "doi": "10.48550/arxiv.1706.03762",
+        "titles": [
+          {
+            "title": "Attention Is All You Need"
+          }
+        ],
+        "publicationYear": 2017,
+        "publisher": "arXiv",
+        "creators": [
+          {
+            "name": "Vaswani, Ashish",
+            "nameType": "Personal",
+            "givenName": "Ashish",
+            "familyName": "Vaswani",
+            "affiliation": [],
+            "nameIdentifiers": []
+          }
+        ]
+      }
+    }
+  }
+}

@@ -16,6 +16,7 @@ from mooltrace.clients import (
     MoolTraceError,
     crossref_work,
     crossref_works,
+    datacite_registered,
     datacite_work,
     doi_org_csl,
     fetch_page,
@@ -288,10 +289,35 @@ def notice_check(graph: Graph, dois: list[str], stats: CallStats) -> None:
         item = found.get(doi)
         if not item:
             row = graph.work_row(doi)
-            if row and (
-                row.get("title") or row.get("year") or row.get("openalex_id") or row.get("expanded")
-            ):
+            already = bool(
+                row
+                and (
+                    row.get("title")
+                    or row.get("year")
+                    or row.get("openalex_id")
+                    or row.get("expanded")
+                )
+            )
+            if already:
                 graph.merge_work(doi, notice_checked=True, notice_checked_at=checked_at)
+                continue
+            if not datacite_registered(doi):
+                continue
+            try:
+                datacite = datacite_work(doi, stats)
+            except InfraError:
+                raise
+            except MoolTraceError:
+                datacite = None
+            if datacite:
+                graph.merge_work(
+                    doi,
+                    title=datacite.get("title"),
+                    year=datacite.get("year"),
+                    first_author=datacite.get("first_author"),
+                    notice_checked=True,
+                    notice_checked_at=checked_at,
+                )
             continue
         titles = item.get("title") or []
         graph.merge_work(
@@ -368,6 +394,7 @@ def expand_work(graph: Graph, doi: str, stats: CallStats) -> None:
             doi,
             title=datacite.get("title"),
             year=datacite.get("year"),
+            first_author=datacite.get("first_author") or family,
             notice_checked=True,
             notice_checked_at=_now(),
         )

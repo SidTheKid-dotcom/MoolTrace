@@ -1,0 +1,34 @@
+{
+  "note": "Recorded DataCite JSON:API subset (titles, year, publisher, first creator).",
+  "recorded_at": "2026-10-16T15:02:33Z",
+  "doi": "10.5281/zenodo.3242074",
+  "url": "https://api.datacite.org/dois/10.5281%2Fzenodo.3242074",
+  "status": 200,
+  "body": {
+    "data": {
+      "id": "10.5281/zenodo.3242074",
+      "type": "dois",
+      "attributes": {
+        "doi": "10.5281/zenodo.3242074",
+        "titles": [
+          {
+            "title": "Simple requirements.txt based example for repo2docker"
+          }
+        ],
+        "publicationYear": 2019,
+        "publisher": "Zenodo",
+        "creators": [
+          {
+            "name": "Binder, Project",
+            "givenName": "Project",
+            "familyName": "Binder",
+            "affiliation": [
+              "Project Jupyter"
+            ],
+            "nameIdentifiers": []
+          }
+        ]
+      }
+    }
+  }
+}

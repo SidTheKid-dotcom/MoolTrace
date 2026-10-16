@@ -565,6 +565,27 @@ def crossref_work(doi: str, stats: CallStats) -> dict[str, Any] | None:
     return data.get("message")
 
 
+def datacite_registered(doi: str) -> bool:
+    """True for arXiv (10.48550) and Zenodo (10.5281) DOIs DataCite registers."""
+    text = (doi or "").strip().lower()
+    return text.startswith("10.48550/") or text.startswith("10.5281/")
+
+
+def _datacite_family(attrs: dict[str, Any]) -> str | None:
+    creators = attrs.get("creators") or []
+    if not creators or not isinstance(creators[0], dict):
+        return None
+    family = str(creators[0].get("familyName") or "").strip()
+    if family:
+        return family
+    name = str(creators[0].get("name") or "").strip()
+    if "," in name:
+        left = name.split(",", 1)[0].strip()
+        return left or None
+    parts = [part for part in name.replace(".", " ").split() if len(part) > 2]
+    return parts[-1] if parts else None
+
+
 def datacite_work(doi: str, stats: CallStats) -> dict[str, Any] | None:
     """Resolve a DOI that Crossref and OpenAlex miss (arXiv, Zenodo, DataCite)."""
     url = f"{DATACITE}/dois/{quote(doi, safe='')}"
@@ -593,6 +614,7 @@ def datacite_work(doi: str, stats: CallStats) -> dict[str, Any] | None:
         "title": title,
         "year": year,
         "publisher": attrs.get("publisher"),
+        "first_author": _datacite_family(attrs),
         "source": "datacite",
     }
 
