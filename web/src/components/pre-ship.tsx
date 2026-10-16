@@ -199,9 +199,8 @@ export function PreShip() {
           Trace your AI&apos;s answer to its root, and see if that root is flagged.
         </h1>
         <p className="text-base leading-7 text-muted-foreground">
-          Evidence viewer for the pre-merge check. Paste a draft or a cited URL. Pass, warn, or
-          block comes back with every graph path, each hop&apos;s sentence, and the Cypher that
-          decided it. CI over JSONL fixtures is the product workflow.
+          Paste a draft and the pages it cites. MoolTrace follows those citations in FalkorDB and
+          returns pass, warn, or block. It does not say the draft is wrong.
         </p>
       </header>
 
