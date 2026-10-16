@@ -61,6 +61,8 @@ Same URL via the README `check-answer` form (not re-fetched; same cinnamon page)
 
 The 2013 PREDIMED trial was retracted and republished in 2018 after re-analysis. Both olive-oil hops are `mention`. This does not say olive oil or the Mediterranean diet works or does not.
 
+Reconfirmed signed-out 16 Oct 2026 22:03 UTC (T21, no cookies): home HTTP 200, `Set-Cookie` absent, HTML has no sign-in/signup/login/password/oauth, has depth toggle and **Not in the graph**. Olive depth 1 **pass** exit 0, 0 notice paths, coverage expanded 1 of 1. Olive depth 3 **block** exit 1 strength `0.30250000000000005` hops `mention` / `mention` retraction `10.1056/nejmc1806491`. Cinnamon depth 2 **warn** exit 2 strength 0.55 hops `mention` / `relies` EoC `10.2337/dc25-ec09`. Clean **pass** exit 0. Not in the graph **warn** exit 2, coverage **expanded 0 of 0 cited works**.
+
 Offline replay of the same four recorded presets (no HTTP; throwaway graph):
 
 ```
@@ -204,7 +206,7 @@ docker compose up --build
 unshare --net --map-root-user .venv/bin/python -m pytest -q
 ```
 
-17 Oct 2026 this checkout: 267 passed, 0 failed, 421.03 s, network namespace unshared.
+16 Oct 2026 22:21 UTC this checkout: 297 passed, 0 failed, 434.85 s, network namespace unshared (earlier same session 431.03 s, also 297).
 
 ## Limits quoted in README (spot-checks)
 
@@ -218,11 +220,11 @@ unshare --net --map-root-user .venv/bin/python -m pytest -q
 | Hosted live URL is allow-listed | POST a non-preset `healthline.com` URL with `MOOLTRACE_PUBLIC_LIVE=1`; `example.com` is 400 | allow-list + SSRF + per-IP 429 + concurrency 1 + 120 s timeout. Presets never 429. UI: Running live, about 60 s. `pytest tests/test_public_live.py` |
 | `assets/healthline-warn.png` is a signed-out live WARN capture | `/?preset=healthline` on the Lightsail demo, 17 Oct 2026 | path strength 0.55, EoC `10.2337/dc25-ec09`; not 0.72 |
 
-## Seeded gate (T14, three runs)
+## Seeded gate (T21, three runs)
 
 ```bash
 MOOLTRACE_MAILTO=siddhant.m.vishnu@gmail.com MOOLTRACE_OPENALEX_RPS=3 \
-MOOLTRACE_HTTP_CACHE=/tmp/mt-t14-gate-cache MOOLTRACE_DB=/tmp/mt-t14-unused/mooltrace.db \
+MOOLTRACE_HTTP_CACHE=/tmp/mt-t21-gate-cache MOOLTRACE_DB=/tmp/mt-t21-unused/mooltrace.db \
 .venv/bin/python -m mooltrace.gate
 ```
 
@@ -230,11 +232,11 @@ MOOLTRACE_HTTP_CACHE=/tmp/mt-t14-gate-cache MOOLTRACE_DB=/tmp/mt-t14-unused/mool
 
 | Run | caught | alarms | wall_s | ran_at | Allen 2013 |
 | --- | --- | --- | --- | --- | --- |
-| 1 | 7/7 | 0/6 | 150.4 | 2026-10-16T18:43:02+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
-| 2 | 7/7 | 0/6 | 97.0 | 2026-10-16T18:45:03+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
-| 3 | 7/7 | 0/6 | 98.5 | 2026-10-16T18:51:18+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
+| 1 | 7/7 | 0/6 | 151.6 | 2026-10-16T22:05:49+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
+| 2 | 7/7 | 0/6 | 94.0 | 2026-10-16T22:07:30+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
+| 3 | 7/7 | 0/6 | 96.2 | 2026-10-16T22:13:37+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
 
-Files: `results/gate_2026-10-16_t14_run1.json`, `run2`, `run3`.
+Files: `results/gate_2026-10-17_t21_run1.json`, `run2`, `run3`.
 
 ## Prior art (re-fetched 16 Oct 2026 18:43 UTC)
 
@@ -244,8 +246,8 @@ Files: `results/gate_2026-10-16_t14_run1.json`, `run2`, `run3`.
 
 | Claim | Why |
 | --- | --- |
-| Cold Healthline 47.09 s / 49.18 s / 49.10 s | Replaced by the T12 fresh-clone 52.37 s check (RPS=3); not re-timed in T14 |
+| Cold Healthline 47.09 s / 49.18 s / 49.10 s | Replaced by the T12 fresh-clone 52.37 s check (RPS=3); not re-timed in T21 |
 | Warm Healthline 23.16 s | Not repeated |
-| Fresh-clone quickstart 65.06 s | T12 `/tmp` timing; not re-cloned in T14 |
+| Fresh-clone quickstart 65.06 s | T12 `/tmp` timing; not re-cloned in T21 |
 | `docker compose up --build` | Config confirmed; public demo already live |
 | Live `mooltrace labelled` (52 cases) | Offline baseline reproduce + schema test |
