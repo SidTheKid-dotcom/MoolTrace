@@ -1,0 +1,23 @@
+MoolTrace seeded regression (not accuracy)
+  case 1: Everyday Health cinnamon page (URL only)
+    caught=True decision=warn api=12 warm_api=0 query_ms=8.29
+  case 2: Allen 2013
+    caught=True decision=warn api=13 warm_api=0 query_ms=4.17
+  case 3: Deyno 2019
+    caught=True decision=warn api=0 warm_api=0 query_ms=3.95
+  case 4: Complementary Therapies in Medicine 2020
+    caught=True decision=warn api=0 warm_api=0 query_ms=3.89
+  case 5: Moridpour 2023
+    caught=True decision=warn api=0 warm_api=0 query_ms=3.73
+  case 6: Cochrane 2012 CD007170.pub2
+    caught=True decision=warn api=13 warm_api=0 query_ms=4.46
+  case 7: Lancet 2020 hydroxychloroquine registry
+    caught=True decision=block api=12 warm_api=0 query_ms=5.18
+  clean works
+    10.1016/j.jsps.2015.03.013 flagged=False decision=pass
+    10.14252/foodsafetyfscj.d-21-00015 flagged=False decision=pass
+    10.3390/foods12030452 flagged=False decision=pass
+    10.1136/bmj.327.7414.557 flagged=False decision=pass
+    10.1016/0197-2456(86)90046-2 flagged=False decision=pass
+    10.1136/bmj.d5928 flagged=False decision=pass
+REGRESSION caught 7/7 alarms 0/6 wall_s=156.2

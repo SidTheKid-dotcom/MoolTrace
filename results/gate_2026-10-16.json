@@ -1,0 +1,551 @@
+{
+  "product": "MoolTrace",
+  "kind": "seeded_regression_cold_repeats",
+  "date": "2026-10-16",
+  "note": "Each case used a fresh throwaway Graph under /tmp (mooltrace.gate _fresh_graph). data/mooltrace.db was not opened. HTTP cache was shared at /tmp/mooltrace-t02-http-cache. Run 1 Everyday Health was exit 3 (Crossref 429), not a decision pass. Runs 2\u20134 are the three complete cold 7/7 0/6 repeats.",
+  "mailto": "siddhant.m.vishnu@gmail.com",
+  "target": {
+    "caught": "7/7",
+    "alarms": "0/6"
+  },
+  "runs": [
+    {
+      "run": 1,
+      "ran_at": "2026-10-16T14:13:33+00:00",
+      "wall_s": 175.6,
+      "caught": 6,
+      "positives": 7,
+      "alarms": 0,
+      "clean": 6,
+      "regression_line": "REGRESSION caught 6/7 alarms 0/6 wall_s=175.6",
+      "cases": [
+        {
+          "n": 1,
+          "name": "Everyday Health cinnamon page (URL only)",
+          "caught": false,
+          "decision": "incomplete",
+          "exit_code": 3,
+          "network_ok": false,
+          "errors": [
+            "giving up on api.crossref.org: 429 from api.crossref.org"
+          ],
+          "hops": null,
+          "reliance": null,
+          "weight": null
+        },
+        {
+          "n": 2,
+          "name": "Allen 2013",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "uses_data_or_method",
+          "weight": 0.85
+        },
+        {
+          "n": 3,
+          "name": "Deyno 2019",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "unverified",
+          "weight": 0.0
+        },
+        {
+          "n": 4,
+          "name": "Complementary Therapies in Medicine 2020",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "unverified",
+          "weight": 0.0
+        },
+        {
+          "n": 5,
+          "name": "Moridpour 2023",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "unverified",
+          "weight": 0.0
+        },
+        {
+          "n": 6,
+          "name": "Cochrane 2012 CD007170.pub2",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "relies",
+          "weight": 1.0
+        },
+        {
+          "n": 7,
+          "name": "Lancet 2020 hydroxychloroquine registry",
+          "caught": true,
+          "decision": "block",
+          "exit_code": 1,
+          "network_ok": true,
+          "errors": [],
+          "hops": null,
+          "reliance": null,
+          "weight": null
+        }
+      ],
+      "clean_rows": [
+        {
+          "doi": "10.1016/j.jsps.2015.03.013",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.14252/foodsafetyfscj.d-21-00015",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.3390/foods12030452",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.1136/bmj.327.7414.557",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.1016/0197-2456(86)90046-2",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.1136/bmj.d5928",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "ran_at": "2026-10-16T14:18:45+00:00",
+      "wall_s": 193.7,
+      "caught": 7,
+      "positives": 7,
+      "alarms": 0,
+      "clean": 6,
+      "regression_line": "REGRESSION caught 7/7 alarms 0/6 wall_s=193.7",
+      "cases": [
+        {
+          "n": 1,
+          "name": "Everyday Health cinnamon page (URL only)",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 1,
+          "reliance": "mention",
+          "weight": 0.55
+        },
+        {
+          "n": 2,
+          "name": "Allen 2013",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "uses_data_or_method",
+          "weight": 0.85
+        },
+        {
+          "n": 3,
+          "name": "Deyno 2019",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "unverified",
+          "weight": 0.0
+        },
+        {
+          "n": 4,
+          "name": "Complementary Therapies in Medicine 2020",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "unverified",
+          "weight": 0.0
+        },
+        {
+          "n": 5,
+          "name": "Moridpour 2023",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "unverified",
+          "weight": 0.0
+        },
+        {
+          "n": 6,
+          "name": "Cochrane 2012 CD007170.pub2",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "relies",
+          "weight": 1.0
+        },
+        {
+          "n": 7,
+          "name": "Lancet 2020 hydroxychloroquine registry",
+          "caught": true,
+          "decision": "block",
+          "exit_code": 1,
+          "network_ok": true,
+          "errors": [],
+          "hops": null,
+          "reliance": null,
+          "weight": null
+        }
+      ],
+      "clean_rows": [
+        {
+          "doi": "10.1016/j.jsps.2015.03.013",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.14252/foodsafetyfscj.d-21-00015",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.3390/foods12030452",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.1136/bmj.327.7414.557",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.1016/0197-2456(86)90046-2",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.1136/bmj.d5928",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        }
+      ]
+    },
+    {
+      "run": 3,
+      "ran_at": "2026-10-16T14:21:36+00:00",
+      "wall_s": 156.2,
+      "caught": 7,
+      "positives": 7,
+      "alarms": 0,
+      "clean": 6,
+      "regression_line": "REGRESSION caught 7/7 alarms 0/6 wall_s=156.2",
+      "cases": [
+        {
+          "n": 1,
+          "name": "Everyday Health cinnamon page (URL only)",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 1,
+          "reliance": "mention",
+          "weight": 0.55
+        },
+        {
+          "n": 2,
+          "name": "Allen 2013",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "uses_data_or_method",
+          "weight": 0.85
+        },
+        {
+          "n": 3,
+          "name": "Deyno 2019",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "unverified",
+          "weight": 0.0
+        },
+        {
+          "n": 4,
+          "name": "Complementary Therapies in Medicine 2020",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "unverified",
+          "weight": 0.0
+        },
+        {
+          "n": 5,
+          "name": "Moridpour 2023",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "unverified",
+          "weight": 0.0
+        },
+        {
+          "n": 6,
+          "name": "Cochrane 2012 CD007170.pub2",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "relies",
+          "weight": 1.0
+        },
+        {
+          "n": 7,
+          "name": "Lancet 2020 hydroxychloroquine registry",
+          "caught": true,
+          "decision": "block",
+          "exit_code": 1,
+          "network_ok": true,
+          "errors": [],
+          "hops": null,
+          "reliance": null,
+          "weight": null
+        }
+      ],
+      "clean_rows": [
+        {
+          "doi": "10.1016/j.jsps.2015.03.013",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.14252/foodsafetyfscj.d-21-00015",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.3390/foods12030452",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.1136/bmj.327.7414.557",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.1016/0197-2456(86)90046-2",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.1136/bmj.d5928",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        }
+      ]
+    },
+    {
+      "run": 4,
+      "ran_at": "2026-10-16T14:24:14+00:00",
+      "wall_s": 150.2,
+      "caught": 7,
+      "positives": 7,
+      "alarms": 0,
+      "clean": 6,
+      "regression_line": "REGRESSION caught 7/7 alarms 0/6 wall_s=150.2",
+      "cases": [
+        {
+          "n": 1,
+          "name": "Everyday Health cinnamon page (URL only)",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 1,
+          "reliance": "mention",
+          "weight": 0.55
+        },
+        {
+          "n": 2,
+          "name": "Allen 2013",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "uses_data_or_method",
+          "weight": 0.85
+        },
+        {
+          "n": 3,
+          "name": "Deyno 2019",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "unverified",
+          "weight": 0.0
+        },
+        {
+          "n": 4,
+          "name": "Complementary Therapies in Medicine 2020",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "unverified",
+          "weight": 0.0
+        },
+        {
+          "n": 5,
+          "name": "Moridpour 2023",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "unverified",
+          "weight": 0.0
+        },
+        {
+          "n": 6,
+          "name": "Cochrane 2012 CD007170.pub2",
+          "caught": true,
+          "decision": "warn",
+          "exit_code": 2,
+          "network_ok": true,
+          "errors": [],
+          "hops": 2,
+          "reliance": "relies",
+          "weight": 1.0
+        },
+        {
+          "n": 7,
+          "name": "Lancet 2020 hydroxychloroquine registry",
+          "caught": true,
+          "decision": "block",
+          "exit_code": 1,
+          "network_ok": true,
+          "errors": [],
+          "hops": null,
+          "reliance": null,
+          "weight": null
+        }
+      ],
+      "clean_rows": [
+        {
+          "doi": "10.1016/j.jsps.2015.03.013",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.14252/foodsafetyfscj.d-21-00015",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.3390/foods12030452",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.1136/bmj.327.7414.557",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.1016/0197-2456(86)90046-2",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        },
+        {
+          "doi": "10.1136/bmj.d5928",
+          "alarm": false,
+          "decision": "pass",
+          "flagged": false
+        }
+      ]
+    }
+  ]
+}
