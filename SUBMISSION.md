@@ -45,7 +45,7 @@ Expect exit **1** (retraction). Optional UI: `docker compose up --build` → htt
 | --- | --- |
 | Public GitHub repo | _paste after flipping the repo public_ |
 | Demo video (YouTube, ≤3 min) | _paste after upload_ |
-| Hosted demo | _none this session: no Railway/Fly/HF login on this machine. Local: http://127.0.0.1:4318. Commands in SHIP_CHECKLIST.md_ |
+| Hosted demo | https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/ |
 
 ## AI-assistance disclosure
 

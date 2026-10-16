@@ -50,6 +50,7 @@ def test_readme_names_no_sources_and_fixture_recheck():
     assert "fresh fixture recheck" in text
     assert "not persistent monitoring" in text
     assert text.splitlines()[2].startswith("MoolTrace catches when your health AI's sources quietly rest")
+    assert "https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/" in "\n".join(text.splitlines()[:8])
     assert "rewrite_answer" in text
     assert "algo.SPpaths" in text
     assert "Azure AI Foundry" in text
@@ -70,6 +71,7 @@ def test_readme_demo_is_compose_and_honest():
     assert "Rewrite and recheck" in demo
     assert "Expression of Concern is not a retraction" in demo
     assert "does not say olive oil, cinnamon, or the Mediterranean diet works or does not" in demo
+    assert "https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/" in demo
     assert "railway.app" not in demo.lower()
 
 

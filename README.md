@@ -2,7 +2,13 @@
 
 MoolTrace catches when your health AI's sources quietly rest on a flagged or retracted study, even three links deep.
 
+**Live demo (no sign-up):** https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/ — click **Healthline olive oil (block)**.
+
 Health chatbots cite web pages. Those pages cite reviews, which cite trials — and some of those trials have since been retracted or flagged by their journal. MoolTrace follows every citation path in a FalkorDB graph and tells you, before you ship, whether your answer rests on one, showing the exact path, the sentence at each step, and the Cypher that decided it. Run it in CI or from your agent via MCP: **pass** ships, **warn** needs a human look, **block** fails the build.
+
+![Healthline olive oil BLOCK path](assets/demo-olive-oil-block.png)
+
+Signed-out headless Chrome 1280×2200 capture, 16 Oct 2026, of `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/?preset=olive-oil`. BLOCK (exit 1). Page `mention` 0.55 → Schwingshackl 2014 `mention` 0.55 → Estruch 2013 retraction `10.1056/nejmc1806491` (2018-06-13). `Decided by: algo.SPpaths, path strength 0.30`. Both hops are mention; the 2013 trial was retracted and republished in 2018 after re-analysis. This does not say olive oil or the Mediterranean diet works or does not.
 
 ![Healthline cinnamon WARN path](assets/healthline-warn.png)
 
@@ -86,7 +92,7 @@ The web UI is an evidence viewer for the demo, not the core claim. MCP is an edi
 docker compose up --build
 ```
 
-Open [http://127.0.0.1:4318](http://127.0.0.1:4318). API health is [http://127.0.0.1:4317/health](http://127.0.0.1:4317/health). Compose publishes those ports on loopback only. Three presets from recorded live runs on 16 Oct 2026: **Healthline olive oil** (URL-only counted 2-hop, page `mention` 0.55 → Schwingshackl 2014 `mention` 0.55 → Estruch 2013 retraction `10.1056/nejmc1806491` 2018-06-13, `Decided by: algo.SPpaths, path strength 0.30`, block), **Healthline cinnamon** (URL-only counted 2-hop, page → Silva 2022 `relies` 1.0 → Khan Expression of Concern, path strength 0.55, warn), and a clean DOI (pass at depth 2). Both olive-oil hops are `mention`; do not read that as the review relying on the trial. The 2013 trial was retracted and republished in 2018 after re-analysis. Expression of Concern is not a retraction. First boot seeds those three into `/data/demo.db` (a Compose volume, not `data/mooltrace.db`). After a warn or block, **Rewrite and recheck** drops the flagged citations. The Cypher panel shows `algo.SPpaths`. No copyrighted full text. This does not say olive oil, cinnamon, or the Mediterranean diet works or does not. Private, loopback, and credentialed URLs stay refused. There is no public host URL in this checkout yet; Lightsail commands are in `SHIP_CHECKLIST.md`.
+Open [http://127.0.0.1:4318](http://127.0.0.1:4318). API health is [http://127.0.0.1:4317/health](http://127.0.0.1:4317/health). Compose publishes those ports on loopback only. Three presets from recorded live runs on 16 Oct 2026: **Healthline olive oil** (URL-only counted 2-hop, page `mention` 0.55 → Schwingshackl 2014 `mention` 0.55 → Estruch 2013 retraction `10.1056/nejmc1806491` 2018-06-13, `Decided by: algo.SPpaths, path strength 0.30`, block), **Healthline cinnamon** (URL-only counted 2-hop, page → Silva 2022 `relies` 1.0 → Khan Expression of Concern, path strength 0.55, warn), and a clean DOI (pass at depth 2). Both olive-oil hops are `mention`; do not read that as the review relying on the trial. The 2013 trial was retracted and republished in 2018 after re-analysis. Expression of Concern is not a retraction. First boot seeds those three into `/data/demo.db` (a Compose volume, not `data/mooltrace.db`). After a warn or block, **Rewrite and recheck** drops the flagged citations. The Cypher panel shows `algo.SPpaths`. No copyrighted full text. This does not say olive oil, cinnamon, or the Mediterranean diet works or does not. Private, loopback, and credentialed URLs stay refused. Public HTTPS: https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/ (Lightsail micro, ap-south-1; teardown in `SHIP_CHECKLIST.md`).
 
 ## Use from an AI agent
 
