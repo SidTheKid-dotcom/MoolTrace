@@ -168,7 +168,7 @@ Edges: `(Answer)-[:CITES]->(Source)`, `(Source)-[:RESTS_ON]->(Work)`, `(Work)-[:
 
 `RESTS_ON` stores `reliance`, `weight`, `cost`, `sentence`, `evidence_from`, `judged`, `judged_at`. `cost` is `-ln(weight)` for `algo.SPpaths`.
 
-Every path from a cited source (used for traces and brute-force equality tests; not the verdict). Bounds are literals; depth 2 shown. `FLAGS` is matched separately so FalkorDB does not bind the notice hop into `p`:
+Every path from a cited source (used for traces and brute-force equality tests; not the verdict). Zero `algo.SPpaths` rows is a pass on this listing: it never supplies a second warn or block. Bounds are literals; depth 2 shown. `FLAGS` is matched separately so FalkorDB does not bind the notice hop into `p`:
 
 ```cypher
 MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)

@@ -49,6 +49,7 @@ def test_clean_pass():
     assert verdict["decision"] == "pass"
     assert verdict["exit_code"] == EXIT_PASS
     assert verdict["reasons"] == []
+    assert verdict["decided_by"] == "algo.SPpaths"
 
 
 def test_no_sources_is_warn_not_pass():

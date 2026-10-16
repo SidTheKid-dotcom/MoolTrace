@@ -24,7 +24,8 @@ PATH_RULE = (
     "retraction → block; counted + EoC → warn; flagged with an "
     "unverified hop → warn (can't verify); a hop below 0.5 → pass "
     "(cites a flagged study only in passing). A multiplied path-strength "
-    "floor is not applied. Python PATH_RULE is not a verdict. If the "
+    "floor is not applied. Zero SPpaths rows is a pass; PATHS_TO_NOTICE "
+    "is not a second verdict. Python PATH_RULE is not a verdict. If the "
     "algorithm errors, exit 3."
 )
 STRONG_RELIANCE = frozenset({"included", "relies", "uses_data_or_method"})

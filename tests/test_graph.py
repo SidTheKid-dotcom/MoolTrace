@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from mooltrace.clients import InfraError, MoolTraceError
-from mooltrace.graph import Graph
+from mooltrace.graph import Graph, QueryRun
 from mooltrace.trace import ro_cypher
 
 
@@ -513,7 +513,15 @@ def test_cli_check_answer_warns_when_a_weak_direct_path_hides_a_counted_route(tm
     assert payload["api_calls"] == 0
     assert "shortestPath" not in (payload.get("cypher") or "")
     assert any(reason.get("code") == "expression_of_concern" for reason in payload.get("reasons") or [])
-    assert payload.get("discounted")
+    counted = next(
+        reason
+        for reason in payload.get("reasons") or []
+        if reason.get("code") == "expression_of_concern"
+    )
+    assert counted.get("hops") == 2
+    assert abs(float(counted.get("path_score") or 0) - 0.85 * 0.85) < 1e-9
+    assert payload.get("discounted") == []
+    assert "algo.SPpaths" in (payload.get("cypher") or "")
 
 
 def test_cli_hedged_draft_still_warns(tmp_path: Path):
@@ -973,6 +981,46 @@ def test_sp_paths_ablation_returns_exit_3(tmp_path: Path, monkeypatch):
         assert out["decision"] not in {"pass", "warn", "block"}
         assert out.get("algorithm") is None
         assert "algo.SPpaths disabled" in (out.get("summary") or "")
+    finally:
+        graph.close()
+
+
+def test_zero_sppaths_rows_do_not_warn_from_brute_force_paths(tmp_path: Path, monkeypatch):
+    """Empty algo.SPpaths is a pass. PATHS_TO_NOTICE is not a second verdict."""
+    from mooltrace.trace import check_answer
+
+    _offline_check(monkeypatch)
+
+    def empty_sp(self, answer_id, depth=None):
+        return QueryRun(
+            name="sp_paths_to_notice",
+            cypher=(
+                "CALL algo.SPpaths({sourceNode: s, targetNode: w, "
+                "relTypes: ['RESTS_ON'], relDirection: 'outgoing', "
+                "maxLen: 2, weightProp: 'cost'})"
+            ),
+            params={"answer_id": answer_id},
+            elapsed_ms=0.1,
+            rows=[],
+        )
+
+    monkeypatch.setattr("mooltrace.graph.Graph.sp_paths", empty_sp)
+    graph = Graph(tmp_path / "empty-sp" / "mooltrace.db")
+    try:
+        _seed_flip_graph(graph, weight=0.85, reliance="uses_data_or_method")
+        from mooltrace.trace import _answer_id
+
+        answer_id = _answer_id(FLIP_ENGINE, "", [FLIP_URL])
+        brute = graph.paths(answer_id, 2)
+        assert brute.rows, "brute-force listing must still find the EoC chain"
+        assert brute.rows[0]["notice_type"] == "expression_of_concern"
+        out = check_answer("", [FLIP_URL], FLIP_ENGINE, 2, graph=graph)
+        assert out["paths"], "trace listing still shows the stored chain"
+        assert out["decision"] == "pass"
+        assert out["exit_code"] == 0
+        assert out["reasons"] == []
+        assert (out.get("algorithm") or {}).get("name") == "algo.SPpaths"
+        assert out.get("decided_by") == "algo.SPpaths"
     finally:
         graph.close()
 

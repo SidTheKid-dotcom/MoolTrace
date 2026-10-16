@@ -3,7 +3,7 @@
 Relationship bounds are literals: FalkorDB rejects parameters there.
 Depth is substituted from a clamped integer (1..3). Unweighted shortestPath
 is not the verdict. algo.SPpaths with cost -ln(weight) computes the
-strongest path per flagged Work; that path strength is the verdict.
+strongest path per flagged Work; decide() classifies those rows only.
 """
 
 from __future__ import annotations

@@ -725,7 +725,7 @@ def _clusters(graph: Graph) -> dict[str, Any]:
         "note": (
             "Weakly connected Work components that contain a publisher notice. "
             "Use these clusters to group answers that share a contaminated "
-            "citation component. The verdict is algo.SPpaths path strength."
+            "citation component. The verdict classifies algo.SPpaths rows."
         ),
     }
 
@@ -986,11 +986,11 @@ def check_answer(
         except (TypeError, ValueError):
             pass
         sp_paths.append(path)
-    # algo.SPpaths must succeed (else exit 3). Classify every stored path
-    # so a hop-shortest weak route cannot hide a stronger counted path to
-    # the same flagged Work. Strength is the product of RESTS_ON weights.
+    # algo.SPpaths must succeed (else exit 3). Classify only those rows.
+    # Zero rows is a pass here: PATHS_TO_NOTICE is the trace listing, not
+    # a second verdict. Strength is the product of RESTS_ON weights.
     verdict = decide(
-        list(sp_paths) + list(traced["paths"]),
+        list(sp_paths),
         incomplete=traced["incomplete"],
         depth=traced["depth"],
         has_sources=True,
