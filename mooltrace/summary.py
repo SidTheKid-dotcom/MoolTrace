@@ -113,4 +113,12 @@ def format_summary(payload: dict[str, Any]) -> str:
     if flag:
         lines.append(flag)
     lines.append(_advice(payload))
+    algo = payload.get("algorithm") or {}
+    decided = algo.get("explanation") or ""
+    if decided:
+        lines.append(decided)
+    elif algo.get("name"):
+        strength = algo.get("strength")
+        strength_txt = f"{strength:.2f}" if isinstance(strength, float) else "n/a"
+        lines.append(f"Decided by: {algo.get('name')}, path strength {strength_txt}")
     return "\n".join(lines) + "\n"

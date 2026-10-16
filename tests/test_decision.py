@@ -298,7 +298,7 @@ def test_mention_then_included_counts():
     assert verdict["path_rule"] == PATH_RULE
 
 
-def test_three_hop_strong_path_counts_without_a_product_floor():
+def test_three_hop_strong_path_counts_when_product_meets_floor():
     path = _path("expression_of_concern")
     path.update(
         hops=3,
@@ -374,6 +374,34 @@ def test_strong_two_hop_still_counts():
     verdict = decide([path], incomplete=False, depth=2)
     assert verdict["decision"] == "warn"
     assert verdict["reasons"][0]["path_score"] == 0.85 * 0.85
+    assert verdict["decided_by"] == "algo.SPpaths"
+
+
+def test_strength_below_floor_passes_as_in_passing():
+    path = _path("expression_of_concern")
+    path.update(
+        hops=2,
+        hops_evidence=[
+            {
+                "weight": 0.85,
+                "judged": True,
+                "reliance": "uses_data_or_method",
+                "sentence": "The page cites the review.",
+                "evidence_from": "page",
+            },
+            {
+                "weight": 0.2,
+                "judged": True,
+                "reliance": "background",
+                "sentence": "Khan is listed in the bibliography.",
+                "evidence_from": "pmc_html",
+            },
+        ],
+    )
+    verdict = decide([path], incomplete=False, depth=2)
+    assert verdict["decision"] == "pass"
+    assert verdict["discounted"]
+    assert "cites a flagged study only in passing" in verdict["summary"]
 
 
 def test_sp_cost_picks_the_deciding_notice():

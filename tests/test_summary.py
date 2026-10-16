@@ -42,6 +42,28 @@ def test_summary_warn_eoc_is_three_lines():
     assert "mooltrace rewrite" in text
 
 
+def test_summary_names_sppaths_strength():
+    text = format_summary(
+        {
+            "decision": "warn",
+            "exit_code": 2,
+            "algorithm": {
+                "name": "algo.SPpaths",
+                "strength": 0.72,
+                "explanation": "Decided by: algo.SPpaths, path strength 0.72",
+            },
+            "reasons": [
+                {
+                    "code": "expression_of_concern",
+                    "notice_doi": "10.2337/dc25-ec09",
+                    "steps": [{"url": "https://www.healthline.com/nutrition/cinnamon-and-diabetes"}],
+                }
+            ],
+        }
+    )
+    assert "Decided by: algo.SPpaths, path strength 0.72" in text
+
+
 def test_summary_block_and_pass():
     blocked = format_summary(
         {

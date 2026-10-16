@@ -2,9 +2,8 @@
 
 Relationship bounds are literals: FalkorDB rejects parameters there.
 Depth is substituted from a clamped integer (1..3). Unweighted shortestPath
-is not the verdict. algo.SPpaths with cost -ln(weight) picks the strongest
-reliance route on the answer subgraph; PATH_RULE still classifies every
-PATHS_TO_NOTICE row so a weak short hop cannot hide a counted retraction.
+is not the verdict. algo.SPpaths with cost -ln(weight) computes the
+strongest path per flagged Work; that path strength is the verdict.
 """
 
 from __future__ import annotations
@@ -41,8 +40,9 @@ LIMIT 80
 """.strip()
 
 # Weighted shortest path on the answer subgraph. cost = -ln(weight) is
-# stored on RESTS_ON. Lower cost is stronger reliance. Used to pick the
-# shown route, not to hide a counted retraction on another path.
+# stored on RESTS_ON. Lower cost is stronger reliance. The product of
+# hop weights (path_score) is the verdict strength. One strongest path
+# per flagged Work.
 SP_PATHS_TO_NOTICE = """
 MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)
 MATCH p0 = (s)-[:RESTS_ON*1..3]->(w)
@@ -72,10 +72,9 @@ LIMIT 40
 
 # Reverse impact: only answers whose cited sources reach this flagged work.
 # Unrelated drafts in the same graph are dropped. Counted answers use the
-# same hop rule as the forward verdict (PATH_RULE / STRONG_RELIANCE):
-# every hop has a stored sentence and weight >= 0.5, and the path is one
-# hop or has an included/relies/uses_data_or_method hop. Mention-only
-# multi-hop paths do not count. shortestPath is not used.
+# same gate as the forward verdict (algo.SPpaths strength): every hop has
+# a stored sentence and the product of RESTS_ON weights is >= 0.5.
+# shortestPath is not used.
 WHAT_RESTS_ON = """
 MATCH (n:Notice)-[:FLAGS]->(w:Work)
 WHERE n.doi = $doi OR w.doi = $doi
@@ -84,7 +83,7 @@ OPTIONAL MATCH (a:Answer)-[:CITES]->(s)
 WITH n, w, a, s, p, relationships(p) AS rels
 WHERE p IS NOT NULL OR a IS NULL
 WITH n, w, a, s,
-     CASE WHEN p IS NULL THEN false ELSE ALL(r IN rels WHERE coalesce(r.weight, 0.0) >= 0.5 AND coalesce(r.sentence, '') <> '') AND (size(rels) = 1 OR ANY(r IN rels WHERE r.reliance IN ['included', 'relies', 'uses_data_or_method'])) END AS counted
+     CASE WHEN p IS NULL THEN false ELSE ALL(r IN rels WHERE coalesce(r.sentence, '') <> '') AND reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) >= 0.5 END AS counted
 RETURN n.doi AS notice_doi,
        n.type AS notice_type,
        n.label AS notice_label,

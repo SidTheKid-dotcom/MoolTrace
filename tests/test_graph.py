@@ -739,8 +739,7 @@ def test_what_rests_on_uses_the_forward_hop_rule(tmp_path: Path):
         assert "shortestPath" not in reverse.cypher
         assert "path_score >= 0.25" not in reverse.cypher
         assert "MATCH (n:Notice)-[:FLAGS]->(w:Work)" in reverse.cypher
-        assert "included" in reverse.cypher
-        assert "uses_data_or_method" in reverse.cypher
+        assert ">= 0.5" in reverse.cypher
     finally:
         graph.close()
 
@@ -953,6 +952,65 @@ def test_sp_weight_flip_changes_verdict(tmp_path: Path, monkeypatch):
     finally:
         strong.close()
         weak.close()
+
+
+def test_sp_paths_ablation_returns_exit_3(tmp_path: Path, monkeypatch):
+    from mooltrace.trace import check_answer
+
+    _offline_check(monkeypatch)
+
+    def boom(self, *args, **kwargs):
+        raise RuntimeError("algo.SPpaths disabled")
+
+    monkeypatch.setattr("mooltrace.graph.Graph.sp_paths", boom)
+    graph = Graph(tmp_path / "ablate" / "mooltrace.db")
+    try:
+        _seed_flip_graph(graph, weight=0.85, reliance="uses_data_or_method")
+        out = check_answer("", [FLIP_URL], FLIP_ENGINE, 2, graph=graph)
+        assert out["exit_code"] == 3
+        assert out["decision"] not in {"pass", "warn", "block"}
+        assert out.get("algorithm") is None
+        assert "algo.SPpaths disabled" in (out.get("summary") or "")
+    finally:
+        graph.close()
+
+
+def _product(path: dict) -> float:
+    score = 1.0
+    for edge in path.get("hops_evidence") or []:
+        score *= float(edge.get("weight") or 0.0)
+    return score
+
+
+def test_sp_paths_strength_equals_brute_force_product(tmp_path: Path, monkeypatch):
+    from mooltrace.trace import check_answer
+
+    _offline_check(monkeypatch)
+    fixtures = [
+        (tmp_path / "bf-strong", 0.85, "uses_data_or_method"),
+        (tmp_path / "bf-weak", 0.2, "background"),
+        (tmp_path / "bf-mention", 0.55, "mention"),
+    ]
+    for folder, weight, reliance in fixtures:
+        graph = Graph(folder / "mooltrace.db")
+        try:
+            _seed_flip_graph(graph, weight=weight, reliance=reliance)
+            out = check_answer("", [FLIP_URL], FLIP_ENGINE, 2, graph=graph)
+            algo = out.get("algorithm") or {}
+            assert algo.get("name") == "algo.SPpaths"
+            strength = float(algo.get("strength"))
+            brute = max((_product(path) for path in out.get("paths") or []), default=0.0)
+            assert abs(strength - brute) < 1e-9
+            hops = (out.get("reasons") or out.get("discounted") or [{}])[0].get(
+                "hops_evidence"
+            ) or []
+            if hops:
+                hop_product = 1.0
+                for edge in hops:
+                    hop_product *= float(edge.get("weight") or 0.0)
+                assert abs(strength - hop_product) < 1e-9 or abs(strength - brute) < 1e-9
+        finally:
+            graph.close()
 
 
 def test_what_rests_on_summary_and_recheck_affected(tmp_path: Path, monkeypatch):

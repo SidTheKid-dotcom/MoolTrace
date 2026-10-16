@@ -272,10 +272,10 @@ function ResultCard({
           <div className="flex flex-col gap-2">
             <p
               className="text-xs text-muted-foreground"
-              title="algo.SPpaths walks RESTS_ON with cost −ln(weight). Lower cost is stronger reliance. PATH_RULE still classifies every path so a weak short hop cannot hide a counted retraction."
+              title="algo.SPpaths walks RESTS_ON with cost −ln(weight). Path strength is the product of hop weights and is the verdict."
             >
               {result.algorithm?.explanation ||
-                "FalkorDB algo.SPpaths on this answer's graph. Lower cost is stronger reliance."}
+                "Decided by: algo.SPpaths"}
             </p>
             <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs leading-5">
               {result.algorithm?.cypher || result.cypher}

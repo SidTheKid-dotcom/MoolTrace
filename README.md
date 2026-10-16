@@ -17,7 +17,7 @@ What to do: disclose or replace this source. Run `mooltrace rewrite` to fix only
 
 It reports a path to a publisher notice. It does not say the draft is medically correct or incorrect. An Expression of Concern is not a retraction. **Pass is not a medical-accuracy check.**
 
-WeMakeDevs × FalkorDB Graph Hacks, **Track 1**. The shown route is `algo.SPpaths` with cost `-ln(weight)` on that answer's subgraph. `PATH_RULE` still classifies every path so a weak short hop cannot hide a counted retraction. Notices come from Crossref. Citation lists come from OpenAlex. Diabetes Care `care/article/{volume}/{issue}/{page}` URLs resolve through Crossref on the ADA DOI pattern, then OpenAlex. Citation sentences come from Semantic Scholar contexts, PMC, the citing page, or the pasted draft.
+WeMakeDevs × FalkorDB Graph Hacks, **Track 1**. The verdict is `algo.SPpaths` with cost `-ln(weight)` on that answer's subgraph. Path strength is the product of `RESTS_ON` weights. If the algorithm errors, the check returns exit 3, not a Python fallback verdict. Notices come from Crossref. Citation lists come from OpenAlex. Diabetes Care `care/article/{volume}/{issue}/{page}` URLs resolve through Crossref on the ADA DOI pattern, then OpenAlex. Citation sentences come from Semantic Scholar contexts, PMC, the citing page, or the pasted draft.
 
 ## Quickstart
 
@@ -120,7 +120,7 @@ Demo hero: Healthline URL only, no Khan DOI in the pasted text. See `examples/he
 | block | 1 | A counted path reaches a retraction, withdrawal, or removal. | Fail the build. Disclose or replace the source. |
 | error | 3 | Graph timeout or exhausted upstream. | Retry later. Not a silent pass and not a block. |
 
-A **counted path** needs every `RESTS_ON` hop judged with a stored sentence and weight ≥ 0.5, and is either a **single hop** or has at least one `included` / `relies` / `uses_data_or_method` hop. Mention-only multi-hop paths do not count. A two-hop use (`uses` × `uses`) does. A draft that only names a review DOI is a mention; that path counts when the review→trial hop is `included` or another strong use. The old product-with-floor rule (`0.55³ ≈ 0.17 < 0.25`) is retired so hop count does not silently drop a strong 3-hop chain. `algo.SPpaths` with cost `-ln(weight)` picks the shown route on that answer's subgraph; changing one hop's weight flips the verdict (see `test_sp_weight_flip_changes_verdict`). Unweighted `shortestPath` is not the verdict. `PATH_RULE` still classifies **every** path within the depth cap so a weak short hop cannot hide a counted retraction. Unverified hops warn; they never silently pass. The draft cannot hedge-bypass: naming an Expression of Concern or writing "we excluded" in the pasted answer does not turn a cited flagged study into a pass. A scholarly review can still set a study aside. Depth is 1–3. Depth 4 is not implemented. `pass` means no counted or unverified notice was found within that depth. Coverage is **not shown** beyond it. Seeds past the expand cap are still notice-checked.
+A **counted path** is the strongest `algo.SPpaths` route from the answer to a flagged Work (depth ≤ 3) whose path strength — the product of `RESTS_ON` weights, equal to `exp(−Σ −ln(w))` — is ≥ 0.5 and whose every hop has a stored sentence. Counted + retraction → **block**. Counted + Expression of Concern → **warn**. Flagged but an unverified hop → **warn** (can't verify). Strength < 0.5 → **pass** with "cites a flagged study only in passing". `--summary` and the UI print `Decided by: algo.SPpaths, path strength 0.72` plus the Cypher. If `algo.SPpaths` errors, the check returns exit 3, not a verdict. Unweighted `shortestPath` is not the verdict. Unverified hops warn; they never silently pass. The draft cannot hedge-bypass: naming an Expression of Concern or writing "we excluded" in the pasted answer does not turn a cited flagged study into a pass. A scholarly review can still set a study aside. Depth is 1–3. Depth 4 is not implemented. `pass` means no counted or unverified notice was found within that depth. Coverage is **not shown** beyond it. Seeds past the expand cap are still notice-checked.
 
 ## Graph model
 
@@ -130,7 +130,7 @@ Edges: `(Answer)-[:CITES]->(Source)`, `(Source)-[:RESTS_ON]->(Work)`, `(Work)-[:
 
 `RESTS_ON` stores `reliance`, `weight`, `cost`, `sentence`, `evidence_from`, `judged`, `judged_at`. `cost` is `-ln(weight)` for `algo.SPpaths`.
 
-The deciding query (bounds are literals; depth 2 shown). `FLAGS` is matched separately so FalkorDB does not bind the notice hop into `p`:
+Every path from a cited source (used for traces and brute-force equality tests; not the verdict). Bounds are literals; depth 2 shown. `FLAGS` is matched separately so FalkorDB does not bind the notice hop into `p`:
 
 ```cypher
 MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)
@@ -157,7 +157,7 @@ ORDER BY path_score DESC, hops ASC
 LIMIT 80
 ```
 
-The shown route (bounds are literals; depth 2 shown):
+The deciding query is `algo.SPpaths` (bounds are literals; depth 2 shown):
 
 ```cypher
 MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)
@@ -182,11 +182,11 @@ CALL algo.pageRank('Work', 'RESTS_ON')
 YIELD node, score
 ```
 
-That groups answers that share a Work component containing a publisher notice. The fixture batch report includes these clusters. `algo.SPpaths` with cost `-ln(weight)` is the shown route. `algo.pageRank` is not the verdict. `algo.MaxFlow` is not registered in this build. Independent sources are distinct citers on counted paths.
+That groups answers that share a Work component containing a publisher notice. The fixture batch report includes these clusters. `algo.SPpaths` with cost `-ln(weight)` is the verdict. `algo.pageRank` is not the verdict. `algo.MaxFlow` is not registered in this build. Independent sources are distinct citers on counted paths.
 
 ## Why a graph
 
-Take FalkorDB out and you lose: (1) multi-hop weighted search over a shared citation graph reused across answers; (2) `algo.SPpaths` with `cost = -ln(weight)` as the shown route whose hop weights flip pass vs warn; (3) reverse impact (`what_rests_on` / `recheck_affected`) in one Cypher query. A list of DOIs is not that.
+Take FalkorDB out and you lose: (1) multi-hop weighted search over a shared citation graph reused across answers; (2) `algo.SPpaths` with `cost = -ln(weight)` as the verdict (path strength ≥ 0.5 and evidenced hops); (3) reverse impact (`what_rests_on` / `recheck_affected`) in one Cypher query. A list of DOIs is not that. If the algorithm is disabled, the check returns exit 3.
 
 ## Glossary
 
@@ -266,7 +266,7 @@ Numbers below are from this checkout on 16 Oct 2026. Re-run the command next to 
 | Claim | Command | Result (16 Oct 2026) |
 | --- | --- | --- |
 | Full unit suite | `.venv/bin/python -m pytest -q` | 186 passed in 308 s |
-| Flip test (algorithm decides) | `.venv/bin/python -m pytest tests/test_graph.py::test_sp_weight_flip_changes_verdict -q` | 3/3 pass (9.16 s, 9.11 s, 9.57 s). Weight 0.85 → warn; 0.2 → pass. |
+| Flip + ablation | `.venv/bin/python -m pytest tests/test_graph.py::test_sp_weight_flip_changes_verdict tests/test_graph.py::test_sp_paths_ablation_returns_exit_3 tests/test_graph.py::test_sp_paths_strength_equals_brute_force_product -q` | 16 Oct 2026: weight 0.85 → warn, 0.2 → pass; `sp_paths` raised → exit 3, no verdict; algorithm strength equals brute-force product on 3 fixtures. |
 | Agent loop | `.venv/bin/python examples/agent_loop.py` | check warn, `algo.SPpaths`, rewrite recheck pass, 1 counted answer |
 | Cold Healthline `--summary` | `MOOLTRACE_HTTP_CACHE=/tmp/mt-cold MOOLTRACE_DB=/tmp/mt-cold/mooltrace.db .venv/bin/python -m mooltrace check --url https://www.healthline.com/nutrition/cinnamon-and-diabetes --summary` | 47.09 s / 49.18 s / 49.10 s. All three: warn, EoC `10.2337/dc25-ec09`. No verdict flip. ~119–121 API calls cold. |
 | Warm Healthline (same DB+cache) | same command again | 23.16 s, 26 API calls, still warn / same EoC |

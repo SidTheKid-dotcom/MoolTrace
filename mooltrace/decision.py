@@ -1,9 +1,10 @@
 """Pass, warn, or block for a draft health-AI answer.
 
 The decision flags reliance on a publisher notice. It does not say the
-draft is medically wrong. A counted path needs every RESTS_ON hop judged
-with a stored sentence and weight at or above the floor, and is either a
-single hop or has at least one included/relies/uses_data_or_method hop.
+draft is medically wrong. Verdicts come from algo.SPpaths path strength
+(the product of RESTS_ON weights) on the strongest path to each flagged
+Work. This module classifies those algorithm rows; it is not a second
+Python verdict.
 """
 
 from __future__ import annotations
@@ -11,7 +12,9 @@ from __future__ import annotations
 from typing import Any
 
 from mooltrace.ids import normalize_update_type
-from mooltrace.reliance import PATH_RULE, STRONG_RELIANCE, WEIGHT_FLOOR
+from mooltrace.reliance import PATH_RULE, STRENGTH_FLOOR, STRONG_RELIANCE, WEIGHT_FLOOR
+
+PASSING_NOTE = "cites a flagged study only in passing"
 
 PRESHIP_EOC = (
     "Before your bot ships this answer, MoolTrace flags that a cited page "
@@ -91,23 +94,45 @@ def _worst_status(statuses: list[str]) -> str:
 def path_status(path: dict[str, Any]) -> str:
     """``count``, ``discount``, ``unverified``, or ``unknown``.
 
-    When hops_evidence is present, every RESTS_ON hop must count. A weak
-    last hop cannot hide a stronger alternate path; each path is classified
-    on its own hops. Mention-only multi-hop paths do not count. A path
-    counts when every hop meets the floor and it is a single hop or has an
-    included/relies/uses_data_or_method hop. Without hops_evidence, the
-    last-edge fields are used.
+    Counted when algo.SPpaths strength (product of hop weights) is at
+    least STRENGTH_FLOOR and every hop is evidenced (stored sentence).
+    An unverified hop is warn, never a silent pass. Strength below the
+    floor is discount: cites a flagged study only in passing. Decide()
+    keeps the strongest path per flagged Work, so a weak short hop
+    cannot hide a stronger counted path to the same work.
     """
     hops = path.get("hops_evidence") or []
     if hops:
         status = _worst_status([_edge_status(edge) for edge in hops])
-        if status == "count" and not _clears_hop_rule(hops):
-            return "discount"
-        return status
+        if status in {"unverified", "unknown"}:
+            return status
+        if status == "count" and path_score(path) >= STRENGTH_FLOOR:
+            return "count"
+        return "discount"
     weighted = "weight" in path or "judged" in path or "sentence" in path
     if not weighted:
         return "count"
-    return _edge_status(path)
+    status = _edge_status(path)
+    if status in {"unverified", "unknown"}:
+        return status
+    if status == "count" and path_score(path) >= STRENGTH_FLOOR:
+        return "count"
+    return "discount"
+
+
+def strongest_per_flagged_work(paths: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """One strongest algo.SPpaths row per flagged Work (root DOI)."""
+    best: dict[str, dict[str, Any]] = {}
+    leftover: list[dict[str, Any]] = []
+    for path in paths:
+        doi = ((path.get("root") or {}).get("doi") or "").strip().lower()
+        if not doi:
+            leftover.append(path)
+            continue
+        current = best.get(doi)
+        if current is None or path_score(path) > path_score(current):
+            best[doi] = path
+    return list(best.values()) + leftover
 
 
 def _clears_hop_rule(hops: list[dict[str, Any]]) -> bool:
@@ -243,29 +268,26 @@ def decide(
     has_sources: bool = True,
     sp_cost: dict[str, float] | None = None,
 ) -> dict[str, Any]:
-    """Turn traced paths into pass, warn, or block.
+    """Classify algo.SPpaths rows into pass, warn, or block.
 
-    block — a counted path reaches a retraction, withdrawal, or removal.
-    warn  — a counted path reaches an Expression of Concern, a reachable
-            flagged path is unverified or unknown, the check stopped early,
-            or the draft named no verifiable source.
-    pass  — cited works were checked and no counted or unverified notice remains.
-            This is not a claim that the draft is clean beyond the depth.
+    block — counted path reaches a retraction, withdrawal, or removal.
+    warn  — counted path reaches an Expression of Concern, a reachable
+            flagged path is unverified, the check stopped early, or the
+            draft named no verifiable source.
+    pass  — cited works were checked and no counted or unverified notice
+            remains. Discounted paths (strength < 0.5) pass with
+            "cites a flagged study only in passing".
+            This is not a claim that the draft is medically correct.
 
-    A counted path has every hop at weight >= 0.5 with a stored sentence,
-    and is either one hop or has an included/relies/uses_data_or_method hop.
-    Mention-only multi-hop paths do not count. algo.SPpaths cost -ln(weight)
-    ranks which counted notice is shown first. A reachable unverified path
-    never passes. A discounted short path does not hide a counted longer
-    path: every returned path is classified. Plain prose with no DOI,
-    PMID, PMCID, scholarly identifier, or public URL is warn (`no_sources`).
+    Callers must feed algo.SPpaths rows. If the algorithm errors, do not
+    call this function: return exit 3.
     """
     costs = sp_cost or {}
     counted: list[dict[str, Any]] = []
     discounted: list[dict[str, Any]] = []
     unverified: list[dict[str, Any]] = []
     unknown: list[dict[str, Any]] = []
-    for path in paths:
+    for path in strongest_per_flagged_work(paths):
         status = path_status(path)
         if status == "count":
             counted.append(path)
@@ -345,11 +367,11 @@ def decide(
         decision = "pass"
         if discounted:
             summary = (
-                f"No counted reliance on a flagged study within {depth} hops. "
+                f"No counted reliance on a flagged study within {depth} hops "
+                f"({PASSING_NOTE}). "
                 f"{len(discounted)} citation path"
-                f"{'s' if len(discounted) != 1 else ''} reached a notice only as "
-                "background, a scholarly dispute, or a mention-only multi-hop "
-                "path. Coverage is not shown beyond this depth."
+                f"{'s' if len(discounted) != 1 else ''} reached a notice with "
+                "path strength below 0.5. Coverage is not shown beyond this depth."
             )
         else:
             summary = (
@@ -375,7 +397,9 @@ def decide(
         "independent_sources": sources,
         "independent_source_count": len(sources),
         "weight_floor": WEIGHT_FLOOR,
+        "strength_floor": STRENGTH_FLOOR,
         "path_rule": PATH_RULE,
+        "decided_by": "algo.SPpaths",
         "coverage": f"depth_{depth}",
         "not_shown": "beyond requested depth",
     }

@@ -705,8 +705,7 @@ def _clusters(graph: Graph) -> dict[str, Any]:
         "note": (
             "Weakly connected Work components that contain a publisher notice. "
             "Use these clusters to group answers that share a contaminated "
-            "citation component. The shown route is algo.SPpaths; PATH_RULE "
-            "still classifies every PATHS_TO_NOTICE row."
+            "citation component. The verdict is algo.SPpaths path strength."
         ),
     }
 
@@ -884,32 +883,34 @@ def check_answer(
         }
     graph = graph or get_graph()
     costs: dict[str, float] = {}
-    sp_run = None
     try:
         sp_run = graph.sp_paths(traced["answer_id"], traced["depth"])
-        for row in sp_run.rows:
-            doi = (row.get("root_doi") or "").lower()
-            if not doi or doi in costs:
-                continue
-            try:
-                costs[doi] = float(row.get("sp_cost"))
-            except (TypeError, ValueError):
-                continue
-    except Exception:
-        sp_run = None
+    except Exception as exc:
+        return _infra_check(
+            exc,
+            depth=traced["depth"],
+            extra={
+                "answer_id": traced["answer_id"],
+                "engine": traced.get("engine"),
+                "errors": list(traced.get("errors") or []) + [str(exc)],
+                "algorithm": None,
+            },
+        )
     sp_paths = []
-    if sp_run is not None:
-        sp_paths = [_public_path(row) for row in sp_run.rows]
-        for path, row in zip(sp_paths, sp_run.rows):
-            try:
-                path["sp_cost"] = float(row.get("sp_cost"))
-            except (TypeError, ValueError):
-                pass
-    # Classify every PATHS_TO_NOTICE row so a weak short hop cannot hide a
-    # counted retraction. algo.SPpaths supplies cost/strength for the shown
-    # route; a counted SP path is what the algorithm decided.
+    for row in sp_run.rows:
+        path = _public_path(row)
+        doi = (row.get("root_doi") or "").lower()
+        try:
+            path["sp_cost"] = float(row.get("sp_cost"))
+            if doi and doi not in costs:
+                costs[doi] = path["sp_cost"]
+        except (TypeError, ValueError):
+            pass
+        sp_paths.append(path)
+    # Verdict is classified from algo.SPpaths rows only. PATHS_TO_NOTICE
+    # is kept on the payload for brute-force equality tests, not decide().
     verdict = decide(
-        traced["paths"],
+        sp_paths,
         incomplete=traced["incomplete"],
         depth=traced["depth"],
         has_sources=True,
@@ -934,6 +935,7 @@ def check_answer(
                 strength = float(best.get("path_score"))
             except (TypeError, ValueError):
                 strength = None
+        strength_txt = f"{strength:.2f}" if isinstance(strength, float) else "n/a"
         algorithm = {
             "name": "algo.SPpaths",
             "weight_prop": "cost",
@@ -942,9 +944,7 @@ def check_answer(
             "weight_floor": WEIGHT_FLOOR,
             "cypher": sp_run.cypher,
             "explanation": (
-                "algo.SPpaths with cost -ln(weight) on this answer's subgraph. "
-                f"Best path strength (product of RESTS_ON weights) is {strength}. "
-                f"PATH_RULE classified that route as {verdict['decision']}."
+                f"Decided by: algo.SPpaths, path strength {strength_txt}"
             ),
         }
     if clusters.get("cypher"):
@@ -1006,7 +1006,9 @@ def check_answer(
         "independent_sources": verdict["independent_sources"],
         "independent_source_count": verdict["independent_source_count"],
         "weight_floor": verdict["weight_floor"],
+        "strength_floor": verdict.get("strength_floor"),
         "path_rule": verdict.get("path_rule"),
+        "decided_by": verdict.get("decided_by"),
         "coverage": verdict.get("coverage"),
         "not_shown": verdict.get("not_shown"),
         "remediation_clusters": clusters,
@@ -1163,11 +1165,9 @@ def what_rests_on(doi: str, graph: Graph | None = None, depth: int | None = None
         "note": (
             "Reverse lookup lists matching publisher notices and only the "
             "answers whose sources reach that work. counted_answer_ids uses "
-            "the same hop rule as forward verdicts (path_rule): every hop "
-            "has a stored sentence and weight ≥ 0.5, and the path is one hop "
-            "or has an included/relies/uses_data_or_method hop. Mention-only "
-            "multi-hop paths do not count. This is not a monitoring or "
-            "alert scheduler."
+            "the same algo.SPpaths gate as forward verdicts: every hop has "
+            "a stored sentence and path strength (product of RESTS_ON "
+            "weights) ≥ 0.5. This is not a monitoring or alert scheduler."
         ),
     }
 
