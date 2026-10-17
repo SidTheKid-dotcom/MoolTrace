@@ -1,0 +1,3633 @@
+{
+  "product": "MoolTrace",
+  "kind": "baseline_eval",
+  "ran_at": "2026-10-17T08:23:09+00:00",
+  "file": "/home/sidvish/Documents/Work/Personal/wemakedevs-graph-hacks/MoolTrace/examples/labelled.jsonl",
+  "labelling_rule": "Label rule (written 16 Oct 2026, before these rows were run):\nR1 retraction of Lancet HCQ DOI 10.1016/S0140-6736(20)31180-6 \u2192 block.\nR2 known EoC (Khan 2003) or known 2-hop to it (Healthline cinnamon, Everyday Health cinnamon, Allen/Deyno/CTIM/Moridpour/Cochrane) \u2192 warn.\nR3 public-page HTML that contains those same identifiers \u2192 warn.\nR4 public-page HTML with no DOI/PMID/PMCID \u2192 pass (no chain to inspect).\nR5 public-page HTML with other scholarly ids that are not known flags \u2192 pass pending a publisher notice; relabel if a counted path appears.\nR6 no verifiable source \u2192 warn (no_sources).\nR7 depth 1 on a review that only reaches Khan at hop 2 \u2192 pass.",
+  "checker": {
+    "name": "direct_doi_crossref",
+    "graph": false,
+    "rule": "Extract DOIs and doi.org URLs literally present in the draft text and URL list. Look each DOI up on Crossref updated-by. Retraction/withdrawal/removal \u2192 block. Expression of Concern \u2192 warn. Corrections, errata, and new_version are not flags. Consumer pages are not fetched. Unresolved DOIs and drafts with no DOI pass.",
+    "crossref_catalog": "/home/sidvish/Documents/Work/Personal/wemakedevs-graph-hacks/MoolTrace/examples/baseline_crossref.json",
+    "crossref_fetched_at": "2026-10-16T15:31:06+00:00"
+  },
+  "n": 52,
+  "baseline": {
+    "metrics": {
+      "n": 52,
+      "scored": 52,
+      "infra": 0,
+      "tp": 15,
+      "fp": 0,
+      "fn": 20,
+      "tn": 17,
+      "precision": 1.0,
+      "recall": 0.4286,
+      "f1": 0.6,
+      "exact_match": 32,
+      "exact_match_rate": 0.6154,
+      "timing": {
+        "mean_wall_ms": 0.1,
+        "mean_query_ms": 0.1,
+        "max_wall_ms": 0.6
+      },
+      "by_family": {
+        "eoc": {
+          "n": 8,
+          "exact_match": 1,
+          "precision": 1.0,
+          "recall": 0.125
+        },
+        "retraction": {
+          "n": 4,
+          "exact_match": 4,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "hedged": {
+          "n": 6,
+          "exact_match": 4,
+          "precision": 1.0,
+          "recall": 0.6667
+        },
+        "clean": {
+          "n": 6,
+          "exact_match": 6,
+          "precision": null,
+          "recall": null
+        },
+        "no_sources": {
+          "n": 4,
+          "exact_match": 0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "depth": {
+          "n": 3,
+          "exact_match": 3,
+          "precision": null,
+          "recall": null
+        },
+        "page": {
+          "n": 8,
+          "exact_match": 3,
+          "precision": null,
+          "recall": 0.0
+        },
+        "identifier": {
+          "n": 9,
+          "exact_match": 8,
+          "precision": 1.0,
+          "recall": 0.75
+        },
+        "i18n": {
+          "n": 4,
+          "exact_match": 3,
+          "precision": 1.0,
+          "recall": 0.75
+        }
+      },
+      "rule": "Binary positive class is warn or block. Exact match is the three-way decision. Infra rows are excluded from scored metrics."
+    },
+    "results": [
+      {
+        "id": "eoc-everyday-health-url",
+        "family": "eoc",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "multihop",
+        "summary": "Direct-DOI check (no graph): no DOI or doi.org URL was present in the draft. Pages are not fetched.",
+        "dois": [],
+        "resolved": [],
+        "unresolved": [],
+        "wall_ms": 0.6,
+        "query_ms": 0.6,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "eoc-allen-2013",
+        "family": "eoc",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "multihop",
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.1370/afm.1517"
+        ],
+        "resolved": [
+          "10.1370/afm.1517"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "eoc-deyno-2019",
+        "family": "eoc",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "multihop",
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.1016/j.diabres.2019.107815"
+        ],
+        "resolved": [
+          "10.1016/j.diabres.2019.107815"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "eoc-ctim-2020",
+        "family": "eoc",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "multihop",
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.1016/j.ctim.2020.102571"
+        ],
+        "resolved": [
+          "10.1016/j.ctim.2020.102571"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "eoc-moridpour-2023",
+        "family": "eoc",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "multihop",
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.1002/ptr.8026"
+        ],
+        "resolved": [
+          "10.1002/ptr.8026"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "eoc-cochrane-2012",
+        "family": "eoc",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "multihop",
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.1002/14651858.cd007170.pub2"
+        ],
+        "resolved": [
+          "10.1002/14651858.cd007170.pub2"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "eoc-khan-direct",
+        "family": "eoc",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): the cited DOI itself has an Expression of Concern on Crossref.",
+        "dois": [
+          "10.2337/diacare.26.12.3215"
+        ],
+        "resolved": [
+          "10.2337/diacare.26.12.3215"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "notice_label": "Expression of concern",
+            "notice_source": "publisher",
+            "notice_date": "2025-08-20",
+            "hops": 1,
+            "path_score": 1.0
+          }
+        ],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "eoc-everyday-health-draft",
+        "family": "eoc",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "multihop",
+        "summary": "Direct-DOI check (no graph): no DOI or doi.org URL was present in the draft. Pages are not fetched.",
+        "dois": [],
+        "resolved": [],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "retract-lancet-draft",
+        "family": "retraction",
+        "expected": "block",
+        "decision": "block",
+        "exit_code": 1,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): the cited DOI itself has a retraction on Crossref.",
+        "dois": [
+          "10.1016/s0140-6736(20)31180-6"
+        ],
+        "resolved": [
+          "10.1016/s0140-6736(20)31180-6"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31324-6",
+            "notice_type": "retraction",
+            "notice_label": "Retraction",
+            "notice_source": "retraction-watch",
+            "notice_date": "2020-06-05",
+            "hops": 1,
+            "path_score": 1.0
+          }
+        ],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "retract-lancet-doi-only",
+        "family": "retraction",
+        "expected": "block",
+        "decision": "block",
+        "exit_code": 1,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): the cited DOI itself has a retraction on Crossref.",
+        "dois": [
+          "10.1016/s0140-6736(20)31180-6"
+        ],
+        "resolved": [
+          "10.1016/s0140-6736(20)31180-6"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31324-6",
+            "notice_type": "retraction",
+            "notice_label": "Retraction",
+            "notice_source": "retraction-watch",
+            "notice_date": "2020-06-05",
+            "hops": 1,
+            "path_score": 1.0
+          }
+        ],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "retract-lancet-doi-url",
+        "family": "retraction",
+        "expected": "block",
+        "decision": "block",
+        "exit_code": 1,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): the cited DOI itself has a retraction on Crossref.",
+        "dois": [
+          "10.1016/s0140-6736(20)31180-6"
+        ],
+        "resolved": [
+          "10.1016/s0140-6736(20)31180-6"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.2,
+        "query_ms": 0.2,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31324-6",
+            "notice_type": "retraction",
+            "notice_label": "Retraction",
+            "notice_source": "retraction-watch",
+            "notice_date": "2020-06-05",
+            "hops": 1,
+            "path_score": 1.0
+          }
+        ],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "retract-lancet-relies",
+        "family": "retraction",
+        "expected": "block",
+        "decision": "block",
+        "exit_code": 1,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): the cited DOI itself has a retraction on Crossref.",
+        "dois": [
+          "10.1016/s0140-6736(20)31180-6"
+        ],
+        "resolved": [
+          "10.1016/s0140-6736(20)31180-6"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31324-6",
+            "notice_type": "retraction",
+            "notice_label": "Retraction",
+            "notice_source": "retraction-watch",
+            "notice_date": "2020-06-05",
+            "hops": 1,
+            "path_score": 1.0
+          }
+        ],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "hedged-khan-eoc",
+        "family": "hedged",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): the cited DOI itself has an Expression of Concern on Crossref.",
+        "dois": [
+          "10.2337/diacare.26.12.3215"
+        ],
+        "resolved": [
+          "10.2337/diacare.26.12.3215"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "notice_label": "Expression of concern",
+            "notice_source": "publisher",
+            "notice_date": "2025-08-20",
+            "hops": 1,
+            "path_score": 1.0
+          }
+        ],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "hedged-khan-excluded",
+        "family": "hedged",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): the cited DOI itself has an Expression of Concern on Crossref.",
+        "dois": [
+          "10.2337/diacare.26.12.3215"
+        ],
+        "resolved": [
+          "10.2337/diacare.26.12.3215"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "notice_label": "Expression of concern",
+            "notice_source": "publisher",
+            "notice_date": "2025-08-20",
+            "hops": 1,
+            "path_score": 1.0
+          }
+        ],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "hedged-everyday-eoc",
+        "family": "hedged",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "multihop",
+        "summary": "Direct-DOI check (no graph): no DOI or doi.org URL was present in the draft. Pages are not fetched.",
+        "dois": [],
+        "resolved": [],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "hedged-allen-eoc",
+        "family": "hedged",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "multihop",
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.1370/afm.1517"
+        ],
+        "resolved": [
+          "10.1370/afm.1517"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "hedged-lancet-excluded",
+        "family": "hedged",
+        "expected": "block",
+        "decision": "block",
+        "exit_code": 1,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): the cited DOI itself has a retraction on Crossref.",
+        "dois": [
+          "10.1016/s0140-6736(20)31180-6"
+        ],
+        "resolved": [
+          "10.1016/s0140-6736(20)31180-6"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31324-6",
+            "notice_type": "retraction",
+            "notice_label": "Retraction",
+            "notice_source": "retraction-watch",
+            "notice_date": "2020-06-05",
+            "hops": 1,
+            "path_score": 1.0
+          }
+        ],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "hedged-lancet-named",
+        "family": "hedged",
+        "expected": "block",
+        "decision": "block",
+        "exit_code": 1,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): the cited DOI itself has a retraction on Crossref.",
+        "dois": [
+          "10.1016/s0140-6736(20)31180-6"
+        ],
+        "resolved": [
+          "10.1016/s0140-6736(20)31180-6"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31324-6",
+            "notice_type": "retraction",
+            "notice_label": "Retraction",
+            "notice_source": "retraction-watch",
+            "notice_date": "2020-06-05",
+            "hops": 1,
+            "path_score": 1.0
+          }
+        ],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "clean-jsps-2015",
+        "family": "clean",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.1016/j.jsps.2015.03.013"
+        ],
+        "resolved": [
+          "10.1016/j.jsps.2015.03.013"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "clean-foodsafety-2021",
+        "family": "clean",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.14252/foodsafetyfscj.d-21-00015"
+        ],
+        "resolved": [
+          "10.14252/foodsafetyfscj.d-21-00015"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "clean-foods-2023",
+        "family": "clean",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.3390/foods12030452"
+        ],
+        "resolved": [
+          "10.3390/foods12030452"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "clean-bmj-2003",
+        "family": "clean",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.1136/bmj.327.7414.557"
+        ],
+        "resolved": [
+          "10.1136/bmj.327.7414.557"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "clean-cct-1986",
+        "family": "clean",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.1016/0197-2456(86)90046-2"
+        ],
+        "resolved": [
+          "10.1016/0197-2456(86)90046-2"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "clean-bmj-2011",
+        "family": "clean",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.1136/bmj.d5928"
+        ],
+        "resolved": [
+          "10.1136/bmj.d5928"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "nosrc-cinnamon-prose",
+        "family": "no_sources",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "no_sources",
+        "summary": "Direct-DOI check (no graph): no DOI or doi.org URL was present in the draft. Pages are not fetched.",
+        "dois": [],
+        "resolved": [],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "nosrc-clinic-advice",
+        "family": "no_sources",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "no_sources",
+        "summary": "Direct-DOI check (no graph): no DOI or doi.org URL was present in the draft. Pages are not fetched.",
+        "dois": [],
+        "resolved": [],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "nosrc-empty-urls",
+        "family": "no_sources",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "no_sources",
+        "summary": "Direct-DOI check (no graph): no DOI or doi.org URL was present in the draft. Pages are not fetched.",
+        "dois": [],
+        "resolved": [],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "depth-allen-1",
+        "family": "depth",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.1370/afm.1517"
+        ],
+        "resolved": [
+          "10.1370/afm.1517"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "depth-deyno-1",
+        "family": "depth",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.1016/j.diabres.2019.107815"
+        ],
+        "resolved": [
+          "10.1016/j.diabres.2019.107815"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "depth-ctim-1",
+        "family": "depth",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.1016/j.ctim.2020.102571"
+        ],
+        "resolved": [
+          "10.1016/j.ctim.2020.102571"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "page-healthline-cinnamon",
+        "family": "page",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "multihop",
+        "summary": "Direct-DOI check (no graph): no DOI or doi.org URL was present in the draft. Pages are not fetched.",
+        "dois": [],
+        "resolved": [],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "page-healthline-hedged",
+        "family": "page",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "multihop",
+        "summary": "Direct-DOI check (no graph): no DOI or doi.org URL was present in the draft. Pages are not fetched.",
+        "dois": [],
+        "resolved": [],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "page-healthline-draft",
+        "family": "page",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "multihop",
+        "summary": "Direct-DOI check (no graph): no DOI or doi.org URL was present in the draft. Pages are not fetched.",
+        "dois": [],
+        "resolved": [],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "page-nccih-cinnamon",
+        "family": "page",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): no DOI or doi.org URL was present in the draft. Pages are not fetched.",
+        "dois": [],
+        "resolved": [],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "ident-fake-doi",
+        "family": "identifier",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "unresolved",
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.9999/not-a-real-doi"
+        ],
+        "resolved": [],
+        "unresolved": [
+          "10.9999/not-a-real-doi"
+        ],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "ident-arxiv-attention",
+        "family": "identifier",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.48550/arxiv.1706.03762"
+        ],
+        "resolved": [],
+        "unresolved": [
+          "10.48550/arxiv.1706.03762"
+        ],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "ident-zenodo-3242074",
+        "family": "identifier",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.5281/zenodo.3242074"
+        ],
+        "resolved": [],
+        "unresolved": [
+          "10.5281/zenodo.3242074"
+        ],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "ident-encoded-khan",
+        "family": "identifier",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): the cited DOI itself has an Expression of Concern on Crossref.",
+        "dois": [
+          "10.2337/diacare.26.12.3215"
+        ],
+        "resolved": [
+          "10.2337/diacare.26.12.3215"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.3,
+        "query_ms": 0.3,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "notice_label": "Expression of concern",
+            "notice_source": "publisher",
+            "notice_date": "2025-08-20",
+            "hops": 1,
+            "path_score": 1.0
+          }
+        ],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "ident-fullwidth-khan",
+        "family": "identifier",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): the cited DOI itself has an Expression of Concern on Crossref.",
+        "dois": [
+          "10.2337/diacare.26.12.3215"
+        ],
+        "resolved": [
+          "10.2337/diacare.26.12.3215"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "notice_label": "Expression of concern",
+            "notice_source": "publisher",
+            "notice_date": "2025-08-20",
+            "hops": 1,
+            "path_score": 1.0
+          }
+        ],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "i18n-es-khan",
+        "family": "i18n",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): the cited DOI itself has an Expression of Concern on Crossref.",
+        "dois": [
+          "10.2337/diacare.26.12.3215"
+        ],
+        "resolved": [
+          "10.2337/diacare.26.12.3215"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "notice_label": "Expression of concern",
+            "notice_source": "publisher",
+            "notice_date": "2025-08-20",
+            "hops": 1,
+            "path_score": 1.0
+          }
+        ],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "i18n-fr-lancet",
+        "family": "i18n",
+        "expected": "block",
+        "decision": "block",
+        "exit_code": 1,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): the cited DOI itself has a retraction on Crossref.",
+        "dois": [
+          "10.1016/s0140-6736(20)31180-6"
+        ],
+        "resolved": [
+          "10.1016/s0140-6736(20)31180-6"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31324-6",
+            "notice_type": "retraction",
+            "notice_label": "Retraction",
+            "notice_source": "retraction-watch",
+            "notice_date": "2020-06-05",
+            "hops": 1,
+            "path_score": 1.0
+          }
+        ],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "i18n-hi-healthline",
+        "family": "i18n",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "multihop",
+        "summary": "Direct-DOI check (no graph): no DOI or doi.org URL was present in the draft. Pages are not fetched.",
+        "dois": [],
+        "resolved": [],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "page-everyday-health-cinnamon",
+        "family": "page",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "multihop",
+        "summary": "Direct-DOI check (no graph): no DOI or doi.org URL was present in the draft. Pages are not fetched.",
+        "dois": [],
+        "resolved": [],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "page-webmd-cinnamon-guide",
+        "family": "page",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): no DOI or doi.org URL was present in the draft. Pages are not fetched.",
+        "dois": [],
+        "resolved": [],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "page-mnt-cinnamon-diabetes",
+        "family": "page",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): no DOI or doi.org URL was present in the draft. Pages are not fetched.",
+        "dois": [],
+        "resolved": [],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "page-healthline-utm",
+        "family": "page",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "multihop",
+        "summary": "Direct-DOI check (no graph): no DOI or doi.org URL was present in the draft. Pages are not fetched.",
+        "dois": [],
+        "resolved": [],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "ident-mdpi-pdf-foods",
+        "family": "identifier",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): no DOI or doi.org URL was present in the draft. Pages are not fetched.",
+        "dois": [],
+        "resolved": [],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "ident-doi-query-khan",
+        "family": "identifier",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): the cited DOI itself has an Expression of Concern on Crossref.",
+        "dois": [
+          "10.2337/diacare.26.12.3215"
+        ],
+        "resolved": [
+          "10.2337/diacare.26.12.3215"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "notice_label": "Expression of concern",
+            "notice_source": "publisher",
+            "notice_date": "2025-08-20",
+            "hops": 1,
+            "path_score": 1.0
+          }
+        ],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "ident-arxiv-bert",
+        "family": "identifier",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.48550/arxiv.1810.04805"
+        ],
+        "resolved": [],
+        "unresolved": [
+          "10.48550/arxiv.1810.04805"
+        ],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "ident-jsps-abstract",
+        "family": "identifier",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): Crossref lists no retraction, withdrawal, removal, or Expression of Concern on the cited DOI itself.",
+        "dois": [
+          "10.1016/j.jsps.2015.03.013"
+        ],
+        "resolved": [
+          "10.1016/j.jsps.2015.03.013"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "i18n-de-khan",
+        "family": "i18n",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "miss_kind": null,
+        "summary": "Direct-DOI check (no graph): the cited DOI itself has an Expression of Concern on Crossref.",
+        "dois": [
+          "10.2337/diacare.26.12.3215"
+        ],
+        "resolved": [
+          "10.2337/diacare.26.12.3215"
+        ],
+        "unresolved": [],
+        "wall_ms": 0.1,
+        "query_ms": 0.1,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "notice_label": "Expression of concern",
+            "notice_source": "publisher",
+            "notice_date": "2025-08-20",
+            "hops": 1,
+            "path_score": 1.0
+          }
+        ],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      },
+      {
+        "id": "nosrc-take-cinnamon",
+        "family": "no_sources",
+        "expected": "warn",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": true,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "miss_kind": "no_sources",
+        "summary": "Direct-DOI check (no graph): no DOI or doi.org URL was present in the draft. Pages are not fetched.",
+        "dois": [],
+        "resolved": [],
+        "unresolved": [],
+        "wall_ms": 0.0,
+        "query_ms": 0.0,
+        "errors": [],
+        "reasons": [],
+        "graph": false,
+        "checker": "direct_doi_crossref"
+      }
+    ]
+  },
+  "only_multihop_catches": [
+    {
+      "id": "eoc-everyday-health-url",
+      "family": "eoc",
+      "expected": "warn",
+      "baseline": "pass",
+      "mooltrace": "warn",
+      "dois": [],
+      "notes": "MoolTrace flagged a chain the direct-DOI checker never walked"
+    },
+    {
+      "id": "eoc-allen-2013",
+      "family": "eoc",
+      "expected": "warn",
+      "baseline": "pass",
+      "mooltrace": "warn",
+      "dois": [
+        "10.1370/afm.1517"
+      ],
+      "notes": "MoolTrace flagged a chain the direct-DOI checker never walked"
+    },
+    {
+      "id": "eoc-deyno-2019",
+      "family": "eoc",
+      "expected": "warn",
+      "baseline": "pass",
+      "mooltrace": "warn",
+      "dois": [
+        "10.1016/j.diabres.2019.107815"
+      ],
+      "notes": "MoolTrace flagged a chain the direct-DOI checker never walked"
+    },
+    {
+      "id": "eoc-ctim-2020",
+      "family": "eoc",
+      "expected": "warn",
+      "baseline": "pass",
+      "mooltrace": "warn",
+      "dois": [
+        "10.1016/j.ctim.2020.102571"
+      ],
+      "notes": "MoolTrace flagged a chain the direct-DOI checker never walked"
+    },
+    {
+      "id": "eoc-moridpour-2023",
+      "family": "eoc",
+      "expected": "warn",
+      "baseline": "pass",
+      "mooltrace": "warn",
+      "dois": [
+        "10.1002/ptr.8026"
+      ],
+      "notes": "MoolTrace flagged a chain the direct-DOI checker never walked"
+    },
+    {
+      "id": "eoc-cochrane-2012",
+      "family": "eoc",
+      "expected": "warn",
+      "baseline": "pass",
+      "mooltrace": "warn",
+      "dois": [
+        "10.1002/14651858.cd007170.pub2"
+      ],
+      "notes": "MoolTrace flagged a chain the direct-DOI checker never walked"
+    },
+    {
+      "id": "eoc-everyday-health-draft",
+      "family": "eoc",
+      "expected": "warn",
+      "baseline": "pass",
+      "mooltrace": "warn",
+      "dois": [],
+      "notes": "MoolTrace flagged a chain the direct-DOI checker never walked"
+    },
+    {
+      "id": "hedged-everyday-eoc",
+      "family": "hedged",
+      "expected": "warn",
+      "baseline": "pass",
+      "mooltrace": "warn",
+      "dois": [],
+      "notes": "MoolTrace flagged a chain the direct-DOI checker never walked"
+    },
+    {
+      "id": "hedged-allen-eoc",
+      "family": "hedged",
+      "expected": "warn",
+      "baseline": "pass",
+      "mooltrace": "warn",
+      "dois": [
+        "10.1370/afm.1517"
+      ],
+      "notes": "MoolTrace flagged a chain the direct-DOI checker never walked"
+    },
+    {
+      "id": "page-healthline-cinnamon",
+      "family": "page",
+      "expected": "warn",
+      "baseline": "pass",
+      "mooltrace": "warn",
+      "dois": [],
+      "notes": "MoolTrace flagged a chain the direct-DOI checker never walked"
+    },
+    {
+      "id": "page-healthline-hedged",
+      "family": "page",
+      "expected": "warn",
+      "baseline": "pass",
+      "mooltrace": "warn",
+      "dois": [],
+      "notes": "MoolTrace flagged a chain the direct-DOI checker never walked"
+    },
+    {
+      "id": "page-healthline-draft",
+      "family": "page",
+      "expected": "warn",
+      "baseline": "pass",
+      "mooltrace": "warn",
+      "dois": [],
+      "notes": "MoolTrace flagged a chain the direct-DOI checker never walked"
+    },
+    {
+      "id": "i18n-hi-healthline",
+      "family": "i18n",
+      "expected": "warn",
+      "baseline": "pass",
+      "mooltrace": "warn",
+      "dois": [],
+      "notes": "MoolTrace flagged a chain the direct-DOI checker never walked"
+    },
+    {
+      "id": "page-everyday-health-cinnamon",
+      "family": "page",
+      "expected": "warn",
+      "baseline": "pass",
+      "mooltrace": "warn",
+      "dois": [],
+      "notes": "MoolTrace flagged a chain the direct-DOI checker never walked"
+    },
+    {
+      "id": "page-healthline-utm",
+      "family": "page",
+      "expected": "warn",
+      "baseline": "pass",
+      "mooltrace": "warn",
+      "dois": [],
+      "notes": "MoolTrace flagged a chain the direct-DOI checker never walked"
+    }
+  ],
+  "only_multihop_ids": [
+    "eoc-everyday-health-url",
+    "eoc-allen-2013",
+    "eoc-deyno-2019",
+    "eoc-ctim-2020",
+    "eoc-moridpour-2023",
+    "eoc-cochrane-2012",
+    "eoc-everyday-health-draft",
+    "hedged-everyday-eoc",
+    "hedged-allen-eoc",
+    "page-healthline-cinnamon",
+    "page-healthline-hedged",
+    "page-healthline-draft",
+    "i18n-hi-healthline",
+    "page-everyday-health-cinnamon",
+    "page-healthline-utm"
+  ],
+  "other_baseline_misses": [
+    {
+      "id": "nosrc-cinnamon-prose",
+      "family": "no_sources",
+      "expected": "warn",
+      "baseline": "pass",
+      "miss_kind": "no_sources"
+    },
+    {
+      "id": "nosrc-clinic-advice",
+      "family": "no_sources",
+      "expected": "warn",
+      "baseline": "pass",
+      "miss_kind": "no_sources"
+    },
+    {
+      "id": "nosrc-empty-urls",
+      "family": "no_sources",
+      "expected": "warn",
+      "baseline": "pass",
+      "miss_kind": "no_sources"
+    },
+    {
+      "id": "ident-fake-doi",
+      "family": "identifier",
+      "expected": "warn",
+      "baseline": "pass",
+      "miss_kind": "unresolved"
+    },
+    {
+      "id": "nosrc-take-cinnamon",
+      "family": "no_sources",
+      "expected": "warn",
+      "baseline": "pass",
+      "miss_kind": "no_sources"
+    }
+  ],
+  "wall_s": 0.0,
+  "mooltrace": {
+    "ran_at": "2026-10-16T15:39:56+00:00",
+    "kind": "labelled_eval",
+    "wall_s": 486.0,
+    "metrics": {
+      "n": 52,
+      "scored": 52,
+      "infra": 0,
+      "tp": 35,
+      "fp": 4,
+      "fn": 0,
+      "tn": 13,
+      "precision": 0.8974,
+      "recall": 1.0,
+      "f1": 0.9459,
+      "exact_match": 48,
+      "exact_match_rate": 0.9231,
+      "timing": {
+        "mean_wall_ms": 9225.6,
+        "mean_query_ms": 4.8,
+        "max_wall_ms": 44481.6
+      },
+      "by_family": {
+        "eoc": {
+          "n": 8,
+          "exact_match": 8,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "retraction": {
+          "n": 4,
+          "exact_match": 4,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "hedged": {
+          "n": 6,
+          "exact_match": 6,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "clean": {
+          "n": 6,
+          "exact_match": 6,
+          "precision": null,
+          "recall": null
+        },
+        "no_sources": {
+          "n": 4,
+          "exact_match": 4,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "depth": {
+          "n": 3,
+          "exact_match": 3,
+          "precision": null,
+          "recall": null
+        },
+        "page": {
+          "n": 8,
+          "exact_match": 5,
+          "precision": 0.625,
+          "recall": 1.0
+        },
+        "identifier": {
+          "n": 9,
+          "exact_match": 8,
+          "precision": 0.8,
+          "recall": 1.0
+        },
+        "i18n": {
+          "n": 4,
+          "exact_match": 4,
+          "precision": 1.0,
+          "recall": 1.0
+        }
+      },
+      "rule": "Binary positive class is warn or block. Exact match is the three-way decision. Infra rows are excluded from scored metrics."
+    },
+    "results": [
+      {
+        "id": "eoc-everyday-health-url",
+        "family": "eoc",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 68,
+        "wall_ms": 31319.6,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          },
+          {
+            "code": "unverified",
+            "root_doi": "10.12659/msm.906027",
+            "notice_doi": "10.12659/msm.911741",
+            "notice_type": "retraction",
+            "path_score": 0.0
+          },
+          {
+            "code": "unverified",
+            "root_doi": "10.1155/2022/9177108",
+            "notice_doi": "10.1155/2024/9815890",
+            "notice_type": "retraction",
+            "path_score": 0.0
+          },
+          {
+            "code": "unverified",
+            "root_doi": "10.1155/2012/429320",
+            "notice_doi": "10.1155/ecam/9841076",
+            "notice_type": "retraction",
+            "path_score": 0.0
+          }
+        ]
+      },
+      {
+        "id": "eoc-allen-2013",
+        "family": "eoc",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 15,
+        "wall_ms": 20328.8,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.4675
+          }
+        ]
+      },
+      {
+        "id": "eoc-deyno-2019",
+        "family": "eoc",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "cites flagged study; reliance unverified",
+        "api_calls": 11,
+        "wall_ms": 24691.1,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "unverified",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.0
+          }
+        ]
+      },
+      {
+        "id": "eoc-ctim-2020",
+        "family": "eoc",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "cites flagged study; reliance unverified",
+        "api_calls": 8,
+        "wall_ms": 8841.1,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "unverified",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.0
+          }
+        ]
+      },
+      {
+        "id": "eoc-moridpour-2023",
+        "family": "eoc",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "cites flagged study; reliance unverified",
+        "api_calls": 3,
+        "wall_ms": 5737.1,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "unverified",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.0
+          }
+        ]
+      },
+      {
+        "id": "eoc-cochrane-2012",
+        "family": "eoc",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 14,
+        "wall_ms": 20319.8,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "eoc-khan-direct",
+        "family": "eoc",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 1,
+        "wall_ms": 5603.5,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "eoc-everyday-health-draft",
+        "family": "eoc",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 10,
+        "wall_ms": 7861.1,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          },
+          {
+            "code": "unverified",
+            "root_doi": "10.12659/msm.906027",
+            "notice_doi": "10.12659/msm.911741",
+            "notice_type": "retraction",
+            "path_score": 0.0
+          },
+          {
+            "code": "unverified",
+            "root_doi": "10.1155/2022/9177108",
+            "notice_doi": "10.1155/2024/9815890",
+            "notice_type": "retraction",
+            "path_score": 0.0
+          },
+          {
+            "code": "unverified",
+            "root_doi": "10.1155/2012/429320",
+            "notice_doi": "10.1155/ecam/9841076",
+            "notice_type": "retraction",
+            "path_score": 0.0
+          }
+        ]
+      },
+      {
+        "id": "retract-lancet-draft",
+        "family": "retraction",
+        "expected": "block",
+        "decision": "block",
+        "exit_code": 1,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a retracted study.",
+        "api_calls": 18,
+        "wall_ms": 13040.9,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31324-6",
+            "notice_type": "retraction",
+            "path_score": 1.0
+          },
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31174-0",
+            "notice_type": "retraction",
+            "path_score": 1.0
+          },
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31290-3",
+            "notice_type": "expression_of_concern",
+            "path_score": 1.0
+          }
+        ]
+      },
+      {
+        "id": "retract-lancet-doi-only",
+        "family": "retraction",
+        "expected": "block",
+        "decision": "block",
+        "exit_code": 1,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a retracted study.",
+        "api_calls": 0,
+        "wall_ms": 4364.6,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31324-6",
+            "notice_type": "retraction",
+            "path_score": 0.55
+          },
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31174-0",
+            "notice_type": "retraction",
+            "path_score": 0.55
+          },
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31290-3",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "retract-lancet-doi-url",
+        "family": "retraction",
+        "expected": "block",
+        "decision": "block",
+        "exit_code": 1,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a retracted study.",
+        "api_calls": 0,
+        "wall_ms": 3947.4,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31324-6",
+            "notice_type": "retraction",
+            "path_score": 0.55
+          },
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31174-0",
+            "notice_type": "retraction",
+            "path_score": 0.55
+          },
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31290-3",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "retract-lancet-relies",
+        "family": "retraction",
+        "expected": "block",
+        "decision": "block",
+        "exit_code": 1,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a retracted study.",
+        "api_calls": 0,
+        "wall_ms": 3504.5,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31324-6",
+            "notice_type": "retraction",
+            "path_score": 1.0
+          },
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31174-0",
+            "notice_type": "retraction",
+            "path_score": 1.0
+          },
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31290-3",
+            "notice_type": "expression_of_concern",
+            "path_score": 1.0
+          }
+        ]
+      },
+      {
+        "id": "hedged-khan-eoc",
+        "family": "hedged",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 0,
+        "wall_ms": 4002.2,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "hedged-khan-excluded",
+        "family": "hedged",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 0,
+        "wall_ms": 4240.0,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "hedged-everyday-eoc",
+        "family": "hedged",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 5,
+        "wall_ms": 5547.2,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          },
+          {
+            "code": "unverified",
+            "root_doi": "10.12659/msm.906027",
+            "notice_doi": "10.12659/msm.911741",
+            "notice_type": "retraction",
+            "path_score": 0.0
+          },
+          {
+            "code": "unverified",
+            "root_doi": "10.1155/2022/9177108",
+            "notice_doi": "10.1155/2024/9815890",
+            "notice_type": "retraction",
+            "path_score": 0.0
+          },
+          {
+            "code": "unverified",
+            "root_doi": "10.1155/2012/429320",
+            "notice_doi": "10.1155/ecam/9841076",
+            "notice_type": "retraction",
+            "path_score": 0.0
+          }
+        ]
+      },
+      {
+        "id": "hedged-allen-eoc",
+        "family": "hedged",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 8,
+        "wall_ms": 17563.5,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.4675
+          }
+        ]
+      },
+      {
+        "id": "hedged-lancet-excluded",
+        "family": "hedged",
+        "expected": "block",
+        "decision": "block",
+        "exit_code": 1,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a retracted study.",
+        "api_calls": 0,
+        "wall_ms": 4949.9,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31324-6",
+            "notice_type": "retraction",
+            "path_score": 0.55
+          },
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31174-0",
+            "notice_type": "retraction",
+            "path_score": 0.55
+          },
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31290-3",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "hedged-lancet-named",
+        "family": "hedged",
+        "expected": "block",
+        "decision": "block",
+        "exit_code": 1,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a retracted study.",
+        "api_calls": 0,
+        "wall_ms": 3350.5,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31324-6",
+            "notice_type": "retraction",
+            "path_score": 0.55
+          },
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31174-0",
+            "notice_type": "retraction",
+            "path_score": 0.55
+          },
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31290-3",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "clean-jsps-2015",
+        "family": "clean",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "summary": "No publisher notice was found within 2 hops. Coverage is not shown beyond that depth.",
+        "api_calls": 0,
+        "wall_ms": 3861.1,
+        "errors": [],
+        "reasons": []
+      },
+      {
+        "id": "clean-foodsafety-2021",
+        "family": "clean",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "summary": "No publisher notice was found within 2 hops. Coverage is not shown beyond that depth.",
+        "api_calls": 0,
+        "wall_ms": 4528.7,
+        "errors": [],
+        "reasons": []
+      },
+      {
+        "id": "clean-foods-2023",
+        "family": "clean",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "summary": "No counted reliance on a flagged study within 2 hops (cites a flagged study only in passing). 1 citation path reached a notice with a hop below the 0.5 weight floor. Coverage is not shown beyond this depth.",
+        "api_calls": 0,
+        "wall_ms": 3612.2,
+        "errors": [],
+        "reasons": []
+      },
+      {
+        "id": "clean-bmj-2003",
+        "family": "clean",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "summary": "No publisher notice was found within 2 hops. Coverage is not shown beyond that depth.",
+        "api_calls": 3,
+        "wall_ms": 6161.1,
+        "errors": [],
+        "reasons": []
+      },
+      {
+        "id": "clean-cct-1986",
+        "family": "clean",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "summary": "No publisher notice was found within 2 hops. Coverage is not shown beyond that depth.",
+        "api_calls": 2,
+        "wall_ms": 4310.1,
+        "errors": [],
+        "reasons": []
+      },
+      {
+        "id": "clean-bmj-2011",
+        "family": "clean",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "summary": "No publisher notice was found within 2 hops. Coverage is not shown beyond that depth.",
+        "api_calls": 4,
+        "wall_ms": 5402.7,
+        "errors": [],
+        "reasons": []
+      },
+      {
+        "id": "nosrc-cinnamon-prose",
+        "family": "no_sources",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "No verifiable citation or source was provided. MoolTrace cannot inspect this answer's evidence chain.",
+        "api_calls": 0,
+        "wall_ms": 4.3,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "no_sources",
+            "root_doi": null,
+            "notice_doi": null,
+            "notice_type": null,
+            "path_score": null
+          }
+        ]
+      },
+      {
+        "id": "nosrc-clinic-advice",
+        "family": "no_sources",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "No verifiable citation or source was provided. MoolTrace cannot inspect this answer's evidence chain.",
+        "api_calls": 0,
+        "wall_ms": 3073.4,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "no_sources",
+            "root_doi": null,
+            "notice_doi": null,
+            "notice_type": null,
+            "path_score": null
+          }
+        ]
+      },
+      {
+        "id": "nosrc-empty-urls",
+        "family": "no_sources",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "No verifiable citation or source was provided. MoolTrace cannot inspect this answer's evidence chain.",
+        "api_calls": 0,
+        "wall_ms": 3873.6,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "no_sources",
+            "root_doi": null,
+            "notice_doi": null,
+            "notice_type": null,
+            "path_score": null
+          }
+        ]
+      },
+      {
+        "id": "depth-allen-1",
+        "family": "depth",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "summary": "No publisher notice was found within 1 hops. Coverage is not shown beyond that depth.",
+        "api_calls": 1,
+        "wall_ms": 4596.2,
+        "errors": [],
+        "reasons": []
+      },
+      {
+        "id": "depth-deyno-1",
+        "family": "depth",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "summary": "No publisher notice was found within 1 hops. Coverage is not shown beyond that depth.",
+        "api_calls": 1,
+        "wall_ms": 4479.7,
+        "errors": [],
+        "reasons": []
+      },
+      {
+        "id": "depth-ctim-1",
+        "family": "depth",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "summary": "No publisher notice was found within 1 hops. Coverage is not shown beyond that depth.",
+        "api_calls": 1,
+        "wall_ms": 3698.5,
+        "errors": [],
+        "reasons": []
+      },
+      {
+        "id": "page-healthline-cinnamon",
+        "family": "page",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 112,
+        "wall_ms": 31153.4,
+        "errors": [
+          "expanded 15 of 16 cited works"
+        ],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "page-healthline-hedged",
+        "family": "page",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 15,
+        "wall_ms": 7936.3,
+        "errors": [
+          "expanded 15 of 16 cited works"
+        ],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "page-healthline-draft",
+        "family": "page",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 16,
+        "wall_ms": 9014.8,
+        "errors": [
+          "expanded 15 of 16 cited works"
+        ],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "page-nccih-cinnamon",
+        "family": "page",
+        "expected": "pass",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": false,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "cites flagged study; reliance unverified",
+        "api_calls": 77,
+        "wall_ms": 36244.2,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "unverified",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.0
+          }
+        ]
+      },
+      {
+        "id": "ident-fake-doi",
+        "family": "identifier",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "MoolTrace could not finish this pre-ship check, so the draft is a warn rather than a pass. Depth requested: 2.",
+        "api_calls": 3,
+        "wall_ms": 4115.6,
+        "errors": [
+          "10.9999/not-a-real-doi: could not resolve 10.9999/not-a-real-doi"
+        ],
+        "reasons": [
+          {
+            "code": "incomplete",
+            "root_doi": null,
+            "notice_doi": null,
+            "notice_type": null,
+            "path_score": null
+          }
+        ]
+      },
+      {
+        "id": "ident-arxiv-attention",
+        "family": "identifier",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "summary": "No publisher notice was found within 2 hops. Coverage is not shown beyond that depth.",
+        "api_calls": 5,
+        "wall_ms": 5151.3,
+        "errors": [],
+        "reasons": []
+      },
+      {
+        "id": "ident-zenodo-3242074",
+        "family": "identifier",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "summary": "No publisher notice was found within 2 hops. Coverage is not shown beyond that depth.",
+        "api_calls": 3,
+        "wall_ms": 4571.8,
+        "errors": [],
+        "reasons": []
+      },
+      {
+        "id": "ident-encoded-khan",
+        "family": "identifier",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 0,
+        "wall_ms": 3783.5,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "ident-fullwidth-khan",
+        "family": "identifier",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 0,
+        "wall_ms": 4127.8,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "i18n-es-khan",
+        "family": "i18n",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 0,
+        "wall_ms": 3715.9,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "i18n-fr-lancet",
+        "family": "i18n",
+        "expected": "block",
+        "decision": "block",
+        "exit_code": 1,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a retracted study.",
+        "api_calls": 0,
+        "wall_ms": 4509.2,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31324-6",
+            "notice_type": "retraction",
+            "path_score": 0.55
+          },
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31174-0",
+            "notice_type": "retraction",
+            "path_score": 0.55
+          },
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.1016/s0140-6736(20)31180-6",
+            "notice_doi": "10.1016/s0140-6736(20)31290-3",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "i18n-hi-healthline",
+        "family": "i18n",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 2,
+        "wall_ms": 8307.3,
+        "errors": [
+          "expanded 15 of 16 cited works"
+        ],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "page-everyday-health-cinnamon",
+        "family": "page",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 3,
+        "wall_ms": 8707.3,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          },
+          {
+            "code": "unverified",
+            "root_doi": "10.12659/msm.906027",
+            "notice_doi": "10.12659/msm.911741",
+            "notice_type": "retraction",
+            "path_score": 0.0
+          },
+          {
+            "code": "unverified",
+            "root_doi": "10.1155/2022/9177108",
+            "notice_doi": "10.1155/2024/9815890",
+            "notice_type": "retraction",
+            "path_score": 0.0
+          },
+          {
+            "code": "unverified",
+            "root_doi": "10.1155/2012/429320",
+            "notice_doi": "10.1155/ecam/9841076",
+            "notice_type": "retraction",
+            "path_score": 0.0
+          }
+        ]
+      },
+      {
+        "id": "page-webmd-cinnamon-guide",
+        "family": "page",
+        "expected": "pass",
+        "decision": "block",
+        "exit_code": 1,
+        "match": false,
+        "expected_flagged": false,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a retracted study.",
+        "api_calls": 103,
+        "wall_ms": 44481.6,
+        "errors": [
+          "unresolved PMID:22783715",
+          "expanded 15 of 19 cited works"
+        ],
+        "reasons": [
+          {
+            "code": "retraction",
+            "root_doi": "10.18632/oncotarget.20059",
+            "notice_doi": "10.18632/oncotarget.28577",
+            "notice_type": "retraction",
+            "path_score": 0.30250000000000005
+          },
+          {
+            "code": "retraction",
+            "root_doi": "10.12659/msm.906027",
+            "notice_doi": "10.12659/msm.911741",
+            "notice_type": "retraction",
+            "path_score": 0.30250000000000005
+          },
+          {
+            "code": "retraction",
+            "root_doi": "10.1371/journal.pone.0107315",
+            "notice_doi": "10.1371/journal.pone.0280492",
+            "notice_type": "retraction",
+            "path_score": 0.30250000000000005
+          },
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "page-mnt-cinnamon-diabetes",
+        "family": "page",
+        "expected": "pass",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": false,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 81,
+        "wall_ms": 31305.3,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "page-healthline-utm",
+        "family": "page",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 1,
+        "wall_ms": 8006.8,
+        "errors": [
+          "expanded 15 of 16 cited works"
+        ],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "ident-mdpi-pdf-foods",
+        "family": "identifier",
+        "expected": "pass",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": false,
+        "expected_flagged": false,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "MoolTrace could not finish this pre-ship check, so the draft is a warn rather than a pass. Depth requested: 2.",
+        "api_calls": 1,
+        "wall_ms": 3497.3,
+        "errors": [
+          "could not fetch https://www.mdpi.com/2304-8158/12/3/452/pdf: HTTP 403"
+        ],
+        "reasons": [
+          {
+            "code": "incomplete",
+            "root_doi": null,
+            "notice_doi": null,
+            "notice_type": null,
+            "path_score": null
+          }
+        ]
+      },
+      {
+        "id": "ident-doi-query-khan",
+        "family": "identifier",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 0,
+        "wall_ms": 4155.4,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "ident-arxiv-bert",
+        "family": "identifier",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "summary": "No publisher notice was found within 2 hops. Coverage is not shown beyond that depth.",
+        "api_calls": 7,
+        "wall_ms": 7921.1,
+        "errors": [],
+        "reasons": []
+      },
+      {
+        "id": "ident-jsps-abstract",
+        "family": "identifier",
+        "expected": "pass",
+        "decision": "pass",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": false,
+        "predicted_flagged": false,
+        "scored": true,
+        "infra": false,
+        "summary": "No publisher notice was found within 2 hops. Coverage is not shown beyond that depth.",
+        "api_calls": 0,
+        "wall_ms": 4331.8,
+        "errors": [],
+        "reasons": []
+      },
+      {
+        "id": "i18n-de-khan",
+        "family": "i18n",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+        "api_calls": 0,
+        "wall_ms": 3659.1,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "expression_of_concern",
+            "root_doi": "10.2337/diacare.26.12.3215",
+            "notice_doi": "10.2337/dc25-ec09",
+            "notice_type": "expression_of_concern",
+            "path_score": 0.55
+          }
+        ]
+      },
+      {
+        "id": "nosrc-take-cinnamon",
+        "family": "no_sources",
+        "expected": "warn",
+        "decision": "warn",
+        "exit_code": 2,
+        "match": true,
+        "expected_flagged": true,
+        "predicted_flagged": true,
+        "scored": true,
+        "infra": false,
+        "summary": "No verifiable citation or source was provided. MoolTrace cannot inspect this answer's evidence chain.",
+        "api_calls": 0,
+        "wall_ms": 4217.8,
+        "errors": [],
+        "reasons": [
+          {
+            "code": "no_sources",
+            "root_doi": null,
+            "notice_doi": null,
+            "notice_type": null,
+            "path_score": null
+          }
+        ]
+      }
+    ]
+  },
+  "labelled_disagreements": [
+    {
+      "id": "page-nccih-cinnamon",
+      "family": "page",
+      "expected": "pass",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "summary": "cites flagged study; reliance unverified",
+      "reasons": [
+        {
+          "code": "unverified",
+          "root_doi": "10.2337/diacare.26.12.3215",
+          "notice_doi": "10.2337/dc25-ec09",
+          "notice_type": "expression_of_concern",
+          "path_score": 0.0
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "page-webmd-cinnamon-guide",
+      "family": "page",
+      "expected": "pass",
+      "mooltrace": "block",
+      "baseline": "pass",
+      "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a retracted study.",
+      "reasons": [
+        {
+          "code": "retraction",
+          "root_doi": "10.18632/oncotarget.20059",
+          "notice_doi": "10.18632/oncotarget.28577",
+          "notice_type": "retraction",
+          "path_score": 0.30250000000000005
+        },
+        {
+          "code": "retraction",
+          "root_doi": "10.12659/msm.906027",
+          "notice_doi": "10.12659/msm.911741",
+          "notice_type": "retraction",
+          "path_score": 0.30250000000000005
+        },
+        {
+          "code": "retraction",
+          "root_doi": "10.1371/journal.pone.0107315",
+          "notice_doi": "10.1371/journal.pone.0280492",
+          "notice_type": "retraction",
+          "path_score": 0.30250000000000005
+        },
+        {
+          "code": "expression_of_concern",
+          "root_doi": "10.2337/diacare.26.12.3215",
+          "notice_doi": "10.2337/dc25-ec09",
+          "notice_type": "expression_of_concern",
+          "path_score": 0.55
+        }
+      ],
+      "errors": [
+        "unresolved PMID:22783715",
+        "expanded 15 of 19 cited works"
+      ]
+    },
+    {
+      "id": "page-mnt-cinnamon-diabetes",
+      "family": "page",
+      "expected": "pass",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a study under an Expression of Concern.",
+      "reasons": [
+        {
+          "code": "expression_of_concern",
+          "root_doi": "10.2337/diacare.26.12.3215",
+          "notice_doi": "10.2337/dc25-ec09",
+          "notice_type": "expression_of_concern",
+          "path_score": 0.55
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "ident-mdpi-pdf-foods",
+      "family": "identifier",
+      "expected": "pass",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "summary": "MoolTrace could not finish this pre-ship check, so the draft is a warn rather than a pass. Depth requested: 2.",
+      "reasons": [
+        {
+          "code": "incomplete",
+          "root_doi": null,
+          "notice_doi": null,
+          "notice_type": null,
+          "path_score": null
+        }
+      ],
+      "errors": [
+        "could not fetch https://www.mdpi.com/2304-8158/12/3/452/pdf: HTTP 403"
+      ]
+    }
+  ],
+  "graph_caught_baseline_missed": [
+    {
+      "id": "eoc-everyday-health-url",
+      "family": "eoc",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": true
+    },
+    {
+      "id": "eoc-allen-2013",
+      "family": "eoc",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": true
+    },
+    {
+      "id": "eoc-deyno-2019",
+      "family": "eoc",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": true
+    },
+    {
+      "id": "eoc-ctim-2020",
+      "family": "eoc",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": true
+    },
+    {
+      "id": "eoc-moridpour-2023",
+      "family": "eoc",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": true
+    },
+    {
+      "id": "eoc-cochrane-2012",
+      "family": "eoc",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": true
+    },
+    {
+      "id": "eoc-everyday-health-draft",
+      "family": "eoc",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": true
+    },
+    {
+      "id": "hedged-everyday-eoc",
+      "family": "hedged",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": true
+    },
+    {
+      "id": "hedged-allen-eoc",
+      "family": "hedged",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": true
+    },
+    {
+      "id": "nosrc-cinnamon-prose",
+      "family": "no_sources",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": false
+    },
+    {
+      "id": "nosrc-clinic-advice",
+      "family": "no_sources",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": false
+    },
+    {
+      "id": "nosrc-empty-urls",
+      "family": "no_sources",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": false
+    },
+    {
+      "id": "page-healthline-cinnamon",
+      "family": "page",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": true
+    },
+    {
+      "id": "page-healthline-hedged",
+      "family": "page",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": true
+    },
+    {
+      "id": "page-healthline-draft",
+      "family": "page",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": true
+    },
+    {
+      "id": "page-nccih-cinnamon",
+      "family": "page",
+      "expected": "pass",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": false
+    },
+    {
+      "id": "ident-fake-doi",
+      "family": "identifier",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": false
+    },
+    {
+      "id": "i18n-hi-healthline",
+      "family": "i18n",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": true
+    },
+    {
+      "id": "page-everyday-health-cinnamon",
+      "family": "page",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": true
+    },
+    {
+      "id": "page-webmd-cinnamon-guide",
+      "family": "page",
+      "expected": "pass",
+      "mooltrace": "block",
+      "baseline": "pass",
+      "multihop": false
+    },
+    {
+      "id": "page-mnt-cinnamon-diabetes",
+      "family": "page",
+      "expected": "pass",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": false
+    },
+    {
+      "id": "page-healthline-utm",
+      "family": "page",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": true
+    },
+    {
+      "id": "ident-mdpi-pdf-foods",
+      "family": "identifier",
+      "expected": "pass",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": false
+    },
+    {
+      "id": "nosrc-take-cinnamon",
+      "family": "no_sources",
+      "expected": "warn",
+      "mooltrace": "warn",
+      "baseline": "pass",
+      "multihop": false
+    }
+  ],
+  "verdict_changes_vs_labelled_2026-10-15": [],
+  "new_since_labelled_2026-10-15": [
+    "page-healthline-cinnamon",
+    "page-healthline-hedged",
+    "page-healthline-draft",
+    "page-nccih-cinnamon",
+    "ident-fake-doi",
+    "ident-arxiv-attention",
+    "ident-zenodo-3242074",
+    "ident-encoded-khan",
+    "ident-fullwidth-khan",
+    "i18n-es-khan",
+    "i18n-fr-lancet",
+    "i18n-hi-healthline",
+    "page-everyday-health-cinnamon",
+    "page-webmd-cinnamon-guide",
+    "page-mnt-cinnamon-diabetes",
+    "page-healthline-utm",
+    "ident-mdpi-pdf-foods",
+    "ident-doi-query-khan",
+    "ident-arxiv-bert",
+    "ident-jsps-abstract",
+    "i18n-de-khan",
+    "nosrc-take-cinnamon"
+  ]
+}

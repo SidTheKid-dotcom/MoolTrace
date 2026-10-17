@@ -115,7 +115,7 @@ Local one-command (after the venv above): `.venv/bin/python -m mooltrace mcp`. P
 .venv/bin/python -m mooltrace baseline --out results/baseline_2026-10-16.json
 ```
 
-Confirmed offline 16 Oct 2026 18:06 UTC (recorded Crossref + recorded MoolTrace labelled run):
+Confirmed offline 16 Oct 2026 18:06 UTC (recorded Crossref + recorded MoolTrace labelled run). T26 re-ran `.venv/bin/python -m mooltrace baseline --out results/baseline_2026-10-17_t26.json` on 17 Oct 2026 08:23 UTC; stored labelled decisions were not re-scored (no `hops_evidence` on those rows):
 
 ```
 BASELINE scored 52/52 precision=1.0 recall=0.4286 multihop_only=15
@@ -143,12 +143,14 @@ Live labelled (52 isolated graphs) was **not** re-run this session (486.0 s on 1
 .venv/bin/python -m mooltrace vitality --out results/vitality_2026-10-17.json
 ```
 
-Confirmed offline 17 Oct 2026 06:30:30Z from recorded Crossref (`examples/vitality_crossref.json`, T19 fetch 2026-10-16T21:08:11Z plus 30 new control DOIs at `t22_controls_fetched_at` 2026-10-16T22:33:15Z) plus the recorded MoolTrace snapshot (`examples/vitality_mooltrace.json`, throwaway graphs, `MOOLTRACE_OPENALEX_RPS=3`, shared `/tmp/mt-t22-cache`, `data/mooltrace.db` mtime `1792153156` unused). New controls frozen 2026-10-16T22:33:00Z before those live rows.
+T26 re-ran the same offline command 17 Oct 2026 08:23 UTC (`results/vitality_2026-10-17_t26.json`). Recorded Crossref + snapshot unchanged. Snapshot reasons have no `hops_evidence`, so T26 PATH_RULE did not re-score stored rows.
 
 ```
 VITALITY baseline pos=0/40 ctrl=0/40
 VITALITY mooltrace d2 same_trial=31/40 false_alarms=1/40 oa429=0+0 pending=0
 VITALITY mooltrace d3 same_trial=14/18 false_alarms=1/40 oa429=0+0 pending=22
+decision split (80 stored rows): 26 block / 11 warn / 43 pass
+positives: 26 block / 10 warn / 4 pass; controls: 39 pass / 1 warn
 ```
 
 | Slice | Result |
@@ -207,7 +209,7 @@ docker compose up --build
 unshare --net --map-root-user .venv/bin/python -m pytest -q
 ```
 
-17 Oct 2026 08:22 UTC this checkout: 316 passed, 0 failed, 467.06 s, network namespace unshared.
+17 Oct 2026 08:50 UTC this checkout: 316 passed, 0 failed, 475.90 s, network namespace unshared.
 
 ## Limits quoted in README (spot-checks)
 
@@ -221,23 +223,23 @@ unshare --net --map-root-user .venv/bin/python -m pytest -q
 | Hosted live URL is allow-listed | POST a non-preset `healthline.com` URL with `MOOLTRACE_PUBLIC_LIVE=1`; `example.com` is 400 | allow-list + SSRF + per-IP 429 + concurrency 1 + 120 s timeout. Presets never 429. UI: Running live, about 60 s. `pytest tests/test_public_live.py` |
 | `assets/healthline-warn.png` is a signed-out live WARN capture | `/?preset=healthline` on the Lightsail demo, 17 Oct 2026 | path strength 0.55, EoC `10.2337/dc25-ec09`; not 0.72 |
 
-## Seeded gate (T21, three runs)
+## Seeded gate (T26, three runs)
 
 ```bash
 MOOLTRACE_OPENALEX_RPS=3 \
-MOOLTRACE_HTTP_CACHE=/tmp/mt-t21-gate-cache MOOLTRACE_DB=/tmp/mt-t21-unused/mooltrace.db \
+MOOLTRACE_HTTP_CACHE=/tmp/mt-t26-gate-cache MOOLTRACE_DB=/tmp/mt-t26-unused/mooltrace.db \
 .venv/bin/python -m mooltrace.gate
 ```
 
-`data/mooltrace.db` mtime stayed `1792153156`. Shared HTTP cache; run 1 is the cold HTTP walk.
+`data/mooltrace.db` mtime stayed `1792225214`. Shared HTTP cache; run 1 is the cold HTTP walk. No case flipped vs T21: Khan-path positives stay **warn** (EoC); Lancet 2020 stays **block** (direct 1-hop retraction).
 
 | Run | caught | alarms | wall_s | ran_at | Allen 2013 |
 | --- | --- | --- | --- | --- | --- |
-| 1 | 7/7 | 0/6 | 151.6 | 2026-10-16T22:05:49+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
-| 2 | 7/7 | 0/6 | 94.0 | 2026-10-16T22:07:30+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
-| 3 | 7/7 | 0/6 | 96.2 | 2026-10-16T22:13:37+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
+| 1 | 7/7 | 0/6 | 158.7 | 2026-10-17T08:25:45+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
+| 2 | 7/7 | 0/6 | 104.5 | 2026-10-17T08:27:44+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
+| 3 | 7/7 | 0/6 | 98.4 | 2026-10-17T08:29:23+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
 
-Files: `results/gate_2026-10-17_t21_run1.json`, `run2`, `run3`.
+Files: `results/gate_2026-10-17_t26_run1.json`, `run2`, `run3`.
 
 ## Prior art (re-fetched 16 Oct 2026 18:43 UTC)
 

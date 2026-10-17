@@ -29,7 +29,7 @@ Expect exit **1** (Lancet HCQ retraction `10.1016/s0140-6736(20)31324-6`). `exam
 
 Fresh-clone quickstart (clone + `pip install -e .` + cinnamon `--summary`) was **65.06 s** from `/tmp` on 16 Oct 2026. Commands and outputs: [CLAIMS.md](CLAIMS.md).
 
-Sealed VITALITY (Xu et al., BMJ 2025): `.venv/bin/python -m mooltrace vitality --out results/vitality_2026-10-17.json`. Depth 2, n=40+40: Direct-DOI **0/40** and **0/40**; MoolTrace same-trial **31/40**; false alarms **1/40**. Depth 3 (separate row; 18 positives + 40 controls finished, 22 extra positives pending): same-trial **14/18**; false alarms **1/40**. Do not replace the depth-2 headline. Not a medical accuracy score.
+Sealed VITALITY (Xu et al., BMJ 2025): `.venv/bin/python -m mooltrace vitality --out results/vitality_2026-10-17.json`. Depth 2, n=40+40: Direct-DOI **0/40** and **0/40**; MoolTrace same-trial **31/40**; false alarms **1/40**. T26 stored-row split: **26 block / 11 warn / 43 pass** (snapshot has no `hops_evidence`, so PATH_RULE was not re-scored). Depth 3 (separate row; 18 positives + 40 controls finished, 22 extra positives pending): same-trial **14/18**; false alarms **1/40**. Do not replace the depth-2 headline. Not a medical accuracy score.
 
 ## 3. See an MCP call (2 min)
 

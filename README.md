@@ -8,7 +8,7 @@ WeMakeDevs × FalkorDB Graph Hacks, Track 01: **Agents That Act on Connected Dat
 
 ![Harvard Nutrition Source vitamin D BLOCK path](assets/demo-harvard-vitamin-d-block.png)
 
-Signed-out headless Chrome 1280×2200 capture of `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/?preset=harvard-vitamin-d`. BLOCK (exit 1). Page `mention` 0.55 → Avenell 2014 Cochrane `uses_data_or_method` 0.85 → Ishida 2004 retraction `10.1016/j.amjmed.2004.05.019` (2004-10-15). `Decided by: algo.SPpaths, path strength 0.47`. The review called Ishida an included trial. This does not say vitamin D works or does not.
+Signed-out headless Chrome 1280×2200 capture, 17 Oct 2026, of the local seeded demo `http://127.0.0.1:4318/?preset=harvard-vitamin-d` (Lightsail pin pending `aws login`). BLOCK (exit 1). Page `mention` 0.55 → Avenell 2014 Cochrane `uses_data_or_method` 0.85 → Ishida 2004 retraction `10.1016/j.amjmed.2004.05.019` (2004-10-15). `Decided by: algo.SPpaths, path strength 0.47`. The review called Ishida an included trial. This does not say vitamin D works or does not.
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -e .
@@ -354,15 +354,15 @@ Numbers below are dated per row. Re-run the command next to each line. Do not tr
 
 | Claim | Command | Result |
 | --- | --- | --- |
-| Full unit suite | `unshare --net --map-root-user .venv/bin/python -m pytest -q` | 17 Oct 2026 08:22 UTC this checkout: 316 passed, 0 failed, 467.06 s, network namespace unshared |
+| Full unit suite | `unshare --net --map-root-user .venv/bin/python -m pytest -q` | 17 Oct 2026 08:50 UTC this checkout: 316 passed, 0 failed, 475.90 s, network namespace unshared |
 | Flip + ablation | `.venv/bin/python -m pytest tests/test_graph.py::test_sp_weight_flip_changes_verdict tests/test_graph.py::test_sp_paths_ablation_returns_exit_3 tests/test_graph.py::test_sp_paths_strength_equals_brute_force_product -q` | 16 Oct 2026: weight 0.85 → warn, 0.2 → pass; `sp_paths` raised → exit 3, no verdict; algorithm strength equals brute-force product on 3 fixtures. |
 | Agent loop | `.venv/bin/python examples/agent_loop.py` | check warn, `algo.SPpaths`, rewrite recheck pass, 1 counted answer |
 | Fresh-clone quickstart in `/tmp` | `git clone … && python3 -m venv .venv && .venv/bin/pip install -e . && .venv/bin/python -m mooltrace check --url https://www.healthline.com/nutrition/cinnamon-and-diabetes --summary` | 16 Oct 2026: **65.06 s** (clone 3.02 s + install 9.67 s + check 52.37 s). WARN exit 2, EoC `10.2337/dc25-ec09`, `algo.SPpaths` 0.55. See [CLAIMS.md](CLAIMS.md). |
 | Cold Healthline `--summary` | `MOOLTRACE_HTTP_CACHE=/tmp/mt-cold MOOLTRACE_DB=/tmp/mt-cold/mooltrace.db .venv/bin/python -m mooltrace check --url https://www.healthline.com/nutrition/cinnamon-and-diabetes --summary` | 47.09 s / 49.18 s / 49.10 s. All three: warn, EoC `10.2337/dc25-ec09`. No verdict flip. ~119–121 API calls cold. |
 | Warm Healthline (same DB+cache) | same command again | 23.16 s, 26 API calls, still warn / same EoC |
-| Gate (cold cache) | `.venv/bin/python -m mooltrace.gate` | T21 16 Oct 2026, throwaway graphs, shared `/tmp/mt-t21-gate-cache`, `MOOLTRACE_OPENALEX_RPS=3`, `data/mooltrace.db` mtime `1792153156` unused. Three runs: **7/7 caught, 0/6 alarms**, wall_s=151.6 / 94.0 / 96.2. Allen 2013 warn hops=2 `uses_data_or_method` 0.85 on all three. Files: `results/gate_2026-10-17_t21_run{1,2,3}.json`. |
+| Gate (cold cache) | `.venv/bin/python -m mooltrace.gate` | T26 17 Oct 2026, throwaway graphs, shared `/tmp/mt-t26-gate-cache`, `MOOLTRACE_OPENALEX_RPS=3`, `data/mooltrace.db` mtime `1792225214` unused. Three runs: **7/7 caught, 0/6 alarms**, wall_s=158.7 / 104.5 / 98.4. Allen 2013 warn hops=2 `uses_data_or_method` 0.85 on all three. Lancet 2020 still **block**. No case flipped vs T21. Files: `results/gate_2026-10-17_t26_run{1,2,3}.json`. |
 | Labelled vs no-graph baseline (52 cases) | `.venv/bin/python -m mooltrace baseline --out results/baseline_2026-10-16.json` | See **Baseline**: MoolTrace precision 0.8974 recall 1.0 exact 48/52; direct-DOI precision 1.0 recall 0.4286 exact 32/52; 15 only-multi-hop catches. |
-| VITALITY Study I sealed (40 distorted reviews + 40 controls) | `.venv/bin/python -m mooltrace vitality --out results/vitality_2026-10-17.json` | 17 Oct 2026 UTC: Direct-DOI **0/40** and **0/40** flagged; depth-2 MoolTrace same-trial recall **31/40** finished; counted notice 26/40; false alarms **1/40**; OpenAlex 429 0. Sampled-15 same-trial 12/15. Depth 3 (separate row): same-trial **14/18** finished positives; false alarms **1/40**; 22 extra positives pending. Labels frozen 16 Oct / controls 16 Oct 22:33:00Z, not relabelled. |
+| VITALITY Study I sealed (40 distorted reviews + 40 controls) | `.venv/bin/python -m mooltrace vitality --out results/vitality_2026-10-17.json` | T26 replay 17 Oct 2026 08:23 UTC (recorded snapshot, no live walk): Direct-DOI **0/40** and **0/40** flagged; depth-2 same-trial **31/40**; counted notice 26/40; false alarms **1/40**. Decision split on the 80 stored rows: **26 block / 11 warn / 43 pass** (positives 26/10/4; controls 39 pass + 1 warn). Snapshot reasons have no `hops_evidence`, so T26 PATH_RULE was not re-scored. Depth 3: **14/18**, 22 pending. |
 
 ### VITALITY Study I (17 Oct 2026)
 
