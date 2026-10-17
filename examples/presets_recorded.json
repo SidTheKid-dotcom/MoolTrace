@@ -1,5 +1,5 @@
 {
-  "note": "Hero hops recorded from live MoolTrace runs on throwaway graphs (2026-10-16 UTC). data/mooltrace.db was not opened. Hosted demo replays these hops. Live olive-oil depth 2/3 also reached other notices after expanding more cites; the demo seeds only the deciding Estruch 2013 path. Live cinnamon depth 3 likewise reached extra notices; the demo seeds only Silva 2022 -> Khan 2003. The NHS handwashing page (not-in-graph) was fetched 2026-10-16T20:22:08+00:00 with 0 scholarly identifiers and 0 Work nodes.",
+  "note": "Hero hops recorded from live MoolTrace runs on throwaway graphs (olive-oil / cinnamon / JSPS / NHS on 2026-10-16 UTC; Harvard vitamin D on 2026-10-17 UTC). data/mooltrace.db was not opened. Hosted demo replays the four UI presets. Live olive-oil depth 2/3 also reached other notices after expanding more cites; the demo seeds only the deciding Estruch 2013 path. Live cinnamon depth 3 likewise reached extra notices; the demo seeds only Silva 2022 -> Khan 2003. The NHS handwashing page (not-in-graph) was fetched 2026-10-16T20:22:08+00:00 with 0 scholarly identifiers and 0 Work nodes. nutrition-harvard-vitamin-d is a recorded BLOCK hero for T25/T26, not a UI preset. Live Harvard depth 2/3 also reached mention-only Sato retractions (SPpaths strength 0.3025); the recorded hops are the qualifying Avenell 2014 -> Ishida 2004 uses_data_or_method path only.",
   "presets": [
     {
       "id": "nutrition-olive-oil",
@@ -52,7 +52,7 @@
           "to_doi": "10.1056/nejmoa1200303",
           "reliance": "mention",
           "weight": 0.55,
-          "sentence": "Estruch R, Ros E, Salas-Salvado J, Covas MI, Corella D, Aros F, Gomez-Gracia E, Ruiz-Gutierrez V, Fiol M, Lapetra J, Lamuela-Raventos RM, Serra-Majem L, Pint\u00f3 X, Basora J, Mu\u00f1oz MA, Sorl\u00ed JV, Mart\u00ednez JA, Mart\u00ednez-Gonz\u00e1lez MA.",
+          "sentence": "Estruch R, Ros E, Salas-Salvado J, Covas MI, Corella D, Aros F, Gomez-Gracia E, Ruiz-Gutierrez V, Fiol M, Lapetra J, Lamuela-Raventos RM, Serra-Majem L, Pintó X, Basora J, Muñoz MA, Sorlí JV, Martínez JA, Martínez-González MA.",
           "evidence_from": "pmc_html",
           "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4198773/",
           "fetched_at": "2026-10-16T19:52:21+00:00",
@@ -235,7 +235,7 @@
       "works": [
         {
           "doi": "10.1016/j.jsps.2015.03.013",
-          "title": "Diabetes mellitus and oxidative stress\u2014A concise review",
+          "title": "Diabetes mellitus and oxidative stress—A concise review",
           "year": 2016,
           "first_author": "Asmat",
           "expanded": true,
@@ -353,6 +353,122 @@
           "live_coverage": "expanded 0 of 0 cited works"
         }
       }
+    },
+    {
+      "id": "nutrition-harvard-vitamin-d",
+      "decision": "block",
+      "fetch_date": "2026-10-17",
+      "label": "recorded live run on 2026-10-17, content hash 6a3480374fc8ad3145fa014a3a5f9279a91fa25e34bede4ac0f36ca910ced83a",
+      "sources": [
+        {
+          "url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
+          "title": "Vitamin D • The Nutrition Source",
+          "site": "nutritionsource.hsph.harvard.edu",
+          "fetched_at": "2026-10-17T07:34:43+00:00",
+          "content_hash": "6a3480374fc8ad3145fa014a3a5f9279a91fa25e34bede4ac0f36ca910ced83a"
+        }
+      ],
+      "works": [
+        {
+          "doi": "10.1002/14651858.cd000227.pub4",
+          "title": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men",
+          "year": 2014,
+          "first_author": "Avenell",
+          "expanded": true,
+          "notice_checked": true,
+          "notice_checked_at": "2026-10-17T07:34:31+00:00"
+        },
+        {
+          "doi": "10.1016/j.amjmed.2004.05.019",
+          "title": "RETRACTED: Comparative efficacy of hormone replacement therapy, etidronate, calcitonin, alfacalcidol, and vitamin K in postmenopausal women with osteoporosis: The Yamaguchi Osteoporosis Prevention Study",
+          "year": 2004,
+          "first_author": "Ishida",
+          "expanded": false,
+          "notice_checked": true,
+          "notice_checked_at": "2026-10-17T07:34:31+00:00"
+        }
+      ],
+      "hops": [
+        {
+          "from_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
+          "to_doi": "10.1002/14651858.cd000227.pub4",
+          "reliance": "mention",
+          "weight": 0.55,
+          "sentence": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men.",
+          "evidence_from": "page",
+          "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
+          "fetched_at": "2026-10-17T07:34:43+00:00",
+          "content_hash": "6a3480374fc8ad3145fa014a3a5f9279a91fa25e34bede4ac0f36ca910ced83a",
+          "recorded_at": "2026-10-17T07:34:43+00:00"
+        },
+        {
+          "from_doi": "10.1002/14651858.cd000227.pub4",
+          "to_doi": "10.1016/j.amjmed.2004.05.019",
+          "reliance": "uses_data_or_method",
+          "weight": 0.85,
+          "sentence": "Editor; Cochrane Bone, Joint and Muscle Trauma Group) What's new Date Event Description 1 June 2021 Amended Given the trial report of Ishida 2004, an included trial, has been retracted, changes were made to the review to alert the reader to this, including removing data from the analyses, and relabelling were updated, and the study: Ishida 2004 (Retracted).",
+          "evidence_from": "pmc_html",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7032685/",
+          "fetched_at": "2026-10-17T07:34:54+00:00",
+          "content_hash": "c610fe9e9bc8ae2c864f446dc701a980596e0708e3581985db1498f2823fbd1c",
+          "recorded_at": "2026-10-17T07:34:54+00:00"
+        }
+      ],
+      "notices": [
+        {
+          "doi": "10.1016/j.amjmed.2004.05.019",
+          "work_doi": "10.1016/j.amjmed.2004.05.019",
+          "type": "retraction",
+          "label": "Retraction",
+          "source": "publisher",
+          "date": "2004-10-15"
+        }
+      ],
+      "by_depth": {
+        "1": {
+          "decision": "warn",
+          "exit_code": 2,
+          "notice_paths": 0,
+          "strength": null,
+          "recorded_at": "2026-10-17T07:36:47+00:00",
+          "fetch_date": "2026-10-17",
+          "live_wall_s": 13,
+          "live_incomplete": true,
+          "live_api_calls": 4,
+          "live_works_cited": 25,
+          "live_coverage": "expanded 0 of 25 cited works"
+        },
+        "2": {
+          "decision": "block",
+          "exit_code": 1,
+          "notice_paths": 1,
+          "notice_type": "retraction",
+          "notice_doi": "10.1016/j.amjmed.2004.05.019",
+          "strength": 0.4675,
+          "recorded_at": "2026-10-17T07:35:17+00:00",
+          "fetch_date": "2026-10-17",
+          "live_wall_s": 52,
+          "live_incomplete": false,
+          "live_api_calls": 118,
+          "live_works_cited": 25,
+          "live_coverage": "expanded 15 of 25 cited works"
+        },
+        "3": {
+          "decision": "block",
+          "exit_code": 1,
+          "notice_paths": 1,
+          "notice_type": "retraction",
+          "notice_doi": "10.1016/j.amjmed.2004.05.019",
+          "strength": 0.4675,
+          "recorded_at": "2026-10-17T07:36:14+00:00",
+          "fetch_date": "2026-10-17",
+          "live_wall_s": 57,
+          "live_incomplete": false,
+          "live_api_calls": 65,
+          "live_works_cited": 25,
+          "live_coverage": "expanded 15 of 25 cited works"
+        }
+      }
     }
   ],
   "rewrite_drafts": [
@@ -361,7 +477,9 @@
       "seed_id": "nutrition-olive-oil",
       "engine": "nutrition-coach",
       "text": "Vitamin D status is discussed separately. A nutrition coach cites https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil.",
-      "urls": ["https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil"],
+      "urls": [
+        "https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil"
+      ],
       "depth": 3
     }
   ]

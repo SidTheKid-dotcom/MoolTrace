@@ -89,7 +89,7 @@ def test_recorded_presets_include_live_by_depth(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("MOOLTRACE_PUBLIC_DEMO", "1")
     monkeypatch.delenv("MOOLTRACE_PUBLIC_LIVE", raising=False)
     recorded = {row["id"]: row for row in load_recorded_presets()["presets"]}
-    assert set(recorded) == set(EXPECTED)
+    assert set(EXPECTED) <= set(recorded)
     graph = Graph(tmp_path / "demo.db")
     seed_offline_presets(graph)
     fixtures = {row["id"]: row for row in load_demo_fixtures()}
