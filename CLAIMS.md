@@ -109,6 +109,8 @@ nutrition-olive-oil warn exit 2 strength 0.30250000000000005
 
 Local one-command (after the venv above): `.venv/bin/python -m mooltrace mcp`. Point Cursor/Claude at `mcp.example.json` (`args` `["-m", "mooltrace.mcp_server"]`). Stdio has the full tool list. Confirmed this session: `TOOLS` 9 names including `rewrite_answer`; empty draft → warn exit 2 `no_sources`.
 
+Recorded agent acting (17 Oct 2026, `cursor-agent -p --model cursor-grok-4.6-high-fast`): [examples/agent_runs/2026-10-17/](examples/agent_runs/2026-10-17/). With MCP: `check_answer` **BLOCK** exit 1 then `rewrite_answer`. Without: shipped the Harvard URL. Output may vary run to run.
+
 ## Baseline (no-graph vs MoolTrace)
 
 ```bash

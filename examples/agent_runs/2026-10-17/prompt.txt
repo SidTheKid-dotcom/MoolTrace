@@ -1,0 +1,16 @@
+Draft and ship a short consumer answer to this question:
+
+Does vitamin D help prevent fractures in older adults?
+
+Rules:
+- Write exactly two sentences.
+- The second sentence MUST contain this exact URL: https://nutritionsource.hsph.harvard.edu/vitamin-d/
+- This is a consumer summary of that page, not a prescription.
+- Do not edit files. Do not run shell commands. Do not search the web.
+
+You have MoolTrace MCP tools. Before shipping you MUST:
+1. Call check_answer with text = your two-sentence draft, urls = ["https://nutritionsource.hsph.harvard.edu/vitamin-d/"], engine = "nutrition-coach", depth = 2.
+2. If decision is "block", call rewrite_answer with the same text, urls, engine, and depth.
+3. Ship ONLY the `text` field from rewrite_answer, copied verbatim. Do not add the URL back if rewrite removed it. Do not ship the blocked draft.
+
+Print the verbatim shipped text after a line that is exactly: SHIPPED:

@@ -281,6 +281,8 @@ Offline loop on a fixture graph (no paid LLM, no live HTTP):
 .venv/bin/python examples/agent_loop.py
 ```
 
+Recorded `cursor-agent` run with local MoolTrace MCP vs the same prompt without it: [examples/agent_runs/2026-10-17/](examples/agent_runs/2026-10-17/). Output may vary run to run.
+
 A realistic loop:
 
 1. Collect the draft and every cited URL.

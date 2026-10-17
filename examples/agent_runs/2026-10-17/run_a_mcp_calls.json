@@ -1,0 +1,863 @@
+{
+  "date": "2026-10-17",
+  "model": "cursor-grok-4.6-high-fast",
+  "started_at": "2026-10-17T11:06:23Z",
+  "ended_at": "2026-10-17T11:06:57Z",
+  "note": "MCP stdio server was the local logging wrapper that calls mooltrace.mcp_server.main(), the same process as `.venv/bin/python -m mooltrace mcp`. Graph objects were stripped from recorded arguments. Machine paths and personal mail were not stored.",
+  "calls": [
+    {
+      "tool": "check_answer",
+      "ok": true,
+      "arguments": {
+        "text": "For most older adults who already get enough vitamin D, extra supplements have not been shown to prevent broken bones. Harvard's Nutrition Source reviews this evidence at https://nutritionsource.hsph.harvard.edu/vitamin-d/.",
+        "urls": [
+          "https://nutritionsource.hsph.harvard.edu/vitamin-d/"
+        ],
+        "engine": "nutrition-coach",
+        "depth": 2
+      },
+      "result": {
+        "product": "MoolTrace",
+        "tagline": "MoolTrace catches when your health AI's sources quietly rest on a flagged or retracted study, even three links deep.",
+        "decision": "block",
+        "exit_code": 1,
+        "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a retracted study.",
+        "pitch": "Your AI leaned on a flagged study and didn't tell you.",
+        "reasons": [
+          {
+            "code": "retraction",
+            "root_doi": "10.1016/j.amjmed.2004.05.019",
+            "root_title": "RETRACTED: Comparative efficacy of hormone replacement therapy, etidronate, calcitonin, alfacalcidol, and vitamin K in postmenopausal women with osteoporosis: The Yamaguchi Osteoporosis Prevention Study",
+            "root_author": "Ishida",
+            "root_year": 2004,
+            "notice_doi": "10.1016/j.amjmed.2004.05.019",
+            "notice_type": "retraction",
+            "notice_label": "Retraction",
+            "notice_date": "2004-10-15",
+            "notice_source": "publisher",
+            "hops": 2,
+            "path_score": 0.4675,
+            "steps": [
+              {
+                "kind": "Source",
+                "doi": null,
+                "title": "Vitamin D \u2022 The Nutrition Source",
+                "url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
+                "year": null,
+                "first_author": null
+              },
+              {
+                "kind": "Work",
+                "doi": "10.1002/14651858.cd000227.pub4",
+                "title": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men",
+                "url": null,
+                "year": 2014,
+                "first_author": "Avenell"
+              },
+              {
+                "kind": "Work",
+                "doi": "10.1016/j.amjmed.2004.05.019",
+                "title": "RETRACTED: Comparative efficacy of hormone replacement therapy, etidronate, calcitonin, alfacalcidol, and vitamin K in postmenopausal women with osteoporosis: The Yamaguchi Osteoporosis Prevention Study",
+                "url": null,
+                "year": 2004,
+                "first_author": "Ishida"
+              }
+            ],
+            "hops_evidence": [
+              {
+                "weight": 0.55,
+                "reliance": "mention",
+                "sentence": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men.",
+                "evidence_from": "page",
+                "judged": true,
+                "cost": 0.59783700075562,
+                "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
+                "fetched_at": "2026-10-17T07:34:43+00:00",
+                "content_hash": "6a3480374fc8ad3145fa014a3a5f9279a91fa25e34bede4ac0f36ca910ced83a"
+              },
+              {
+                "weight": 0.85,
+                "reliance": "uses_data_or_method",
+                "sentence": "Editor; Cochrane Bone, Joint and Muscle Trauma Group) What's new Date Event Description 1 June 2021 Amended Given the trial report of Ishida 2004, an included trial, has been retracted, changes were made to the review to alert the reader to this, including removing data from the analyses, and relabelling were updated, and the study: Ishida 2004 (Retracted).",
+                "evidence_from": "pmc_html",
+                "judged": true,
+                "cost": 0.162518929497775,
+                "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7032685/",
+                "fetched_at": "2026-10-17T07:34:54+00:00",
+                "content_hash": "c610fe9e9bc8ae2c864f446dc701a980596e0708e3581985db1498f2823fbd1c"
+              }
+            ],
+            "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
+            "reliance": "uses_data_or_method",
+            "weight": 0.85,
+            "sentence": "Editor; Cochrane Bone, Joint and Muscle Trauma Group) What's new Date Event Description 1 June 2021 Amended Given the trial report of Ishida 2004, an included trial, has been retracted, changes were made to the review to alert the reader to this, including removing data from the analyses, and relabelling were updated, and the study: Ishida 2004 (Retracted).",
+            "evidence_from": "pmc_html",
+            "status": "count",
+            "sp_cost": 0.760355930253395,
+            "cypher": "MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)\nMATCH p0 = (s)-[:RESTS_ON*1..2]->(w)\nMATCH (n:Notice)-[:FLAGS]->(w:Work)\nWITH DISTINCT s, w, n\nCALL algo.SPpaths({sourceNode: s, targetNode: w, relTypes: ['RESTS_ON'], relDirection: 'outgoing', maxLen: 2, weightProp: 'cost'})\nYIELD path, pathCost\nWITH s, w, n, path, pathCost, relationships(path) AS rels\nRETURN s.url AS source_url,\n       s.title AS source_title,\n       w.doi AS root_doi,\n       w.title AS root_title,\n       w.year AS root_year,\n       w.first_author AS root_author,\n       n.doi AS notice_doi,\n       n.type AS notice_type,\n       n.label AS notice_label,\n       n.date AS notice_date,\n       n.source AS notice_source,\n       length(path) AS hops,\n       reduce(score = 0.0, r IN rels | score + coalesce(r.cost, 20.0)) AS sp_cost,\n       reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) AS path_score,\n       [x IN nodes(path) | {doi: x.doi, title: x.title, url: x.url, year: x.year, first_author: x.first_author}] AS steps,\n       [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, cost: r.cost, source_url: r.evidence_url, fetched_at: r.evidence_fetched_at, content_hash: r.evidence_sha256}] AS hops_evidence\nORDER BY sp_cost ASC, hops ASC\nLIMIT 40"
+          }
+        ],
+        "discounted": [],
+        "unjudged_paths": 0,
+        "unverified_paths": 0,
+        "independent_sources": [
+          {
+            "id": "10.1002/14651858.cd000227.pub4",
+            "title": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men",
+            "reliance": "uses_data_or_method",
+            "weight": 0.85,
+            "path_score": 0.4675,
+            "sentence": "Editor; Cochrane Bone, Joint and Muscle Trauma Group) What's new Date Event Description 1 June 2021 Amended Given the trial report of Ishida 2004, an included trial, has been retracted, changes were made to the review to alert the reader to this, including removing data from the analyses, and relabelling were updated, and the study: Ishida 2004 (Retracted).",
+            "evidence_from": "pmc_html",
+            "root_doi": "10.1016/j.amjmed.2004.05.019"
+          }
+        ],
+        "independent_source_count": 1,
+        "weight_floor": 0.5,
+        "strength_floor": null,
+        "path_rule": "algo.SPpaths decides: strongest path per flagged Work; counted if every hop is evidenced and each hop weight is \u2265 0.5; counted retraction blocks only when the hop into the retracted work is included, relies, or uses_data_or_method (weight \u2265 0.85); a counted retraction reached only via mention or background is warn (cites a review that mentions a retracted trial; the review did not appear to rely on it); counted + EoC \u2192 warn; flagged with an unverified hop \u2192 warn (can't verify); a hop below 0.5 \u2192 pass (cites a flagged study only in passing). Direct 1-hop citation of a retracted work still blocks. A multiplied path-strength floor is not applied. Zero SPpaths rows is a pass; PATHS_TO_NOTICE is not a second verdict. Python PATH_RULE is not a verdict. If the algorithm errors, exit 3.",
+        "decided_by": "algo.SPpaths",
+        "coverage": "expanded 1 of 1 cited works",
+        "not_shown": "beyond requested depth",
+        "remediation_clusters": {
+          "algorithm": "algo.WCC",
+          "call": "CALL algo.WCC({nodeLabels: ['Work'], relationshipTypes: ['RESTS_ON']})\nYIELD node, componentId\nWITH node, componentId\nOPTIONAL MATCH (flag:Notice)-[:FLAGS]->(node)\nWITH componentId,\n     collect(DISTINCT node.doi) AS work_dois,\n     [d IN collect(DISTINCT flag.doi) WHERE d IS NOT NULL] AS notice_dois,\n     [t IN collect(DISTINCT flag.type) WHERE t IS NOT NULL] AS notice_types\nWHERE size(notice_dois) > 0\nMATCH (a:Answer)-[:CITES]->(:Source)-[:RESTS_ON]->(w:Work)\nWHERE w.doi IN work_dois\nRETURN componentId,\n       work_dois,\n       notice_dois,\n       notice_types,\n       collect(DISTINCT a.id) AS answer_ids,\n       collect(DISTINCT a.engine) AS engines",
+          "cypher": "CALL algo.WCC({nodeLabels: ['Work'], relationshipTypes: ['RESTS_ON']})\nYIELD node, componentId\nWITH node, componentId\nOPTIONAL MATCH (flag:Notice)-[:FLAGS]->(node)\nWITH componentId,\n     collect(DISTINCT node.doi) AS work_dois,\n     [d IN collect(DISTINCT flag.doi) WHERE d IS NOT NULL] AS notice_dois,\n     [t IN collect(DISTINCT flag.type) WHERE t IS NOT NULL] AS notice_types\nWHERE size(notice_dois) > 0\nMATCH (a:Answer)-[:CITES]->(:Source)-[:RESTS_ON]->(w:Work)\nWHERE w.doi IN work_dois\nRETURN componentId,\n       work_dois,\n       notice_dois,\n       notice_types,\n       collect(DISTINCT a.id) AS answer_ids,\n       collect(DISTINCT a.engine) AS engines",
+          "clusters": [
+            {
+              "componentId": 2,
+              "work_dois": [
+                "10.1016/j.amjmed.2004.05.019",
+                "10.1002/14651858.cd000227.pub4"
+              ],
+              "notice_dois": [
+                "10.1016/j.amjmed.2004.05.019"
+              ],
+              "notice_types": [
+                "retraction"
+              ],
+              "answer_ids": [
+                "a209a99ebc3fafec",
+                "26eab81e164a20e2",
+                "f6329a4dfdc27f88",
+                "bce5cc48d70528ff"
+              ],
+              "engines": [
+                "nutrition-coach"
+              ]
+            },
+            {
+              "componentId": 7,
+              "work_dois": [
+                "10.2337/diacare.26.12.3215",
+                "10.3390/nu14132773"
+              ],
+              "notice_dois": [
+                "10.2337/dc25-ec09"
+              ],
+              "notice_types": [
+                "expression_of_concern"
+              ],
+              "answer_ids": [
+                "e08ec1b345088727"
+              ],
+              "engines": [
+                "nutrition-coach"
+              ]
+            },
+            {
+              "componentId": 12,
+              "work_dois": [
+                "10.1056/nejmoa1200303",
+                "10.1186/1476-511x-13-154"
+              ],
+              "notice_dois": [
+                "10.1056/nejmc1806491"
+              ],
+              "notice_types": [
+                "retraction"
+              ],
+              "answer_ids": [
+                "e30c8d434175f9d8"
+              ],
+              "engines": [
+                "nutrition-coach"
+              ]
+            }
+          ],
+          "elapsed_ms": 1.91,
+          "note": "Weakly connected Work components that contain a publisher notice. Use these clusters to group answers that share a contaminated citation component. The verdict classifies algo.SPpaths rows."
+        },
+        "algorithm": {
+          "name": "algo.SPpaths",
+          "weight_prop": "cost",
+          "cost_formula": "-ln(weight)",
+          "strength": 0.4675,
+          "weight_floor": 0.5,
+          "cypher": "MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)\nMATCH p0 = (s)-[:RESTS_ON*1..2]->(w)\nMATCH (n:Notice)-[:FLAGS]->(w:Work)\nWITH DISTINCT s, w, n\nCALL algo.SPpaths({sourceNode: s, targetNode: w, relTypes: ['RESTS_ON'], relDirection: 'outgoing', maxLen: 2, weightProp: 'cost'})\nYIELD path, pathCost\nWITH s, w, n, path, pathCost, relationships(path) AS rels\nRETURN s.url AS source_url,\n       s.title AS source_title,\n       w.doi AS root_doi,\n       w.title AS root_title,\n       w.year AS root_year,\n       w.first_author AS root_author,\n       n.doi AS notice_doi,\n       n.type AS notice_type,\n       n.label AS notice_label,\n       n.date AS notice_date,\n       n.source AS notice_source,\n       length(path) AS hops,\n       reduce(score = 0.0, r IN rels | score + coalesce(r.cost, 20.0)) AS sp_cost,\n       reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) AS path_score,\n       [x IN nodes(path) | {doi: x.doi, title: x.title, url: x.url, year: x.year, first_author: x.first_author}] AS steps,\n       [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, cost: r.cost, source_url: r.evidence_url, fetched_at: r.evidence_fetched_at, content_hash: r.evidence_sha256}] AS hops_evidence\nORDER BY sp_cost ASC, hops ASC\nLIMIT 40",
+          "explanation": "Decided by: algo.SPpaths, path strength 0.47"
+        },
+        "impact": {
+          "notice_doi": "10.1016/j.amjmed.2004.05.019",
+          "notice_type": "retraction",
+          "root_doi": "10.1016/j.amjmed.2004.05.019",
+          "answer_count": 4,
+          "counted_answer_count": 4,
+          "engines": [
+            "nutrition-coach"
+          ],
+          "cypher": "MATCH (n:Notice)-[:FLAGS]->(w:Work)\nWHERE n.doi = $doi OR w.doi = $doi\nOPTIONAL MATCH p = (s:Source)-[:RESTS_ON*1..2]->(w)\nOPTIONAL MATCH (a:Answer)-[:CITES]->(s)\nWITH n, w, a, s, p, relationships(p) AS rels\nWHERE p IS NOT NULL OR a IS NULL\nWITH n, w, a, s,\n     CASE WHEN p IS NULL THEN false ELSE ALL(r IN rels WHERE coalesce(r.sentence, '') <> '' AND coalesce(r.weight, 0.0) >= 0.5) END AS counted\nRETURN n.doi AS notice_doi,\n       n.type AS notice_type,\n       n.label AS notice_label,\n       n.date AS notice_date,\n       n.source AS notice_source,\n       w.doi AS root_doi,\n       w.title AS root_title,\n       w.year AS root_year,\n       [id IN collect(DISTINCT a.id) WHERE id IS NOT NULL] AS answer_ids,\n       [e IN collect(DISTINCT a.engine) WHERE e IS NOT NULL] AS engines,\n       [u IN collect(DISTINCT s.url) WHERE u IS NOT NULL] AS source_urls,\n       [id IN collect(DISTINCT CASE WHEN counted THEN a.id END) WHERE id IS NOT NULL] AS counted_answer_ids,\n       size([id IN collect(DISTINCT a.id) WHERE id IS NOT NULL]) AS answer_count,\n       size([u IN collect(DISTINCT s.url) WHERE u IS NOT NULL]) AS source_count",
+          "summary": "This retraction affects 4 stored answers."
+        },
+        "answer_id": "bce5cc48d70528ff",
+        "engine": "nutrition-coach",
+        "depth": 2,
+        "paths": [
+          {
+            "hops": 2,
+            "path_score": 0.4675,
+            "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
+            "source_title": "Vitamin D \u2022 The Nutrition Source",
+            "root": {
+              "doi": "10.1016/j.amjmed.2004.05.019",
+              "title": "RETRACTED: Comparative efficacy of hormone replacement therapy, etidronate, calcitonin, alfacalcidol, and vitamin K in postmenopausal women with osteoporosis: The Yamaguchi Osteoporosis Prevention Study",
+              "year": 2004,
+              "first_author": "Ishida"
+            },
+            "notice": {
+              "doi": "10.1016/j.amjmed.2004.05.019",
+              "type": "retraction",
+              "label": "Retraction",
+              "date": "2004-10-15",
+              "source": "publisher"
+            },
+            "steps": [
+              {
+                "kind": "Source",
+                "doi": null,
+                "title": "Vitamin D \u2022 The Nutrition Source",
+                "url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
+                "year": null,
+                "first_author": null
+              },
+              {
+                "kind": "Work",
+                "doi": "10.1002/14651858.cd000227.pub4",
+                "title": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men",
+                "url": null,
+                "year": 2014,
+                "first_author": "Avenell"
+              },
+              {
+                "kind": "Work",
+                "doi": "10.1016/j.amjmed.2004.05.019",
+                "title": "RETRACTED: Comparative efficacy of hormone replacement therapy, etidronate, calcitonin, alfacalcidol, and vitamin K in postmenopausal women with osteoporosis: The Yamaguchi Osteoporosis Prevention Study",
+                "url": null,
+                "year": 2004,
+                "first_author": "Ishida"
+              }
+            ],
+            "hops_evidence": [
+              {
+                "weight": 0.55,
+                "reliance": "mention",
+                "sentence": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men.",
+                "evidence_from": "page",
+                "judged": true,
+                "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
+                "fetched_at": "2026-10-17T07:34:43+00:00",
+                "content_hash": "6a3480374fc8ad3145fa014a3a5f9279a91fa25e34bede4ac0f36ca910ced83a"
+              },
+              {
+                "weight": 0.85,
+                "reliance": "uses_data_or_method",
+                "sentence": "Editor; Cochrane Bone, Joint and Muscle Trauma Group) What's new Date Event Description 1 June 2021 Amended Given the trial report of Ishida 2004, an included trial, has been retracted, changes were made to the review to alert the reader to this, including removing data from the analyses, and relabelling were updated, and the study: Ishida 2004 (Retracted).",
+                "evidence_from": "pmc_html",
+                "judged": true,
+                "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7032685/",
+                "fetched_at": "2026-10-17T07:34:54+00:00",
+                "content_hash": "c610fe9e9bc8ae2c864f446dc701a980596e0708e3581985db1498f2823fbd1c"
+              }
+            ],
+            "weight": 0.85,
+            "reliance": "uses_data_or_method",
+            "sentence": "Editor; Cochrane Bone, Joint and Muscle Trauma Group) What's new Date Event Description 1 June 2021 Amended Given the trial report of Ishida 2004, an included trial, has been retracted, changes were made to the review to alert the reader to this, including removing data from the analyses, and relabelling were updated, and the study: Ishida 2004 (Retracted).",
+            "evidence_from": "pmc_html",
+            "judged": true
+          }
+        ],
+        "works_cited": 1,
+        "api_calls": 0,
+        "cache_hits": 0,
+        "reused_graph": false,
+        "incomplete": false,
+        "errors": [],
+        "context_notes": [],
+        "queries": [
+          {
+            "name": "paths_to_notice",
+            "cypher": "MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)\nMATCH p = (s)-[:RESTS_ON*1..2]->(w)\nMATCH (n:Notice)-[:FLAGS]->(w:Work)\nWITH s, w, n, p, relationships(p) AS rels\nWITH s, w, n, p, rels,\n     reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) AS path_score\nRETURN s.url AS source_url,\n       s.title AS source_title,\n       w.doi AS root_doi,\n       w.title AS root_title,\n       w.year AS root_year,\n       w.first_author AS root_author,\n       n.doi AS notice_doi,\n       n.type AS notice_type,\n       n.label AS notice_label,\n       n.date AS notice_date,\n       n.source AS notice_source,\n       length(p) AS hops,\n       path_score,\n       [x IN nodes(p) | {doi: x.doi, title: x.title, url: x.url, year: x.year, first_author: x.first_author}] AS steps,\n       [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, source_url: r.evidence_url, fetched_at: r.evidence_fetched_at, content_hash: r.evidence_sha256}] AS hops_evidence\nORDER BY path_score DESC, hops ASC\nLIMIT 80",
+            "params": {
+              "answer_id": "bce5cc48d70528ff"
+            },
+            "elapsed_ms": 2.13,
+            "rows": 1
+          },
+          {
+            "name": "sp_paths_to_notice",
+            "cypher": "MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)\nMATCH p0 = (s)-[:RESTS_ON*1..2]->(w)\nMATCH (n:Notice)-[:FLAGS]->(w:Work)\nWITH DISTINCT s, w, n\nCALL algo.SPpaths({sourceNode: s, targetNode: w, relTypes: ['RESTS_ON'], relDirection: 'outgoing', maxLen: 2, weightProp: 'cost'})\nYIELD path, pathCost\nWITH s, w, n, path, pathCost, relationships(path) AS rels\nRETURN s.url AS source_url,\n       s.title AS source_title,\n       w.doi AS root_doi,\n       w.title AS root_title,\n       w.year AS root_year,\n       w.first_author AS root_author,\n       n.doi AS notice_doi,\n       n.type AS notice_type,\n       n.label AS notice_label,\n       n.date AS notice_date,\n       n.source AS notice_source,\n       length(path) AS hops,\n       reduce(score = 0.0, r IN rels | score + coalesce(r.cost, 20.0)) AS sp_cost,\n       reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) AS path_score,\n       [x IN nodes(path) | {doi: x.doi, title: x.title, url: x.url, year: x.year, first_author: x.first_author}] AS steps,\n       [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, cost: r.cost, source_url: r.evidence_url, fetched_at: r.evidence_fetched_at, content_hash: r.evidence_sha256}] AS hops_evidence\nORDER BY sp_cost ASC, hops ASC\nLIMIT 40",
+            "params": {
+              "answer_id": "bce5cc48d70528ff"
+            },
+            "elapsed_ms": 2.25,
+            "rows": 1
+          },
+          {
+            "name": "wcc_clusters",
+            "cypher": "CALL algo.WCC({nodeLabels: ['Work'], relationshipTypes: ['RESTS_ON']})\nYIELD node, componentId\nWITH node, componentId\nOPTIONAL MATCH (flag:Notice)-[:FLAGS]->(node)\nWITH componentId,\n     collect(DISTINCT node.doi) AS work_dois,\n     [d IN collect(DISTINCT flag.doi) WHERE d IS NOT NULL] AS notice_dois,\n     [t IN collect(DISTINCT flag.type) WHERE t IS NOT NULL] AS notice_types\nWHERE size(notice_dois) > 0\nMATCH (a:Answer)-[:CITES]->(:Source)-[:RESTS_ON]->(w:Work)\nWHERE w.doi IN work_dois\nRETURN componentId,\n       work_dois,\n       notice_dois,\n       notice_types,\n       collect(DISTINCT a.id) AS answer_ids,\n       collect(DISTINCT a.engine) AS engines",
+            "params": {},
+            "elapsed_ms": 1.91,
+            "rows": 3
+          },
+          {
+            "name": "what_rests_on",
+            "cypher": "MATCH (n:Notice)-[:FLAGS]->(w:Work)\nWHERE n.doi = $doi OR w.doi = $doi\nOPTIONAL MATCH p = (s:Source)-[:RESTS_ON*1..2]->(w)\nOPTIONAL MATCH (a:Answer)-[:CITES]->(s)\nWITH n, w, a, s, p, relationships(p) AS rels\nWHERE p IS NOT NULL OR a IS NULL\nWITH n, w, a, s,\n     CASE WHEN p IS NULL THEN false ELSE ALL(r IN rels WHERE coalesce(r.sentence, '') <> '' AND coalesce(r.weight, 0.0) >= 0.5) END AS counted\nRETURN n.doi AS notice_doi,\n       n.type AS notice_type,\n       n.label AS notice_label,\n       n.date AS notice_date,\n       n.source AS notice_source,\n       w.doi AS root_doi,\n       w.title AS root_title,\n       w.year AS root_year,\n       [id IN collect(DISTINCT a.id) WHERE id IS NOT NULL] AS answer_ids,\n       [e IN collect(DISTINCT a.engine) WHERE e IS NOT NULL] AS engines,\n       [u IN collect(DISTINCT s.url) WHERE u IS NOT NULL] AS source_urls,\n       [id IN collect(DISTINCT CASE WHEN counted THEN a.id END) WHERE id IS NOT NULL] AS counted_answer_ids,\n       size([id IN collect(DISTINCT a.id) WHERE id IS NOT NULL]) AS answer_count,\n       size([u IN collect(DISTINCT s.url) WHERE u IS NOT NULL]) AS source_count",
+            "params": {
+              "doi": "10.1016/j.amjmed.2004.05.019"
+            },
+            "elapsed_ms": 1.98,
+            "rows": 1
+          },
+          {
+            "name": "upstream_works",
+            "cypher": "MATCH (n:Notice)-[:FLAGS]->(w:Work)\nWHERE n.doi = $doi OR w.doi = $doi\nMATCH (u:Work)-[:RESTS_ON*1..3]->(w)\nRETURN DISTINCT u.doi AS doi, u.title AS title, u.year AS year\nORDER BY u.year DESC\nLIMIT 40",
+            "params": {
+              "doi": "10.1016/j.amjmed.2004.05.019"
+            },
+            "elapsed_ms": 0.89,
+            "rows": 1
+          }
+        ],
+        "cypher": "MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)\nMATCH p0 = (s)-[:RESTS_ON*1..2]->(w)\nMATCH (n:Notice)-[:FLAGS]->(w:Work)\nWITH DISTINCT s, w, n\nCALL algo.SPpaths({sourceNode: s, targetNode: w, relTypes: ['RESTS_ON'], relDirection: 'outgoing', maxLen: 2, weightProp: 'cost'})\nYIELD path, pathCost\nWITH s, w, n, path, pathCost, relationships(path) AS rels\nRETURN s.url AS source_url,\n       s.title AS source_title,\n       w.doi AS root_doi,\n       w.title AS root_title,\n       w.year AS root_year,\n       w.first_author AS root_author,\n       n.doi AS notice_doi,\n       n.type AS notice_type,\n       n.label AS notice_label,\n       n.date AS notice_date,\n       n.source AS notice_source,\n       length(path) AS hops,\n       reduce(score = 0.0, r IN rels | score + coalesce(r.cost, 20.0)) AS sp_cost,\n       reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) AS path_score,\n       [x IN nodes(path) | {doi: x.doi, title: x.title, url: x.url, year: x.year, first_author: x.first_author}] AS steps,\n       [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, cost: r.cost, source_url: r.evidence_url, fetched_at: r.evidence_fetched_at, content_hash: r.evidence_sha256}] AS hops_evidence\nORDER BY sp_cost ASC, hops ASC\nLIMIT 40",
+        "elapsed_ms": 2.13,
+        "limits": "MoolTrace reports a path to a publisher notice. An Expression of Concern is a different Crossref update type from a retraction. This check does not give medical advice.",
+        "notices_checked_at": "2026-10-17T07:34:31+00:00",
+        "notices_checked_ago": "3 h ago",
+        "why_graph": {
+          "title": "Why the graph decided",
+          "cypher": "MATCH (a:Answer {id: 'bce5cc48d70528ff'})-[:CITES]->(s:Source)\nMATCH p0 = (s)-[:RESTS_ON*1..2]->(w)\nMATCH (n:Notice)-[:FLAGS]->(w:Work)\nWITH DISTINCT s, w, n\nCALL algo.SPpaths({sourceNode: s, targetNode: w, relTypes: ['RESTS_ON'], relDirection: 'outgoing', maxLen: 2, weightProp: 'cost'})\nYIELD path, pathCost\nWITH s, w, n, path, pathCost, relationships(path) AS rels\nRETURN s.url AS source_url,\n       s.title AS source_title,\n       w.doi AS root_doi,\n       w.title AS root_title,\n       w.year AS root_year,\n       w.first_author AS root_author,\n       n.doi AS notice_doi,\n       n.type AS notice_type,\n       n.label AS notice_label,\n       n.date AS notice_date,\n       n.source AS notice_source,\n       length(path) AS hops,\n       reduce(score = 0.0, r IN rels | score + coalesce(r.cost, 20.0)) AS sp_cost,\n       reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) AS path_score,\n       [x IN nodes(path) | {doi: x.doi, title: x.title, url: x.url, year: x.year, first_author: x.first_author}] AS steps,\n       [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, cost: r.cost, source_url: r.evidence_url, fetched_at: r.evidence_fetched_at, content_hash: r.evidence_sha256}] AS hops_evidence\nORDER BY sp_cost ASC, hops ASC\nLIMIT 40",
+          "path": {
+            "nodes": [
+              "Answer",
+              "Source",
+              "Work",
+              "Work",
+              "Notice"
+            ],
+            "hops": [
+              {
+                "relation": "mention",
+                "weight": 0.55,
+                "sentence": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men.",
+                "sentence_snippet": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men.",
+                "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
+                "fetched_at": "2026-10-17T07:34:43+00:00"
+              },
+              {
+                "relation": "uses_data_or_method",
+                "weight": 0.85,
+                "sentence": "Editor; Cochrane Bone, Joint and Muscle Trauma Group) What's new Date Event Description 1 June 2021 Amended Given the trial report of Ishida 2004, an included trial, has been retracted, changes were made to the review to alert the reader to this, including removing data from the analyses, and relabelling were updated, and the study: Ishida 2004 (Retracted).",
+                "sentence_snippet": "Editor; Cochrane Bone, Joint and Muscle Trauma Group) What's new Date Event Description 1 June 2021 Amended Given the trial report of Ishid\u2026",
+                "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7032685/",
+                "fetched_at": "2026-10-17T07:34:54+00:00"
+              }
+            ],
+            "readable": "Answer \u2192 Source \u2192 Work \u2192 Work \u2192 Notice"
+          },
+          "without_graph": {
+            "decision": "pass",
+            "exit_code": 0,
+            "notice_count": 0,
+            "dois": [],
+            "line": "Direct DOI check: 0 notices \u2192 would ship"
+          },
+          "with_graph": {
+            "depth": 2,
+            "decision": "block",
+            "notice_type": "retraction",
+            "notice_doi": "10.1016/j.amjmed.2004.05.019",
+            "line": "Graph depth 2: retraction 10.1016/j.amjmed.2004.05.019 \u2192 BLOCK"
+          },
+          "contrast": "Direct DOI check: 0 notices \u2192 would ship  |  Graph depth 2: retraction 10.1016/j.amjmed.2004.05.019 \u2192 BLOCK",
+          "live_sppaths": null
+        }
+      }
+    },
+    {
+      "tool": "rewrite_answer",
+      "ok": true,
+      "arguments": {
+        "text": "For most older adults who already get enough vitamin D, extra supplements have not been shown to prevent broken bones. Harvard's Nutrition Source reviews this evidence at https://nutritionsource.hsph.harvard.edu/vitamin-d/.",
+        "urls": [
+          "https://nutritionsource.hsph.harvard.edu/vitamin-d/"
+        ],
+        "engine": "nutrition-coach",
+        "depth": 2
+      },
+      "result": {
+        "rewritten": true,
+        "reason": "block",
+        "method": "template",
+        "before": "For most older adults who already get enough vitamin D, extra supplements have not been shown to prevent broken bones. Harvard's Nutrition Source reviews this evidence at https://nutritionsource.hsph.harvard.edu/vitamin-d/.",
+        "text": "For most older adults who already get enough vitamin D, extra supplements have not been shown to prevent broken bones. An earlier version of this answer cited Ishida et al. 2004; that paper was retracted on 15 Oct 2004, so this claim was removed.",
+        "urls": [],
+        "dropped": [
+          "10.1002/14651858.cd000227.pub4",
+          "10.1016/j.amjmed.2004.05.019",
+          "https://nutritionsource.hsph.harvard.edu/vitamin-d"
+        ],
+        "check": {
+          "product": "MoolTrace",
+          "tagline": "MoolTrace catches when your health AI's sources quietly rest on a flagged or retracted study, even three links deep.",
+          "decision": "block",
+          "exit_code": 1,
+          "summary": "Before your bot ships this answer, MoolTrace flags that a cited page or review reaches a retracted study.",
+          "pitch": "Your AI leaned on a flagged study and didn't tell you.",
+          "reasons": [
+            {
+              "code": "retraction",
+              "root_doi": "10.1016/j.amjmed.2004.05.019",
+              "root_title": "RETRACTED: Comparative efficacy of hormone replacement therapy, etidronate, calcitonin, alfacalcidol, and vitamin K in postmenopausal women with osteoporosis: The Yamaguchi Osteoporosis Prevention Study",
+              "root_author": "Ishida",
+              "root_year": 2004,
+              "notice_doi": "10.1016/j.amjmed.2004.05.019",
+              "notice_type": "retraction",
+              "notice_label": "Retraction",
+              "notice_date": "2004-10-15",
+              "notice_source": "publisher",
+              "hops": 2,
+              "path_score": 0.4675,
+              "steps": [
+                {
+                  "kind": "Source",
+                  "doi": null,
+                  "title": "Vitamin D \u2022 The Nutrition Source",
+                  "url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
+                  "year": null,
+                  "first_author": null
+                },
+                {
+                  "kind": "Work",
+                  "doi": "10.1002/14651858.cd000227.pub4",
+                  "title": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men",
+                  "url": null,
+                  "year": 2014,
+                  "first_author": "Avenell"
+                },
+                {
+                  "kind": "Work",
+                  "doi": "10.1016/j.amjmed.2004.05.019",
+                  "title": "RETRACTED: Comparative efficacy of hormone replacement therapy, etidronate, calcitonin, alfacalcidol, and vitamin K in postmenopausal women with osteoporosis: The Yamaguchi Osteoporosis Prevention Study",
+                  "url": null,
+                  "year": 2004,
+                  "first_author": "Ishida"
+                }
+              ],
+              "hops_evidence": [
+                {
+                  "weight": 0.55,
+                  "reliance": "mention",
+                  "sentence": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men.",
+                  "evidence_from": "page",
+                  "judged": true,
+                  "cost": 0.59783700075562,
+                  "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
+                  "fetched_at": "2026-10-17T07:34:43+00:00",
+                  "content_hash": "6a3480374fc8ad3145fa014a3a5f9279a91fa25e34bede4ac0f36ca910ced83a"
+                },
+                {
+                  "weight": 0.85,
+                  "reliance": "uses_data_or_method",
+                  "sentence": "Editor; Cochrane Bone, Joint and Muscle Trauma Group) What's new Date Event Description 1 June 2021 Amended Given the trial report of Ishida 2004, an included trial, has been retracted, changes were made to the review to alert the reader to this, including removing data from the analyses, and relabelling were updated, and the study: Ishida 2004 (Retracted).",
+                  "evidence_from": "pmc_html",
+                  "judged": true,
+                  "cost": 0.162518929497775,
+                  "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7032685/",
+                  "fetched_at": "2026-10-17T07:34:54+00:00",
+                  "content_hash": "c610fe9e9bc8ae2c864f446dc701a980596e0708e3581985db1498f2823fbd1c"
+                }
+              ],
+              "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
+              "reliance": "uses_data_or_method",
+              "weight": 0.85,
+              "sentence": "Editor; Cochrane Bone, Joint and Muscle Trauma Group) What's new Date Event Description 1 June 2021 Amended Given the trial report of Ishida 2004, an included trial, has been retracted, changes were made to the review to alert the reader to this, including removing data from the analyses, and relabelling were updated, and the study: Ishida 2004 (Retracted).",
+              "evidence_from": "pmc_html",
+              "status": "count",
+              "sp_cost": 0.760355930253395,
+              "cypher": "MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)\nMATCH p0 = (s)-[:RESTS_ON*1..2]->(w)\nMATCH (n:Notice)-[:FLAGS]->(w:Work)\nWITH DISTINCT s, w, n\nCALL algo.SPpaths({sourceNode: s, targetNode: w, relTypes: ['RESTS_ON'], relDirection: 'outgoing', maxLen: 2, weightProp: 'cost'})\nYIELD path, pathCost\nWITH s, w, n, path, pathCost, relationships(path) AS rels\nRETURN s.url AS source_url,\n       s.title AS source_title,\n       w.doi AS root_doi,\n       w.title AS root_title,\n       w.year AS root_year,\n       w.first_author AS root_author,\n       n.doi AS notice_doi,\n       n.type AS notice_type,\n       n.label AS notice_label,\n       n.date AS notice_date,\n       n.source AS notice_source,\n       length(path) AS hops,\n       reduce(score = 0.0, r IN rels | score + coalesce(r.cost, 20.0)) AS sp_cost,\n       reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) AS path_score,\n       [x IN nodes(path) | {doi: x.doi, title: x.title, url: x.url, year: x.year, first_author: x.first_author}] AS steps,\n       [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, cost: r.cost, source_url: r.evidence_url, fetched_at: r.evidence_fetched_at, content_hash: r.evidence_sha256}] AS hops_evidence\nORDER BY sp_cost ASC, hops ASC\nLIMIT 40"
+            }
+          ],
+          "discounted": [],
+          "unjudged_paths": 0,
+          "unverified_paths": 0,
+          "independent_sources": [
+            {
+              "id": "10.1002/14651858.cd000227.pub4",
+              "title": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men",
+              "reliance": "uses_data_or_method",
+              "weight": 0.85,
+              "path_score": 0.4675,
+              "sentence": "Editor; Cochrane Bone, Joint and Muscle Trauma Group) What's new Date Event Description 1 June 2021 Amended Given the trial report of Ishida 2004, an included trial, has been retracted, changes were made to the review to alert the reader to this, including removing data from the analyses, and relabelling were updated, and the study: Ishida 2004 (Retracted).",
+              "evidence_from": "pmc_html",
+              "root_doi": "10.1016/j.amjmed.2004.05.019"
+            }
+          ],
+          "independent_source_count": 1,
+          "weight_floor": 0.5,
+          "strength_floor": null,
+          "path_rule": "algo.SPpaths decides: strongest path per flagged Work; counted if every hop is evidenced and each hop weight is \u2265 0.5; counted retraction blocks only when the hop into the retracted work is included, relies, or uses_data_or_method (weight \u2265 0.85); a counted retraction reached only via mention or background is warn (cites a review that mentions a retracted trial; the review did not appear to rely on it); counted + EoC \u2192 warn; flagged with an unverified hop \u2192 warn (can't verify); a hop below 0.5 \u2192 pass (cites a flagged study only in passing). Direct 1-hop citation of a retracted work still blocks. A multiplied path-strength floor is not applied. Zero SPpaths rows is a pass; PATHS_TO_NOTICE is not a second verdict. Python PATH_RULE is not a verdict. If the algorithm errors, exit 3.",
+          "decided_by": "algo.SPpaths",
+          "coverage": "expanded 1 of 1 cited works",
+          "not_shown": "beyond requested depth",
+          "remediation_clusters": {
+            "algorithm": "algo.WCC",
+            "call": "CALL algo.WCC({nodeLabels: ['Work'], relationshipTypes: ['RESTS_ON']})\nYIELD node, componentId\nWITH node, componentId\nOPTIONAL MATCH (flag:Notice)-[:FLAGS]->(node)\nWITH componentId,\n     collect(DISTINCT node.doi) AS work_dois,\n     [d IN collect(DISTINCT flag.doi) WHERE d IS NOT NULL] AS notice_dois,\n     [t IN collect(DISTINCT flag.type) WHERE t IS NOT NULL] AS notice_types\nWHERE size(notice_dois) > 0\nMATCH (a:Answer)-[:CITES]->(:Source)-[:RESTS_ON]->(w:Work)\nWHERE w.doi IN work_dois\nRETURN componentId,\n       work_dois,\n       notice_dois,\n       notice_types,\n       collect(DISTINCT a.id) AS answer_ids,\n       collect(DISTINCT a.engine) AS engines",
+            "cypher": "CALL algo.WCC({nodeLabels: ['Work'], relationshipTypes: ['RESTS_ON']})\nYIELD node, componentId\nWITH node, componentId\nOPTIONAL MATCH (flag:Notice)-[:FLAGS]->(node)\nWITH componentId,\n     collect(DISTINCT node.doi) AS work_dois,\n     [d IN collect(DISTINCT flag.doi) WHERE d IS NOT NULL] AS notice_dois,\n     [t IN collect(DISTINCT flag.type) WHERE t IS NOT NULL] AS notice_types\nWHERE size(notice_dois) > 0\nMATCH (a:Answer)-[:CITES]->(:Source)-[:RESTS_ON]->(w:Work)\nWHERE w.doi IN work_dois\nRETURN componentId,\n       work_dois,\n       notice_dois,\n       notice_types,\n       collect(DISTINCT a.id) AS answer_ids,\n       collect(DISTINCT a.engine) AS engines",
+            "clusters": [
+              {
+                "componentId": 2,
+                "work_dois": [
+                  "10.1016/j.amjmed.2004.05.019",
+                  "10.1002/14651858.cd000227.pub4"
+                ],
+                "notice_dois": [
+                  "10.1016/j.amjmed.2004.05.019"
+                ],
+                "notice_types": [
+                  "retraction"
+                ],
+                "answer_ids": [
+                  "a209a99ebc3fafec",
+                  "26eab81e164a20e2",
+                  "f6329a4dfdc27f88",
+                  "bce5cc48d70528ff"
+                ],
+                "engines": [
+                  "nutrition-coach"
+                ]
+              },
+              {
+                "componentId": 7,
+                "work_dois": [
+                  "10.2337/diacare.26.12.3215",
+                  "10.3390/nu14132773"
+                ],
+                "notice_dois": [
+                  "10.2337/dc25-ec09"
+                ],
+                "notice_types": [
+                  "expression_of_concern"
+                ],
+                "answer_ids": [
+                  "e08ec1b345088727"
+                ],
+                "engines": [
+                  "nutrition-coach"
+                ]
+              },
+              {
+                "componentId": 12,
+                "work_dois": [
+                  "10.1056/nejmoa1200303",
+                  "10.1186/1476-511x-13-154"
+                ],
+                "notice_dois": [
+                  "10.1056/nejmc1806491"
+                ],
+                "notice_types": [
+                  "retraction"
+                ],
+                "answer_ids": [
+                  "e30c8d434175f9d8"
+                ],
+                "engines": [
+                  "nutrition-coach"
+                ]
+              }
+            ],
+            "elapsed_ms": 1.92,
+            "note": "Weakly connected Work components that contain a publisher notice. Use these clusters to group answers that share a contaminated citation component. The verdict classifies algo.SPpaths rows."
+          },
+          "algorithm": {
+            "name": "algo.SPpaths",
+            "weight_prop": "cost",
+            "cost_formula": "-ln(weight)",
+            "strength": 0.4675,
+            "weight_floor": 0.5,
+            "cypher": "MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)\nMATCH p0 = (s)-[:RESTS_ON*1..2]->(w)\nMATCH (n:Notice)-[:FLAGS]->(w:Work)\nWITH DISTINCT s, w, n\nCALL algo.SPpaths({sourceNode: s, targetNode: w, relTypes: ['RESTS_ON'], relDirection: 'outgoing', maxLen: 2, weightProp: 'cost'})\nYIELD path, pathCost\nWITH s, w, n, path, pathCost, relationships(path) AS rels\nRETURN s.url AS source_url,\n       s.title AS source_title,\n       w.doi AS root_doi,\n       w.title AS root_title,\n       w.year AS root_year,\n       w.first_author AS root_author,\n       n.doi AS notice_doi,\n       n.type AS notice_type,\n       n.label AS notice_label,\n       n.date AS notice_date,\n       n.source AS notice_source,\n       length(path) AS hops,\n       reduce(score = 0.0, r IN rels | score + coalesce(r.cost, 20.0)) AS sp_cost,\n       reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) AS path_score,\n       [x IN nodes(path) | {doi: x.doi, title: x.title, url: x.url, year: x.year, first_author: x.first_author}] AS steps,\n       [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, cost: r.cost, source_url: r.evidence_url, fetched_at: r.evidence_fetched_at, content_hash: r.evidence_sha256}] AS hops_evidence\nORDER BY sp_cost ASC, hops ASC\nLIMIT 40",
+            "explanation": "Decided by: algo.SPpaths, path strength 0.47"
+          },
+          "impact": {
+            "notice_doi": "10.1016/j.amjmed.2004.05.019",
+            "notice_type": "retraction",
+            "root_doi": "10.1016/j.amjmed.2004.05.019",
+            "answer_count": 4,
+            "counted_answer_count": 4,
+            "engines": [
+              "nutrition-coach"
+            ],
+            "cypher": "MATCH (n:Notice)-[:FLAGS]->(w:Work)\nWHERE n.doi = $doi OR w.doi = $doi\nOPTIONAL MATCH p = (s:Source)-[:RESTS_ON*1..2]->(w)\nOPTIONAL MATCH (a:Answer)-[:CITES]->(s)\nWITH n, w, a, s, p, relationships(p) AS rels\nWHERE p IS NOT NULL OR a IS NULL\nWITH n, w, a, s,\n     CASE WHEN p IS NULL THEN false ELSE ALL(r IN rels WHERE coalesce(r.sentence, '') <> '' AND coalesce(r.weight, 0.0) >= 0.5) END AS counted\nRETURN n.doi AS notice_doi,\n       n.type AS notice_type,\n       n.label AS notice_label,\n       n.date AS notice_date,\n       n.source AS notice_source,\n       w.doi AS root_doi,\n       w.title AS root_title,\n       w.year AS root_year,\n       [id IN collect(DISTINCT a.id) WHERE id IS NOT NULL] AS answer_ids,\n       [e IN collect(DISTINCT a.engine) WHERE e IS NOT NULL] AS engines,\n       [u IN collect(DISTINCT s.url) WHERE u IS NOT NULL] AS source_urls,\n       [id IN collect(DISTINCT CASE WHEN counted THEN a.id END) WHERE id IS NOT NULL] AS counted_answer_ids,\n       size([id IN collect(DISTINCT a.id) WHERE id IS NOT NULL]) AS answer_count,\n       size([u IN collect(DISTINCT s.url) WHERE u IS NOT NULL]) AS source_count",
+            "summary": "This retraction affects 4 stored answers."
+          },
+          "answer_id": "bce5cc48d70528ff",
+          "engine": "nutrition-coach",
+          "depth": 2,
+          "paths": [
+            {
+              "hops": 2,
+              "path_score": 0.4675,
+              "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
+              "source_title": "Vitamin D \u2022 The Nutrition Source",
+              "root": {
+                "doi": "10.1016/j.amjmed.2004.05.019",
+                "title": "RETRACTED: Comparative efficacy of hormone replacement therapy, etidronate, calcitonin, alfacalcidol, and vitamin K in postmenopausal women with osteoporosis: The Yamaguchi Osteoporosis Prevention Study",
+                "year": 2004,
+                "first_author": "Ishida"
+              },
+              "notice": {
+                "doi": "10.1016/j.amjmed.2004.05.019",
+                "type": "retraction",
+                "label": "Retraction",
+                "date": "2004-10-15",
+                "source": "publisher"
+              },
+              "steps": [
+                {
+                  "kind": "Source",
+                  "doi": null,
+                  "title": "Vitamin D \u2022 The Nutrition Source",
+                  "url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
+                  "year": null,
+                  "first_author": null
+                },
+                {
+                  "kind": "Work",
+                  "doi": "10.1002/14651858.cd000227.pub4",
+                  "title": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men",
+                  "url": null,
+                  "year": 2014,
+                  "first_author": "Avenell"
+                },
+                {
+                  "kind": "Work",
+                  "doi": "10.1016/j.amjmed.2004.05.019",
+                  "title": "RETRACTED: Comparative efficacy of hormone replacement therapy, etidronate, calcitonin, alfacalcidol, and vitamin K in postmenopausal women with osteoporosis: The Yamaguchi Osteoporosis Prevention Study",
+                  "url": null,
+                  "year": 2004,
+                  "first_author": "Ishida"
+                }
+              ],
+              "hops_evidence": [
+                {
+                  "weight": 0.55,
+                  "reliance": "mention",
+                  "sentence": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men.",
+                  "evidence_from": "page",
+                  "judged": true,
+                  "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
+                  "fetched_at": "2026-10-17T07:34:43+00:00",
+                  "content_hash": "6a3480374fc8ad3145fa014a3a5f9279a91fa25e34bede4ac0f36ca910ced83a"
+                },
+                {
+                  "weight": 0.85,
+                  "reliance": "uses_data_or_method",
+                  "sentence": "Editor; Cochrane Bone, Joint and Muscle Trauma Group) What's new Date Event Description 1 June 2021 Amended Given the trial report of Ishida 2004, an included trial, has been retracted, changes were made to the review to alert the reader to this, including removing data from the analyses, and relabelling were updated, and the study: Ishida 2004 (Retracted).",
+                  "evidence_from": "pmc_html",
+                  "judged": true,
+                  "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7032685/",
+                  "fetched_at": "2026-10-17T07:34:54+00:00",
+                  "content_hash": "c610fe9e9bc8ae2c864f446dc701a980596e0708e3581985db1498f2823fbd1c"
+                }
+              ],
+              "weight": 0.85,
+              "reliance": "uses_data_or_method",
+              "sentence": "Editor; Cochrane Bone, Joint and Muscle Trauma Group) What's new Date Event Description 1 June 2021 Amended Given the trial report of Ishida 2004, an included trial, has been retracted, changes were made to the review to alert the reader to this, including removing data from the analyses, and relabelling were updated, and the study: Ishida 2004 (Retracted).",
+              "evidence_from": "pmc_html",
+              "judged": true
+            }
+          ],
+          "works_cited": 1,
+          "api_calls": 0,
+          "cache_hits": 0,
+          "reused_graph": false,
+          "incomplete": false,
+          "errors": [],
+          "context_notes": [],
+          "queries": [
+            {
+              "name": "paths_to_notice",
+              "cypher": "MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)\nMATCH p = (s)-[:RESTS_ON*1..2]->(w)\nMATCH (n:Notice)-[:FLAGS]->(w:Work)\nWITH s, w, n, p, relationships(p) AS rels\nWITH s, w, n, p, rels,\n     reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) AS path_score\nRETURN s.url AS source_url,\n       s.title AS source_title,\n       w.doi AS root_doi,\n       w.title AS root_title,\n       w.year AS root_year,\n       w.first_author AS root_author,\n       n.doi AS notice_doi,\n       n.type AS notice_type,\n       n.label AS notice_label,\n       n.date AS notice_date,\n       n.source AS notice_source,\n       length(p) AS hops,\n       path_score,\n       [x IN nodes(p) | {doi: x.doi, title: x.title, url: x.url, year: x.year, first_author: x.first_author}] AS steps,\n       [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, source_url: r.evidence_url, fetched_at: r.evidence_fetched_at, content_hash: r.evidence_sha256}] AS hops_evidence\nORDER BY path_score DESC, hops ASC\nLIMIT 80",
+              "params": {
+                "answer_id": "bce5cc48d70528ff"
+              },
+              "elapsed_ms": 2.0,
+              "rows": 1
+            },
+            {
+              "name": "sp_paths_to_notice",
+              "cypher": "MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)\nMATCH p0 = (s)-[:RESTS_ON*1..2]->(w)\nMATCH (n:Notice)-[:FLAGS]->(w:Work)\nWITH DISTINCT s, w, n\nCALL algo.SPpaths({sourceNode: s, targetNode: w, relTypes: ['RESTS_ON'], relDirection: 'outgoing', maxLen: 2, weightProp: 'cost'})\nYIELD path, pathCost\nWITH s, w, n, path, pathCost, relationships(path) AS rels\nRETURN s.url AS source_url,\n       s.title AS source_title,\n       w.doi AS root_doi,\n       w.title AS root_title,\n       w.year AS root_year,\n       w.first_author AS root_author,\n       n.doi AS notice_doi,\n       n.type AS notice_type,\n       n.label AS notice_label,\n       n.date AS notice_date,\n       n.source AS notice_source,\n       length(path) AS hops,\n       reduce(score = 0.0, r IN rels | score + coalesce(r.cost, 20.0)) AS sp_cost,\n       reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) AS path_score,\n       [x IN nodes(path) | {doi: x.doi, title: x.title, url: x.url, year: x.year, first_author: x.first_author}] AS steps,\n       [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, cost: r.cost, source_url: r.evidence_url, fetched_at: r.evidence_fetched_at, content_hash: r.evidence_sha256}] AS hops_evidence\nORDER BY sp_cost ASC, hops ASC\nLIMIT 40",
+              "params": {
+                "answer_id": "bce5cc48d70528ff"
+              },
+              "elapsed_ms": 2.13,
+              "rows": 1
+            },
+            {
+              "name": "wcc_clusters",
+              "cypher": "CALL algo.WCC({nodeLabels: ['Work'], relationshipTypes: ['RESTS_ON']})\nYIELD node, componentId\nWITH node, componentId\nOPTIONAL MATCH (flag:Notice)-[:FLAGS]->(node)\nWITH componentId,\n     collect(DISTINCT node.doi) AS work_dois,\n     [d IN collect(DISTINCT flag.doi) WHERE d IS NOT NULL] AS notice_dois,\n     [t IN collect(DISTINCT flag.type) WHERE t IS NOT NULL] AS notice_types\nWHERE size(notice_dois) > 0\nMATCH (a:Answer)-[:CITES]->(:Source)-[:RESTS_ON]->(w:Work)\nWHERE w.doi IN work_dois\nRETURN componentId,\n       work_dois,\n       notice_dois,\n       notice_types,\n       collect(DISTINCT a.id) AS answer_ids,\n       collect(DISTINCT a.engine) AS engines",
+              "params": {},
+              "elapsed_ms": 1.92,
+              "rows": 3
+            },
+            {
+              "name": "what_rests_on",
+              "cypher": "MATCH (n:Notice)-[:FLAGS]->(w:Work)\nWHERE n.doi = $doi OR w.doi = $doi\nOPTIONAL MATCH p = (s:Source)-[:RESTS_ON*1..2]->(w)\nOPTIONAL MATCH (a:Answer)-[:CITES]->(s)\nWITH n, w, a, s, p, relationships(p) AS rels\nWHERE p IS NOT NULL OR a IS NULL\nWITH n, w, a, s,\n     CASE WHEN p IS NULL THEN false ELSE ALL(r IN rels WHERE coalesce(r.sentence, '') <> '' AND coalesce(r.weight, 0.0) >= 0.5) END AS counted\nRETURN n.doi AS notice_doi,\n       n.type AS notice_type,\n       n.label AS notice_label,\n       n.date AS notice_date,\n       n.source AS notice_source,\n       w.doi AS root_doi,\n       w.title AS root_title,\n       w.year AS root_year,\n       [id IN collect(DISTINCT a.id) WHERE id IS NOT NULL] AS answer_ids,\n       [e IN collect(DISTINCT a.engine) WHERE e IS NOT NULL] AS engines,\n       [u IN collect(DISTINCT s.url) WHERE u IS NOT NULL] AS source_urls,\n       [id IN collect(DISTINCT CASE WHEN counted THEN a.id END) WHERE id IS NOT NULL] AS counted_answer_ids,\n       size([id IN collect(DISTINCT a.id) WHERE id IS NOT NULL]) AS answer_count,\n       size([u IN collect(DISTINCT s.url) WHERE u IS NOT NULL]) AS source_count",
+              "params": {
+                "doi": "10.1016/j.amjmed.2004.05.019"
+              },
+              "elapsed_ms": 1.98,
+              "rows": 1
+            },
+            {
+              "name": "upstream_works",
+              "cypher": "MATCH (n:Notice)-[:FLAGS]->(w:Work)\nWHERE n.doi = $doi OR w.doi = $doi\nMATCH (u:Work)-[:RESTS_ON*1..3]->(w)\nRETURN DISTINCT u.doi AS doi, u.title AS title, u.year AS year\nORDER BY u.year DESC\nLIMIT 40",
+              "params": {
+                "doi": "10.1016/j.amjmed.2004.05.019"
+              },
+              "elapsed_ms": 0.89,
+              "rows": 1
+            }
+          ],
+          "cypher": "MATCH (a:Answer {id: $answer_id})-[:CITES]->(s:Source)\nMATCH p0 = (s)-[:RESTS_ON*1..2]->(w)\nMATCH (n:Notice)-[:FLAGS]->(w:Work)\nWITH DISTINCT s, w, n\nCALL algo.SPpaths({sourceNode: s, targetNode: w, relTypes: ['RESTS_ON'], relDirection: 'outgoing', maxLen: 2, weightProp: 'cost'})\nYIELD path, pathCost\nWITH s, w, n, path, pathCost, relationships(path) AS rels\nRETURN s.url AS source_url,\n       s.title AS source_title,\n       w.doi AS root_doi,\n       w.title AS root_title,\n       w.year AS root_year,\n       w.first_author AS root_author,\n       n.doi AS notice_doi,\n       n.type AS notice_type,\n       n.label AS notice_label,\n       n.date AS notice_date,\n       n.source AS notice_source,\n       length(path) AS hops,\n       reduce(score = 0.0, r IN rels | score + coalesce(r.cost, 20.0)) AS sp_cost,\n       reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) AS path_score,\n       [x IN nodes(path) | {doi: x.doi, title: x.title, url: x.url, year: x.year, first_author: x.first_author}] AS steps,\n       [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, cost: r.cost, source_url: r.evidence_url, fetched_at: r.evidence_fetched_at, content_hash: r.evidence_sha256}] AS hops_evidence\nORDER BY sp_cost ASC, hops ASC\nLIMIT 40",
+          "elapsed_ms": 2.0,
+          "limits": "MoolTrace reports a path to a publisher notice. An Expression of Concern is a different Crossref update type from a retraction. This check does not give medical advice.",
+          "notices_checked_at": "2026-10-17T07:34:31+00:00",
+          "notices_checked_ago": "3 h ago",
+          "why_graph": {
+            "title": "Why the graph decided",
+            "cypher": "MATCH (a:Answer {id: 'bce5cc48d70528ff'})-[:CITES]->(s:Source)\nMATCH p0 = (s)-[:RESTS_ON*1..2]->(w)\nMATCH (n:Notice)-[:FLAGS]->(w:Work)\nWITH DISTINCT s, w, n\nCALL algo.SPpaths({sourceNode: s, targetNode: w, relTypes: ['RESTS_ON'], relDirection: 'outgoing', maxLen: 2, weightProp: 'cost'})\nYIELD path, pathCost\nWITH s, w, n, path, pathCost, relationships(path) AS rels\nRETURN s.url AS source_url,\n       s.title AS source_title,\n       w.doi AS root_doi,\n       w.title AS root_title,\n       w.year AS root_year,\n       w.first_author AS root_author,\n       n.doi AS notice_doi,\n       n.type AS notice_type,\n       n.label AS notice_label,\n       n.date AS notice_date,\n       n.source AS notice_source,\n       length(path) AS hops,\n       reduce(score = 0.0, r IN rels | score + coalesce(r.cost, 20.0)) AS sp_cost,\n       reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) AS path_score,\n       [x IN nodes(path) | {doi: x.doi, title: x.title, url: x.url, year: x.year, first_author: x.first_author}] AS steps,\n       [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, cost: r.cost, source_url: r.evidence_url, fetched_at: r.evidence_fetched_at, content_hash: r.evidence_sha256}] AS hops_evidence\nORDER BY sp_cost ASC, hops ASC\nLIMIT 40",
+            "path": {
+              "nodes": [
+                "Answer",
+                "Source",
+                "Work",
+                "Work",
+                "Notice"
+              ],
+              "hops": [
+                {
+                  "relation": "mention",
+                  "weight": 0.55,
+                  "sentence": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men.",
+                  "sentence_snippet": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men.",
+                  "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
+                  "fetched_at": "2026-10-17T07:34:43+00:00"
+                },
+                {
+                  "relation": "uses_data_or_method",
+                  "weight": 0.85,
+                  "sentence": "Editor; Cochrane Bone, Joint and Muscle Trauma Group) What's new Date Event Description 1 June 2021 Amended Given the trial report of Ishida 2004, an included trial, has been retracted, changes were made to the review to alert the reader to this, including removing data from the analyses, and relabelling were updated, and the study: Ishida 2004 (Retracted).",
+                  "sentence_snippet": "Editor; Cochrane Bone, Joint and Muscle Trauma Group) What's new Date Event Description 1 June 2021 Amended Given the trial report of Ishid\u2026",
+                  "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7032685/",
+                  "fetched_at": "2026-10-17T07:34:54+00:00"
+                }
+              ],
+              "readable": "Answer \u2192 Source \u2192 Work \u2192 Work \u2192 Notice"
+            },
+            "without_graph": {
+              "decision": "pass",
+              "exit_code": 0,
+              "notice_count": 0,
+              "dois": [],
+              "line": "Direct DOI check: 0 notices \u2192 would ship"
+            },
+            "with_graph": {
+              "depth": 2,
+              "decision": "block",
+              "notice_type": "retraction",
+              "notice_doi": "10.1016/j.amjmed.2004.05.019",
+              "line": "Graph depth 2: retraction 10.1016/j.amjmed.2004.05.019 \u2192 BLOCK"
+            },
+            "contrast": "Direct DOI check: 0 notices \u2192 would ship  |  Graph depth 2: retraction 10.1016/j.amjmed.2004.05.019 \u2192 BLOCK",
+            "live_sppaths": null
+          }
+        },
+        "recheck": {
+          "product": "MoolTrace",
+          "tagline": "MoolTrace catches when your health AI's sources quietly rest on a flagged or retracted study, even three links deep.",
+          "decision": "pass",
+          "exit_code": 0,
+          "summary": "Flagged claims were removed. Pass is not a medical-accuracy check. Coverage is not shown beyond this depth.",
+          "pitch": null,
+          "reasons": [],
+          "discounted": [],
+          "unjudged_paths": 0,
+          "unverified_paths": 0,
+          "independent_sources": [],
+          "independent_source_count": 0,
+          "weight_floor": 0.5,
+          "remediation_clusters": {
+            "algorithm": "algo.WCC",
+            "clusters": [],
+            "note": "No live citation graph remains after the rewrite disclosure."
+          },
+          "algorithm": null,
+          "answer_id": "08f22e3c2593deed",
+          "engine": "nutrition-coach",
+          "depth": 2,
+          "paths": [],
+          "works_cited": 0,
+          "api_calls": 0,
+          "cache_hits": 0,
+          "reused_graph": false,
+          "incomplete": false,
+          "errors": [],
+          "context_notes": [],
+          "queries": [],
+          "cypher": null,
+          "elapsed_ms": 0,
+          "limits": "MoolTrace reports a path to a publisher notice. An Expression of Concern is a different Crossref update type from a retraction. This check does not give medical advice.",
+          "coverage": "expanded 0 of 0 cited works",
+          "why_graph": {
+            "title": "Why the graph decided",
+            "cypher": "",
+            "path": {
+              "nodes": [
+                "Answer"
+              ],
+              "hops": [],
+              "readable": "Answer"
+            },
+            "without_graph": {
+              "decision": "pass",
+              "exit_code": 0,
+              "notice_count": 0,
+              "dois": [],
+              "line": "Direct DOI check: 0 notices \u2192 would ship"
+            },
+            "with_graph": {
+              "depth": 2,
+              "decision": "pass",
+              "notice_type": null,
+              "notice_doi": null,
+              "line": "Graph depth 2: 0 notice paths \u2192 PASS"
+            },
+            "contrast": "Direct DOI check: 0 notices \u2192 would ship  |  Graph depth 2: 0 notice paths \u2192 PASS",
+            "live_sppaths": null
+          }
+        },
+        "exit_code": 0
+      }
+    }
+  ]
+}

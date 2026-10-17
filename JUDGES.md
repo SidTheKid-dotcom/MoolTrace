@@ -69,3 +69,12 @@ Presets never 429.
 ```
 
 Point Cursor/Claude at `mcp.example.json` (`command` is this venv's `python`, `args` `["-m", "mooltrace.mcp_server"]`). That stdio server has the full tool list, including `rewrite_answer` and `ro_cypher`.
+
+## 4. Agent acting (2 min)
+
+Track 01 is **Agents That Act on Connected Data**. A recorded `cursor-agent -p --model cursor-grok-4.6-high-fast` pair on 17 Oct 2026 asked the same consumer question (“Does vitamin D help prevent fractures in older adults?”) and required a citation of the Harvard BLOCK page. Files: [examples/agent_runs/2026-10-17/](examples/agent_runs/2026-10-17/). Output may vary run to run.
+
+- **With** local stdio MCP on a throwaway graph seeded from the recorded presets: the agent called `check_answer`, got **BLOCK** (exit 1, Ishida 2004 retraction `10.1016/j.amjmed.2004.05.019`, path strength `0.4675`), called `rewrite_answer`, and shipped the rewritten text. The first sentence stayed; the citing sentence became the Ishida 2004 retraction disclosure.
+- **Without** MoolTrace: the agent found no `check_answer` tool and shipped the consumer claim citing `https://nutritionsource.hsph.harvard.edu/vitamin-d/`.
+
+This does not say vitamin D works or does not.

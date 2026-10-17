@@ -1,0 +1,4 @@
+MoolTrace `check_answer` and `rewrite_answer` are not available in this session, so this is the two-sentence consumer draft as written.
+
+SHIPPED:
+For most older adults who already get enough vitamin D, extra supplements have not been shown to prevent broken bones. Harvard's Nutrition Source reviews this evidence at https://nutritionsource.hsph.harvard.edu/vitamin-d/.
