@@ -180,6 +180,20 @@ def test_submission_has_track_links_cypher_algorithms_video_placeholder():
     assert "rewrite_answer" not in text.split("## Links", 1)[0] or "local" in text.lower()
     assert "Azure AI Foundry" not in text
     assert "LLM rewrit" not in text.lower()
+    assert "## AI-assistance disclosure" in text
+    section = text.split("## AI-assistance disclosure", 1)[1].split("\n## ", 1)[0]
+    lowered = section.lower()
+    assert "teammate" not in lowered
+    assert "Cursor agents" in section
+    assert "Grok 4.6" in section
+    assert "Claude" in section
+    assert "Anthropic" in section
+    assert "Azure OpenAI" in section
+    assert "gpt-5.4-mini" in section
+    assert "Siddhant Vishnu" in section
+    assert "algo.SPpaths" in section
+    assert "OpenAlex" in section
+    assert "AZURE_OPENAI" not in section
 
 
 def test_ship_checklist_is_human_only():

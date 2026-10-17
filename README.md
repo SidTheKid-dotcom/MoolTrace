@@ -203,7 +203,7 @@ Four labelled-pass disagreements (why precision is 0.8974, not 1.0): WebMD cinna
 - Private, loopback, credentialed, and non-http URLs are refused (SSRF). The API binds `127.0.0.1` and does not honor CORS `*`.
 - Semantic Scholar 429s after retries skip that route; other sentence routes still run.
 - The sample GitHub workflow fetches live OpenAlex, Crossref, and the Everyday Health page. If a host refuses GitHub IPs, the job exits 3. The daily cron re-runs that fixture file; it does not watch answers over time.
-- Hosted demo presets are recorded (no live fetch). A user-pasted URL is fetched live only for healthline.com, everydayhealth.com, verywellhealth.com, medicalnewstoday.com, webmd.com, pubmed.ncbi.nlm.nih.gov, and doi.org (`MOOLTRACE_PUBLIC_LIVE=1`). SSRF, 32k size cap, per-IP rate limit (presets exempt), global concurrency 1, 120 s timeout. Other hosts return 400. Oversized drafts return 413.
+- Hosted demo presets are recorded (no live fetch). A user-pasted URL is fetched live only for healthline.com, everydayhealth.com, verywellhealth.com, medicalnewstoday.com, webmd.com, pubmed.ncbi.nlm.nih.gov, doi.org, and nutritionsource.hsph.harvard.edu (`MOOLTRACE_PUBLIC_LIVE=1`). SSRF, 32k size cap, per-IP rate limit (presets exempt), global concurrency 1, 120 s timeout. Other hosts return 400. Oversized drafts return 413.
 - Rewrite is a deterministic template: only sentences that cite flagged work change; every other sentence stays byte-identical. Named as first author + year. Never writes `RETRACTED:` and never cites the notice DOI.
 
 ## Prior art
@@ -384,7 +384,9 @@ Same-trial recall means a path reached the **same** retracted trial DOI VITALITY
 
 ## AI-use disclosure
 
-MoolTrace code in this repository was written with Cursor agents (including Grok) after the Graph Hacks kickoff on 15 Oct 2026. Paths and notices come from live OpenAlex, Crossref, NCBI, Semantic Scholar, and PMC, not from the model. Rewrite is a deterministic template; it is not an LLM edit. Each teammate must be able to explain the code they ship.
+Solo author: Siddhant Vishnu. He chose the problem and the Harvard vitamin D hero, set the product rules (reliance policy; an Expression of Concern is warn, not a retraction; honest negatives; no invented numbers), reviewed every result, and owns the decisions.
+
+Code in this repository was written by Cursor agents running Grok 4.6. Planning, task specs, and review were orchestrated with Claude (Anthropic) in Claude Code. An in-app agent (being added) calls Azure OpenAI `gpt-5.4-mini`. Facts and publisher notices come from public APIs (OpenAlex, Crossref, NCBI, Semantic Scholar, PMC), not from a model. Verdicts come from `algo.SPpaths` rows, not from a model. Rewrite is a deterministic template; it is not an LLM edit.
 
 ## Demo checklist
 

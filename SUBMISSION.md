@@ -106,7 +106,9 @@ Five-minute path: [JUDGES.md](JUDGES.md). Video beats: [VIDEO_SCRIPT.md](VIDEO_S
 
 ## AI-assistance disclosure
 
-MoolTrace code in this repository was written with Cursor agents (including Grok) after the Graph Hacks kickoff on 15 Oct 2026. Paths and notices come from live OpenAlex, Crossref, NCBI, Semantic Scholar, and PMC, not from the model. Rewrite is a deterministic template, not an LLM edit. Each teammate can explain the code they ship.
+Solo author: Siddhant Vishnu. He chose the problem and the Harvard vitamin D hero, set the product rules (reliance policy; an Expression of Concern is warn, not a retraction; honest negatives; no invented numbers), reviewed every result, and owns the decisions.
+
+Code in this repository was written by Cursor agents running Grok 4.6. Planning, task specs, and review were orchestrated with Claude (Anthropic) in Claude Code. An in-app agent (being added) calls Azure OpenAI `gpt-5.4-mini`. Facts and publisher notices come from public APIs (OpenAlex, Crossref, NCBI, Semantic Scholar, PMC), not from a model. Verdicts come from `algo.SPpaths` rows, not from a model. Rewrite is a deterministic template, not an LLM edit.
 
 ## Data sources and attribution
 

@@ -84,6 +84,26 @@ def _first(text: str, needle: str) -> int:
     return index
 
 
+def test_ai_use_disclosure_is_solo_and_names_tools():
+    text = (ROOT / "README.md").read_text()
+    assert "## AI-use disclosure" in text
+    section = text.split("## AI-use disclosure", 1)[1].split("\n## ", 1)[0]
+    lowered = section.lower()
+    assert "teammate" not in lowered
+    assert "Cursor agents" in section
+    assert "Grok 4.6" in section
+    assert "Claude" in section
+    assert "Anthropic" in section
+    assert "Azure OpenAI" in section
+    assert "gpt-5.4-mini" in section
+    assert "Siddhant Vishnu" in section
+    assert "algo.SPpaths" in section
+    assert "OpenAlex" in section
+    assert "Expression of Concern" in section or "EoC" in section
+    assert "AZURE_OPENAI" not in section
+    assert "Azure AI Foundry" not in section
+
+
 def test_readme_names_no_sources_and_fixture_recheck():
     text = (ROOT / "README.md").read_text()
     assert "no_sources" in text
