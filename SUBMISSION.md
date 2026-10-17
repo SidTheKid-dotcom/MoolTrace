@@ -106,9 +106,9 @@ Five-minute path: [JUDGES.md](JUDGES.md). Video beats: [VIDEO_SCRIPT.md](VIDEO_S
 
 ## AI-assistance disclosure
 
-Solo author: Siddhant Vishnu. He chose the problem and the Harvard vitamin D hero, set the product rules (reliance policy; an Expression of Concern is warn, not a retraction; honest negatives; no invented numbers), reviewed every result, and owns the decisions.
+I am the solo author (Siddhant Vishnu). I chose the problem and the Harvard vitamin D hero, set the product rules (reliance policy; an Expression of Concern is warn, not a retraction; honest negatives; no invented numbers), reviewed the results, and own the decisions.
 
-Code in this repository was written by Cursor agents running Grok 4.6. Planning, task specs, and review were orchestrated with Claude (Anthropic) in Claude Code. The in-app agent calls Azure OpenAI `gpt-5.4-mini`. Facts and publisher notices come from public APIs (OpenAlex, Crossref, NCBI, Semantic Scholar, PMC), not from a model. Verdicts come from `algo.SPpaths` rows, not from a model. Rewrite is a deterministic template, not an LLM edit.
+AI coding assistants wrote most of the code. Cursor agents running Grok 4.6 wrote it from task specs; planning, specs, review and, from the evening of 17 Oct 2026, direct code changes were done with Claude (Anthropic) in Claude Code. The in-app agent calls Azure OpenAI `gpt-5.4-mini`. Facts and publisher notices come from public APIs (OpenAlex, Crossref, NCBI, Semantic Scholar, PMC), not from a model. Verdicts come from `algo.SPpaths` rows, not from a model. Rewrite is a deterministic template, not an LLM edit.
 
 ## Data sources and attribution
 

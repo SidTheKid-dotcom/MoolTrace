@@ -1,10 +1,14 @@
 # MoolTrace
 
-MoolTrace catches when your health AI's sources quietly rest on a flagged or retracted study, even three links deep.
+An agent that checks what a health answer rests on before it ships — page → review → trial → retraction notice, walked in FalkorDB.
 
-Paste a health-AI answer or the URL it cites; MoolTrace walks page → review → trial in FalkorDB and returns pass, warn, or block when a counted path rests on a publisher notice.
+WeMakeDevs × FalkorDB Graph Hacks · **Track 01: Agents That Act on Connected Data**
 
-**Live demo (no sign-up):** https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/
+- **Live demo (no sign-up):** https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/?preset=harvard-vitamin-d
+- **Remote MCP:** `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/mcp`
+- **Field finding:** of the 35 vitamin and mineral pages on Harvard's Nutrition Source, **2 rest on withdrawn or retracted research** (zinc directly; vitamin D two hops down, via a trial retracted in May 2025). A direct DOI check passes all 35. Hand-checked: [results/field_scan_2026-10-17.md](results/field_scan_2026-10-17.md).
+
+What the agent does: give it a question (or a draft and its sources). It drafts or reads the answer, calls `check_answer` on the evidence graph, and on BLOCK calls `rewrite_answer`, rechecks, and ships only tool output. **A retraction just landed** runs the graph backwards: which stored answers rest on this paper, and the fix for each. The verdict comes from `algo.SPpaths` rows, never from the model.
 
 ![Harvard vitamin D depth 1 PASS then depth 2 BLOCK](assets/demo-harvard-depth-toggle.gif)
 
@@ -251,11 +255,15 @@ Python 3.12+. Node 20+ only for the demo UI. One venv. Local UI without Compose:
 
 ## Agent
 
-The demo **Run the agent** button (`POST /nw/agent`) is a tool-calling loop on Azure OpenAI `gpt-5.4-mini` with only existing MoolTrace tools: `check_answer`, `explain_path`, `rewrite_answer`, `what_rests_on`. The model never writes Cypher. Tool URLs must be on the public-demo allow-list (or a seeded preset). DOIs are normalised and must already be in the graph.
+Three ways in on the live demo: **Run the agent** (preset draft and its cited URL), **Ask the agent** (question only: the model writes a blind draft citing only allow-listed publishers and is not told about MoolTrace; every cited URL is fetched and reported as checked, off-list, or not found), and **A retraction just landed** (`what_rests_on` + `recheck_affected` on a work DOI).
+
+The shipped text is always tool output — the graph-checked rewrite, or the draft unchanged on PASS. If the model skips `check_answer` or `rewrite_answer`, MoolTrace runs them and labels the step "added by MoolTrace". The model's own words are shown only as a labelled note, and dropped if they cite anything not in the tool results.
+
+The **Run the agent** button (`POST /nw/agent`) is a tool-calling loop on Azure OpenAI `gpt-5.4-mini` with only existing MoolTrace tools: `check_answer`, `explain_path`, `rewrite_answer`, `what_rests_on`. The model never writes Cypher. Tool URLs must be on the public-demo allow-list (or a seeded preset). DOIs are normalised and must already be in the graph.
 
 Before shipping a health answer it checks the sources. On BLOCK it rewrites and rechecks. It ships only after recheck is pass, or warns with the disclosure, and cites the path. After the loop, every DOI, author-year, and URL in the shipped text must appear in the tool results; otherwise the deterministic rewrite is shipped instead.
 
-Hard limits: 6 tool calls, 45 s, bounded `max_completion_tokens`. When `MOOLTRACE_PUBLIC_DEMO=1`: 6 runs / 10 min per IP and 150 runs / day. Prompt and completion tokens from each Azure response are priced at gpt-5.4-mini Data Zone list rates (env-overridable; default $0.825 / 1M input, $4.95 / 1M output) and summed in a JSON file next to the graph. At `MOOLTRACE_AGENT_BUDGET_USD` (default 40) the model stops. Missing key, budget hit, or Azure errors: **rule-based fallback, no model** — same tools, same order. The response includes spent/limit (no key) and a without-MoolTrace column (one tool-less model call, or the draft unchanged).
+Hard limits: 6 model-chosen tool calls, 100 s (cited pages are fetched live), bounded `max_completion_tokens`. When `MOOLTRACE_PUBLIC_DEMO=1`: 6 runs / 10 min per IP and 150 runs / day. Prompt and completion tokens from each Azure response are priced at gpt-5.4-mini Data Zone list rates (env-overridable; default $0.825 / 1M input, $4.95 / 1M output) and summed in a JSON file next to the graph. At `MOOLTRACE_AGENT_BUDGET_USD` (default 40) the model stops. Missing key, budget hit, or Azure errors: **rule-based fallback, no model** — same tools, same order. The response includes spent/limit (no key) and a without-MoolTrace column (the draft as written; in question-only mode, the blind model draft).
 
 ## Use from an AI agent
 
@@ -392,9 +400,9 @@ Same-trial recall means a path reached the **same** retracted trial DOI VITALITY
 
 ## AI-use disclosure
 
-Solo author: Siddhant Vishnu. He chose the problem and the Harvard vitamin D hero, set the product rules (reliance policy; an Expression of Concern is warn, not a retraction; honest negatives; no invented numbers), reviewed every result, and owns the decisions.
+I am the solo author (Siddhant Vishnu). I chose the problem and the Harvard vitamin D hero, set the product rules (reliance policy; an Expression of Concern is warn, not a retraction; honest negatives; no invented numbers), reviewed the results, and own the decisions.
 
-Code in this repository was written by Cursor agents running Grok 4.6. Planning, task specs, and review were orchestrated with Claude (Anthropic) in Claude Code. The in-app agent calls Azure OpenAI `gpt-5.4-mini`. Facts and publisher notices come from public APIs (OpenAlex, Crossref, NCBI, Semantic Scholar, PMC), not from a model. Verdicts come from `algo.SPpaths` rows, not from a model. Rewrite is a deterministic template; it is not an LLM edit.
+AI coding assistants wrote most of the code. Cursor agents running Grok 4.6 wrote it from task specs; planning, specs, review and, from the evening of 17 Oct 2026, direct code changes were done with Claude (Anthropic) in Claude Code. The in-app agent calls Azure OpenAI `gpt-5.4-mini`. Facts and publisher notices come from public APIs (OpenAlex, Crossref, NCBI, Semantic Scholar, PMC), not from a model. Verdicts come from `algo.SPpaths` rows, not from a model. Rewrite is a deterministic template; it is not an LLM edit.
 
 ## Demo checklist
 
