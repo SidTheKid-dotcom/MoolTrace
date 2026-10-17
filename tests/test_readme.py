@@ -206,6 +206,21 @@ def test_readme_demo_is_compose_and_honest():
     assert "railway.app" not in demo.lower()
 
 
+def test_docs_do_not_claim_lightsail_pin_is_stale_api13():
+    pin = json.loads((ROOT / "deploy" / "lightsail-deployment.json").read_text())
+    api = pin["containers"]["api"]["image"]
+    web = pin["containers"]["web"]["image"]
+    assert api.startswith(":mooltrace.api.")
+    assert web.startswith(":mooltrace.web.")
+    for name in ("README.md", "CLAIMS.md"):
+        text = (ROOT / name).read_text()
+        assert "Lightsail rebuild pending" not in text, name
+        assert ":mooltrace.api.13" not in text, name
+        assert ":mooltrace.web.14" not in text, name
+        assert api in text, name
+        assert web in text, name
+
+
 def test_healthline_warn_screenshot_is_live_not_synthetic():
     text = (ROOT / "README.md").read_text()
     assert "](assets/healthline-warn.png)" in text

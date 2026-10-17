@@ -93,7 +93,7 @@ def test_video_script_quotes_live_numbers_with_citations():
         "examples/lancet.jsonl --fail-on block",
         "exit 1",
         "what_rests_on",
-        "This retraction affects 1 stored answer.",
+        "This retraction affects 2 stored answers.",
         str(base["recall"]),
         str(product["recall"]),
         str(len(hops)),
@@ -129,6 +129,12 @@ def test_video_script_quotes_live_numbers_with_citations():
     assert "A nutrition coach cites:" not in rewrite
     assert "This claim:" not in rewrite
     assert "paste this two-sentence draft" not in rewrite.lower()
+    assert "Why the graph decided" in block_section
+    assert "would ship" in block_section
+    agent = text.split("## Agent calls what_rests_on over MCP", 1)[1].split("## Baseline result", 1)[0]
+    assert "what_rests_on" in agent
+    assert "This retraction affects 2 stored answers." in agent
+    assert "shared demo graph" in agent.lower() or "shared hosted" in agent.lower() or "accumulat" in agent.lower()
 
 
 def test_submission_has_track_links_cypher_algorithms_video_placeholder():

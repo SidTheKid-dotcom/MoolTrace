@@ -51,7 +51,7 @@ Same URL via the README `check-answer` form (not re-fetched; same cinnamon page)
 | Claim | Command | Confirmed |
 | --- | --- | --- |
 | Home is public, no sign-up | `curl -sI https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/` | HTTP 200 |
-| Click **Harvard vitamin D (block)** | `curl -sS -X POST …/nw/check-answer -d '{"text":"","urls":["https://nutritionsource.hsph.harvard.edu/vitamin-d/"],"engine":"nutrition-coach","depth":2}'` | **BLOCK (exit 1)**. `decided_by algo.SPpaths`. Seeded strength `0.4675` (docs print **0.47**). Hops `mention` 0.55 × `uses_data_or_method` 0.85. Ishida 2004 retraction `10.1016/j.amjmed.2004.05.019` (2004-10-15). Recorded live 17 Oct 2026 (T25); T26 PATH_RULE still blocks because the hop into Ishida is uses_data_or_method. |
+| Click **Harvard vitamin D (block)** | `curl -sS -X POST …/nw/check-answer -d '{"text":"","urls":["https://nutritionsource.hsph.harvard.edu/vitamin-d/"],"engine":"nutrition-coach","depth":2}'` | **BLOCK (exit 1)**. `decided_by algo.SPpaths`. Seeded strength `0.4675` (docs print **0.47**). Hops `mention` 0.55 × `uses_data_or_method` 0.85. Ishida 2004 retraction `10.1016/j.amjmed.2004.05.019` (2004-10-15). **Why the graph decided**: `Direct DOI check: 0 notices → would ship  |  Graph depth 2: retraction 10.1016/j.amjmed.2004.05.019 → BLOCK`. Signed-out live 17 Oct 2026 10:37 UTC (`:mooltrace.api.15`). |
 | Click **Healthline olive oil (warn)** | same POST, olive-oil URL, depth 3 | **WARN (exit 2)**. Strength `0.30250000000000005` (docs print **0.30**). Both hops `mention` 0.55. Retraction `10.1056/nejmc1806491` (2018-06-13) on Estruch 2013. Summary: cites a review that mentions a retracted trial (Estruch 2013); the review did not appear to rely on it. Hop trail hashes `350900e5…` / `583d26db…` (recorded live 16 Oct 2026 19:52 UTC). |
 | Toggle olive-oil **depth 1** | same POST, `"depth":1` | **PASS (exit 0)**. 0 notice paths. Live throwaway DB 16 Oct 2026 19:51 UTC, wall 13.6 s. Seeded replay matches. |
 | Toggle olive-oil **depth 2** | same POST, `"depth":2` | **WARN (exit 2)**. Same Estruch mention path as depth 3. Strength `0.30250000000000005`. |
@@ -99,7 +99,7 @@ Confirmed 16 Oct 2026 18:09 UTC, throwaway `/tmp/mt-t12-lancet/mooltrace.db`, 14
 
 ## MCP
 
-Remote MCP on hosted `:mooltrace.api.13` still served the pre-T26 olive-oil BLOCK. After T26, the Harvard vitamin D preset is the BLOCK (`check_answer` exit 1, Ishida 2004, seeded strength 0.4675). Olive-oil `check_answer` is WARN exit 2 (mention × mention). Seeded replay (no HTTP) matches `examples/presets_recorded.json`. Live signed-out MCP reconfirm is after the Lightsail pin.
+Remote MCP on hosted `:mooltrace.api.15` / `:mooltrace.web.16` (T31 pin, signed-out reconfirm 17 Oct 2026 10:37 UTC). Official Python `Client` against `/mcp`: tools `['check_answer', 'what_rests_on', 'recheck_affected']`. Harvard vitamin D `check_answer` is **block** exit 1, Ishida 2004 retraction `10.1016/j.amjmed.2004.05.019`, `why_graph.title` **Why the graph decided**. `what_rests_on` on that DOI: **This retraction affects 2 stored answers.** (shared demo graph; a throwaway seed of only that preset is 1). Olive-oil `check_answer` is WARN exit 2 (mention × mention). Seeded replay (no HTTP) matches `examples/presets_recorded.json`.
 
 ```
 # seeded replay, throwaway graph, T26 PATH_RULE
@@ -209,7 +209,7 @@ docker compose up --build
 unshare --net --map-root-user .venv/bin/python -m pytest -q
 ```
 
-17 Oct 2026 10:09 UTC this checkout: 325 passed, 0 failed, 494.90 s, network namespace unshared.
+17 Oct 2026 10:57 UTC this checkout: 326 passed, 0 failed, 477.25 s, network namespace unshared.
 
 ## Limits quoted in README (spot-checks)
 
@@ -221,29 +221,29 @@ unshare --net --map-root-user .venv/bin/python -m pytest -q
 | SSRF refuses loopback / private / credentials | `pytest tests/test_ssrf.py` | passed this session |
 | Rewrite changes only the flagged sentence; never `RETRACTED:`; never the notice DOI | `pytest tests/test_rewrite.py::test_rewrite_hcq_mehra_2020_only_flagged_sentence` | passed this session |
 | Hosted live URL is allow-listed | POST a non-preset `healthline.com` URL with `MOOLTRACE_PUBLIC_LIVE=1`; `example.com` is 400 | allow-list + SSRF + per-IP 429 + concurrency 1 + 120 s timeout. Presets never 429. UI: Running live, about 60 s. `pytest tests/test_public_live.py` |
-| `assets/healthline-warn.png` is a signed-out WARN capture | local seeded `http://127.0.0.1:4318/?preset=healthline`, 17 Oct 2026 (Lightsail pin pending `aws login`) | path strength 0.55, EoC `10.2337/dc25-ec09`; not 0.72 |
+| `assets/healthline-warn.png` is a signed-out WARN capture | local seeded `http://127.0.0.1:4318/?preset=healthline`, 17 Oct 2026; live host `:mooltrace.api.15` / `:mooltrace.web.16` same WARN | path strength 0.55, EoC `10.2337/dc25-ec09`; not 0.72 |
 
-## Seeded gate (T26, three runs)
+## Seeded gate (three runs, 17 Oct 2026 10:36–10:44 UTC)
 
 ```bash
 MOOLTRACE_OPENALEX_RPS=3 \
-MOOLTRACE_HTTP_CACHE=/tmp/mt-t26-gate-cache MOOLTRACE_DB=/tmp/mt-t26-unused/mooltrace.db \
+MOOLTRACE_HTTP_CACHE=/tmp/mt-t26-audit-gate-cache MOOLTRACE_DB=/tmp/mt-t26-audit-unused/mooltrace.db \
 .venv/bin/python -m mooltrace.gate
 ```
 
-`data/mooltrace.db` mtime stayed `1792225214`. Shared HTTP cache; run 1 is the cold HTTP walk. No case flipped vs T21: Khan-path positives stay **warn** (EoC); Lancet 2020 stays **block** (direct 1-hop retraction).
+`data/mooltrace.db` mtime stayed `1792233098` through the three runs (offline pytest later opened the default path). Shared HTTP cache; run 1 is the cold HTTP walk. No case flipped vs T26 `results/gate_2026-10-17_t26_run1.json`: Khan-path positives stay **warn** (EoC); Lancet 2020 stays **block** (direct 1-hop retraction).
 
 | Run | caught | alarms | wall_s | ran_at | Allen 2013 |
 | --- | --- | --- | --- | --- | --- |
-| 1 | 7/7 | 0/6 | 158.7 | 2026-10-17T08:25:45+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
-| 2 | 7/7 | 0/6 | 104.5 | 2026-10-17T08:27:44+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
-| 3 | 7/7 | 0/6 | 98.4 | 2026-10-17T08:29:23+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
+| 1 | 7/7 | 0/6 | 206.1 | 2026-10-17T10:39:49+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
+| 2 | 7/7 | 0/6 | 114.2 | 2026-10-17T10:42:20+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
+| 3 | 7/7 | 0/6 | 129.0 | 2026-10-17T10:44:29+00:00 | warn, hops=2, `uses_data_or_method` 0.85 |
 
-Files: `results/gate_2026-10-17_t26_run1.json`, `run2`, `run3`.
+Files: `results/gate_2026-10-17_t26r3_run1.json`, `run2`, `run3`.
 
-## Prior art (re-fetched 16 Oct 2026 18:43 UTC)
+## Prior art (re-fetched 17 Oct 2026 10:37 UTC)
 
-`pytest tests/test_readme.py::test_readme_prior_art_links_verified_repos` — shaky-ground, scite, GhostCite, Bedrock links. Signed-out HEAD of https://shaky-ground-production.up.railway.app/ still returns **HTTP 501** (Railway). A normal GET on 17 Oct 2026 06:42 UTC returned **HTTP 200** (Content-Length 4848, title “Shaky Ground”, no sign-up; Blast radius / Foundation check UI). `GET /api/config` is `allow_runs: false`. Tracing a DOI not already in their graph is refused (`the server is read only`). GitHub repos `aryangorde6/shaky-ground`, `musharna/ghostcite`, `ibnweb3/bedrock` returned HTTP 200. `scite.ai/features` returned HTTP 403 from this host (CloudFront). Raw `shaky/retractionwatch.py` line 61 still keeps only `RetractionNature == "Retraction"`.
+`pytest tests/test_readme.py::test_readme_prior_art_links_verified_repos` — shaky-ground, scite, GhostCite, Bedrock links. Signed-out HEAD of https://shaky-ground-production.up.railway.app/ still returns **HTTP 501** (Railway). A normal GET on 17 Oct 2026 10:37 UTC returned **HTTP 200** (title “Shaky Ground”, no sign-up; Blast radius / Foundation check UI). `GET /api/config` is `allow_runs: false`. Tracing a DOI not already in their graph is refused (`GET /api/blast?paper=10.1056/nejmoa1200303` → HTTP **404**, “is not in this server's graph, and the server is read only”). GitHub repos `aryangorde6/shaky-ground`, `musharna/ghostcite`, `ibnweb3/bedrock` returned HTTP 200. `scite.ai/features` was not re-fetched this session. Raw `shaky/retractionwatch.py` line 61 still keeps only `RetractionNature == "Retraction"`. Last `aryangorde6/shaky-ground` push 2026-10-16T10:08:35Z.
 
 ## Not re-run this session
 

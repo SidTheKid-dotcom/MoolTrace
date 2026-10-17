@@ -105,6 +105,7 @@ def test_judges_is_five_minute_path():
         "what_rests_on",
         "mooltrace.mcp_server",
         ".venv/bin/python -m mooltrace mcp",
+        "Why the graph decided",
     ):
         assert needle in judges, needle
     assert "click" in judges.lower()
