@@ -248,16 +248,13 @@ function ResultCard({
           <Badge variant={decisionVariant(result.decision)}>{result.decision}</Badge>
           <span className="text-xs text-muted-foreground">
             {result.independent_source_count ?? 0} independent source
-            {(result.independent_source_count ?? 0) === 1 ? "" : "s"} at{" "}
-            <span title="Reliance weight: how strongly this hop uses the next work. included is 1.0; background is 0.2.">
-              weight ≥ {result.weight_floor ?? 0.5}
-            </span>
-            {result.path_rule ? ` · ${result.path_rule}` : ""}
+            {(result.independent_source_count ?? 0) === 1 ? "" : "s"}
+            {result.algorithm?.explanation ? ` · ${result.algorithm.explanation}` : ""}
             {result.coverage ? ` · ${result.coverage.replace("_", " ")}` : ""}
             {result.elapsed_ms != null ? ` · ${result.elapsed_ms} ms` : ""}
           </span>
         </div>
-        <CardTitle className="text-xl leading-snug">{plainVerdict(result)}</CardTitle>
+        <CardTitle className="text-lg leading-snug sm:text-xl">{plainVerdict(result)}</CardTitle>
         <CardDescription>{result.summary}</CardDescription>
         {result.coverage && result.coverage.startsWith("expanded ") ? (
           <CardDescription>Coverage: {result.coverage}</CardDescription>
@@ -452,18 +449,12 @@ export function PreShip() {
   useEffect(() => {
     if (typeof window === "undefined") return
     const params = new URLSearchParams(window.location.search)
-    const id = params.get("preset")
+    const id = params.get("preset") || PRESETS[0].id
     const requested = Number(params.get("depth"))
     const startDepth = DEPTHS.includes(requested as (typeof DEPTHS)[number])
       ? requested
       : undefined
-    if (
-      id === "harvard-vitamin-d" ||
-      id === "olive-oil" ||
-      id === "healthline" ||
-      id === "clean" ||
-      id === "not-in-graph"
-    ) {
+    if (PRESETS.some((item) => item.id === id)) {
       applyPreset(id, startDepth)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -617,32 +608,66 @@ export function PreShip() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
-      <header className="flex flex-col gap-3">
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-3 px-4 py-4 sm:px-6">
+      <header className="flex flex-col gap-1">
         <p className="text-sm font-medium tracking-wide text-primary">MoolTrace</p>
-        <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
           Is your AI&apos;s answer built on a flagged study?
         </h1>
-        {result ? null : (
-          <p className="text-base leading-7 text-muted-foreground">
-            Paste an answer and the links it cites. We follow every citation — page → review → trial —
-            and show you the exact path to any retraction or Expression of Concern.
-          </p>
-        )}
       </header>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5" data-testid="preset-row">
         {PRESETS.map((preset) => (
           <Button
             key={preset.id}
             type="button"
-            variant="outline"
+            size="sm"
+            variant={presetId === preset.id ? "default" : "outline"}
             disabled={loading}
             onClick={() => applyPreset(preset.id)}
           >
             <span title={preset.hint}>{preset.label}</span>
           </Button>
         ))}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>Depth</span>
+          <div
+            data-testid="depth-toggle"
+            role="radiogroup"
+            aria-label="Depth"
+            className="inline-flex rounded-lg border border-input bg-muted p-[3px]"
+          >
+            {DEPTHS.map((item) => (
+              <Button
+                key={item}
+                type="button"
+                size="sm"
+                data-depth={item}
+                role="radio"
+                aria-checked={depth === item}
+                variant={depth === item ? "default" : "ghost"}
+                disabled={loading}
+                onClick={() => selectDepth(item)}
+              >
+                {item}
+              </Button>
+            ))}
+          </div>
+        </div>
+        {presetId === "harvard-vitamin-d" && depth !== 1 ? (
+          <button
+            type="button"
+            data-testid="try-depth-1"
+            className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+            disabled={loading}
+            onClick={() => selectDepth(1)}
+          >
+            Try depth 1 — same page, 0 notice paths, PASS
+          </button>
+        ) : null}
       </div>
 
       {result ? (
@@ -688,31 +713,6 @@ export function PreShip() {
                 className="h-8 rounded-lg border border-input bg-card px-2 text-sm text-foreground"
               />
             </label>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Depth</span>
-              <div
-                data-testid="depth-toggle"
-                role="radiogroup"
-                aria-label="Depth"
-                className="inline-flex rounded-lg border border-input bg-muted p-[3px]"
-              >
-                {DEPTHS.map((item) => (
-                  <Button
-                    key={item}
-                    type="button"
-                    size="sm"
-                    data-depth={item}
-                    role="radio"
-                    aria-checked={depth === item}
-                    variant={depth === item ? "default" : "ghost"}
-                    disabled={loading}
-                    onClick={() => selectDepth(item)}
-                  >
-                    {item}
-                  </Button>
-                ))}
-              </div>
-            </div>
             <Button
               type="button"
               disabled={loading || (!text.trim() && !urls.trim())}

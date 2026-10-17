@@ -100,6 +100,29 @@ def test_ui_has_depth_toggle_one_two_three():
     assert "olive-oil" in src
 
 
+def test_ui_default_is_harvard_block_with_try_depth_1_nudge():
+    src = UI.read_text()
+    harvard = src.split("const PRESETS = [", 1)[1].split("id: \"harvard-vitamin-d\"", 1)
+    assert harvard[0].count("id:") == 0
+    block = src.split('id: "harvard-vitamin-d"', 1)[1].split("id:", 1)[0]
+    assert "depth: 2" in block
+    assert 'data-testid="try-depth-1"' in src
+    assert "try depth 1" in src.lower()
+    assert 'params.get("preset")' in src
+    assert "PRESETS[0].id" in src
+    assert "applyPreset(" in src
+    assert src.index('data-testid="depth-toggle"') < src.index('data-testid="verdict-first"')
+    assert src.index('data-testid="verdict-first"') < src.index("Draft answer")
+    for label in (
+        "Harvard vitamin D (block)",
+        "Healthline olive oil (warn)",
+        "Healthline cinnamon (warn)",
+        "Clean study (pass)",
+        "Not in the graph",
+    ):
+        assert label in src, label
+
+
 def test_recorded_presets_include_live_by_depth(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("MOOLTRACE_PUBLIC_DEMO", "1")
     monkeypatch.delenv("MOOLTRACE_PUBLIC_LIVE", raising=False)

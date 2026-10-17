@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   allowedDevOrigins: ["127.0.0.1", "localhost"],
   agentRules: false,
+  devIndicators: false,
   experimental: {
     proxyTimeout: 130_000,
   },

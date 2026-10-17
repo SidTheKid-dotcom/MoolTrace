@@ -48,7 +48,7 @@ If the Lightsail demo is down, do not paste a substitute. Note it and stop.
 
 Signed-out, in this order:
 
-1. Public GitHub README: tagline, live demo URL, Harvard vitamin D BLOCK screenshot, track name **Agents That Act on Connected Data**.
+1. Public GitHub README: tagline, one sentence of what it does, live demo URL, Harvard vitamin D depth-toggle GIF (depth 1 PASS → depth 2 BLOCK), local MCP one-liner, track name **Agents That Act on Connected Data**.
 2. Live demo: click **Harvard vitamin D (block)** (BLOCK, path strength 0.47, `uses_data_or_method` into Ishida 2004). Click **Healthline olive oil (warn)**. Toggle depth 1 (PASS, 0 notice paths) then depth 3 (WARN, path strength 0.30, both hops `mention`, retraction `10.1056/nejmc1806491`). Click **Not in the graph**: WARN, expanded 0 of 0 cited works.
 3. YouTube: duration ≤90 s, include Harvard BLOCK, the olive-oil depth 1 → 3 toggle (pass → warn), and the Not in the graph beat, close line "MoolTrace. Check the roots before you ship."
 4. Hackathon form track is **Agents That Act on Connected Data**. `SUBMISSION.md` has the three links filled (repo, video, demo). Video placeholder `_paste after upload_` is gone.

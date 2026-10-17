@@ -2,13 +2,19 @@
 
 MoolTrace catches when your health AI's sources quietly rest on a flagged or retracted study, even three links deep.
 
-**Live demo (no sign-up):** https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/ — click **Harvard vitamin D (block)**. Then **Healthline olive oil (warn)**: toggle depth **1** (PASS, 0 notice paths) then **3** (WARN: mention × mention; the review did not appear to rely on Estruch 2013).
+Paste a health-AI answer or the URL it cites; MoolTrace walks page → review → trial in FalkorDB and returns pass, warn, or block when a counted path rests on a publisher notice.
+
+**Live demo (no sign-up):** https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/
+
+![Harvard vitamin D depth 1 PASS then depth 2 BLOCK](assets/demo-harvard-depth-toggle.gif)
+
+Signed-out 1280×800 capture of the seeded demo at `http://127.0.0.1:4318/` (Lightsail rebuild pending `aws login`; hosted pin is still `:mooltrace.api.13`). Default load is Harvard vitamin D at depth 2 **BLOCK**; toggle **depth 1** for **PASS** (0 notice paths). This does not say vitamin D works or does not.
+
+Local MCP (one command): `.venv/bin/python -m mooltrace mcp`
+
+## Run locally
 
 WeMakeDevs × FalkorDB Graph Hacks, Track 01: **Agents That Act on Connected Data**.
-
-![Harvard Nutrition Source vitamin D BLOCK path](assets/demo-harvard-vitamin-d-block.png)
-
-Signed-out headless Chrome 1280×2200 capture, 17 Oct 2026, of the local seeded demo `http://127.0.0.1:4318/?preset=harvard-vitamin-d` (Lightsail pin pending `aws login`). BLOCK (exit 1). Page `mention` 0.55 → Avenell 2014 Cochrane `uses_data_or_method` 0.85 → Ishida 2004 retraction `10.1016/j.amjmed.2004.05.019` (2004-10-15). `Decided by: algo.SPpaths, path strength 0.47`. The **Why the graph decided** panel shows the filled `algo.SPpaths` Cypher, the fixture hops, and `Direct DOI check: 0 notices → would ship` vs `Graph depth 2: retraction 10.1016/j.amjmed.2004.05.019 → BLOCK`. The review called Ishida an included trial. This does not say vitamin D works or does not.
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -e .
@@ -354,7 +360,7 @@ Numbers below are dated per row. Re-run the command next to each line. Do not tr
 
 | Claim | Command | Result |
 | --- | --- | --- |
-| Full unit suite | `unshare --net --map-root-user .venv/bin/python -m pytest -q` | 17 Oct 2026 09:25 UTC this checkout: 323 passed, 0 failed, 473.79 s, network namespace unshared |
+| Full unit suite | `unshare --net --map-root-user .venv/bin/python -m pytest -q` | 17 Oct 2026 10:09 UTC this checkout: 325 passed, 0 failed, 494.90 s, network namespace unshared |
 | Flip + ablation | `.venv/bin/python -m pytest tests/test_graph.py::test_sp_weight_flip_changes_verdict tests/test_graph.py::test_sp_paths_ablation_returns_exit_3 tests/test_graph.py::test_sp_paths_strength_equals_brute_force_product -q` | 16 Oct 2026: weight 0.85 → warn, 0.2 → pass; `sp_paths` raised → exit 3, no verdict; algorithm strength equals brute-force product on 3 fixtures. |
 | Agent loop | `.venv/bin/python examples/agent_loop.py` | check warn, `algo.SPpaths`, rewrite recheck pass, 1 counted answer |
 | Fresh-clone quickstart in `/tmp` | `git clone … && python3 -m venv .venv && .venv/bin/pip install -e . && .venv/bin/python -m mooltrace check --url https://www.healthline.com/nutrition/cinnamon-and-diabetes --summary` | 16 Oct 2026: **65.06 s** (clone 3.02 s + install 9.67 s + check 52.37 s). WARN exit 2, EoC `10.2337/dc25-ec09`, `algo.SPpaths` 0.55. See [CLAIMS.md](CLAIMS.md). |

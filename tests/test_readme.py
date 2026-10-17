@@ -50,6 +50,13 @@ TAGLINE = (
     "MoolTrace catches when your health AI's sources quietly rest on a flagged "
     "or retracted study, even three links deep."
 )
+WHAT_IT_DOES = (
+    "Paste a health-AI answer or the URL it cites; MoolTrace walks page → review "
+    "→ trial in FalkorDB and returns pass, warn, or block when a counted path "
+    "rests on a publisher notice."
+)
+MCP_ONE = ".venv/bin/python -m mooltrace mcp"
+HERO_STEM = "assets/demo-harvard-depth-toggle"
 BASELINE_JSON = ROOT / "results" / "baseline_2026-10-16.json"
 
 
@@ -77,8 +84,10 @@ def test_readme_top_follows_p3_13():
     text = (ROOT / "README.md").read_text()
     order = [
         TAGLINE,
+        WHAT_IT_DOES,
         DEMO,
-        "assets/demo-harvard-vitamin-d-block.png",
+        HERO_STEM,
+        MCP_ONE,
         "python3 -m venv .venv",
         "symptom checkers, nutrition coaches, patient chatbots",
         "| pass | 0 |",
@@ -105,6 +114,27 @@ def test_readme_top_follows_p3_13():
     run_lines = [line for line in first_bash.splitlines() if line.strip()]
     assert len(run_lines) == 3, run_lines
     assert "mention-only multi-hop paths do not count" not in text
+
+
+def test_readme_top_is_ten_second_fold():
+    text = (ROOT / "README.md").read_text()
+    fold = text.split("\n## ", 1)[0]
+    for needle in (TAGLINE, WHAT_IT_DOES, DEMO, HERO_STEM, MCP_ONE):
+        assert needle in fold, needle
+    assert TAGLINE not in WHAT_IT_DOES
+    assert fold.index(TAGLINE) < fold.index(WHAT_IT_DOES) < fold.index(DEMO)
+    assert fold.index(DEMO) < fold.index(HERO_STEM) < fold.index(MCP_ONE)
+    assert "python3 -m venv" not in fold
+    assert "```mermaid" not in fold
+    assert "Who it is for" not in fold
+    assert "depth 1" in fold.lower()
+    assert "block" in fold.lower()
+    heroes = list((ROOT / "assets").glob("demo-harvard-depth-toggle.*"))
+    assert heroes, "hero image or GIF missing from assets/"
+    assert all(path.suffix.lower() in {".gif", ".png", ".webp"} for path in heroes)
+    caption = fold.split(HERO_STEM, 1)[1]
+    assert "signed-out" in caption.lower() or "signed out" in caption.lower()
+    assert "synthetic" not in fold.lower()
 
 
 def test_docs_name_the_connected_data_track():

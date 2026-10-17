@@ -209,7 +209,7 @@ docker compose up --build
 unshare --net --map-root-user .venv/bin/python -m pytest -q
 ```
 
-17 Oct 2026 09:25 UTC this checkout: 323 passed, 0 failed, 473.79 s, network namespace unshared.
+17 Oct 2026 10:09 UTC this checkout: 325 passed, 0 failed, 494.90 s, network namespace unshared.
 
 ## Limits quoted in README (spot-checks)
 
