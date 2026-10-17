@@ -70,6 +70,15 @@ def test_default_mailto_is_neutral_noreply():
     assert GMAIL not in out
 
 
+def test_unused_fly_and_render_files_are_gone():
+    assert not (ROOT / "fly.toml").exists()
+    assert not (ROOT / "render.yaml").exists()
+    for path in (ROOT / "README.md", ROOT / "SUBMISSION.md", ROOT / "SHIP_CHECKLIST.md", ROOT / "JUDGES.md"):
+        text = path.read_text(encoding="utf-8")
+        assert "fly.toml" not in text
+        assert "render.yaml" not in text
+
+
 def test_lightsail_deployment_does_not_embed_mailto():
     text = (ROOT / "deploy" / "lightsail-deployment.json").read_text(encoding="utf-8")
     assert "MOOLTRACE_MAILTO" not in text
