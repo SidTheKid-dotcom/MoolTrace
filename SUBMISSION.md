@@ -82,7 +82,7 @@ YIELD node, componentId
 
 ## Baseline (cited)
 
-From `results/baseline_2026-10-16.json` (16 Oct 2026; 52 labelled cases; Direct-DOI recall **0.4286**, MoolTrace recall **1.0**, 15 only-multi-hop catches). Reproduce: `.venv/bin/python -m mooltrace baseline --out results/baseline_2026-10-16.json`. Sealed external set from `results/vitality_2026-10-17.json`: Direct-DOI **0/40**, MoolTrace same-trial **31/40**, false alarms **0/10**. Reproduce: `.venv/bin/python -m mooltrace vitality --out results/vitality_2026-10-17.json`. This is not a medical accuracy score.
+From `results/baseline_2026-10-16.json` (16 Oct 2026; 52 labelled cases; Direct-DOI recall **0.4286**, MoolTrace recall **1.0**, 15 only-multi-hop catches). Reproduce: `.venv/bin/python -m mooltrace baseline --out results/baseline_2026-10-16.json`. Sealed external set from `results/vitality_2026-10-17.json`: Direct-DOI **0/40**, MoolTrace same-trial **31/40**, false alarms **1/40** (n=40). Depth 3 is a separate row: **14/18** same-trial, **1/40** false alarms, 22 extra positives pending. Reproduce: `.venv/bin/python -m mooltrace vitality --out results/vitality_2026-10-17.json`. This is not a medical accuracy score.
 
 ## Tech used
 

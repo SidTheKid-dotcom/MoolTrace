@@ -36,11 +36,13 @@ def test_frozen_set_is_capped_and_states_the_control_check():
     positives = frozen["positives"]
     controls = frozen["controls"]
     assert DEFAULT_FROZEN.name == "vitality.json"
-    assert 1 <= len(positives) <= 40
-    assert 1 <= len(controls) <= len(positives)
+    assert len(positives) == 40
+    assert len(controls) == 40
+    assert frozen["n_controls"] == 40
     assert frozen["control_check"]
     assert "osf" in frozen["control_check"].lower()
     assert "retracted" in frozen["control_check"].lower()
+    assert frozen.get("controls_frozen_at") == "2026-10-16T22:33:00+00:00"
     dois = [row["doi"] for row in positives] + [row["doi"] for row in controls]
     assert len(dois) == len(set(dois))
     sampled = [row for row in positives if row.get("sampled")]
@@ -50,6 +52,43 @@ def test_frozen_set_is_capped_and_states_the_control_check():
     assert any(row["doi"] == CTRL for row in controls)
     carlisle = "10.1002/14651858.cd004125.pub2"
     assert carlisle not in dois
+    new_controls = [
+        row for row in controls if str(row["id"]) not in {f"ctrl-{n:02d}" for n in range(1, 11)}
+    ]
+    assert len(new_controls) == 30
+    for row in new_controls:
+        assert row.get("frozen_at") == frozen["controls_frozen_at"]
+        assert row.get("in_vitality_all_sheet") is False
+        assert row.get("openalex_is_retracted") is False
+        assert row.get("openalex_retracted_refs") == []
+
+
+def test_new_controls_were_frozen_before_mooltrace_snapshot():
+    from mooltrace.vitality import DEFAULT_CROSSREF, DEFAULT_FROZEN, DEFAULT_SNAPSHOT, load_frozen
+
+    frozen = load_frozen()
+    snap = json.loads(DEFAULT_SNAPSHOT.read_text(encoding="utf-8"))
+    xref = json.loads(DEFAULT_CROSSREF.read_text(encoding="utf-8"))
+    freeze = frozen["controls_frozen_at"]
+    d2_updated = ((snap.get("by_depth") or {}).get("2") or {}).get("updated_at")
+    d3_updated = ((snap.get("by_depth") or {}).get("3") or {}).get("updated_at")
+    xref_new = xref.get("t22_controls_fetched_at")
+    assert freeze == "2026-10-16T22:33:00+00:00"
+    assert d2_updated
+    assert d2_updated > freeze
+    assert xref_new
+    assert freeze <= xref_new <= d2_updated
+    d2_ids = set(((snap.get("by_depth") or {}).get("2") or {}).get("cases") or {})
+    d3_ids = set(((snap.get("by_depth") or {}).get("3") or {}).get("cases") or {})
+    want = {row["id"] for row in frozen["positives"] + frozen["controls"]}
+    assert d2_ids == want
+    ctrl_ids = {row["id"] for row in frozen["controls"]}
+    assert ctrl_ids <= d3_ids
+    pending = want - d3_ids
+    assert pending
+    assert pending <= {row["id"] for row in frozen["positives"]}
+    assert d3_updated
+    assert DEFAULT_FROZEN.name == "vitality.json"
 
 
 def test_same_trial_matches_vitality_doi_or_stored_notice():
@@ -210,6 +249,166 @@ def test_offline_vitality_scores_recorded_fixtures(tmp_path, capsys):
     assert report["never_relabelled"] is True
 
 
+def test_eval_reports_depth_three_as_separate_row(tmp_path):
+    from mooltrace.vitality import render_markdown, run_vitality_eval
+
+    catalog = {
+        "kind": "direct_doi_crossref_catalog",
+        "fetched_at": "2026-10-17T00:00:00+00:00",
+        "works": {
+            HERNANDEZ: {
+                "status": 200,
+                "message": {"DOI": HERNANDEZ, "title": ["HCQ"], "updated-by": []},
+            },
+            CTRL: {
+                "status": 200,
+                "message": {"DOI": CTRL, "title": ["control"], "updated-by": []},
+            },
+        },
+    }
+    frozen = {
+        "product": "MoolTrace",
+        "kind": "vitality_frozen_set",
+        "paper": "Xu et al. BMJ 2025",
+        "control_check": "Same journal/year; not in OSF All-sheet; OpenAlex is_retracted=false; no retracted referenced_works in the first 80.",
+        "draft_template": "This health-information draft cites a single systematic review (DOI {doi}) and no other papers. It is not medical advice.",
+        "positives": [
+            {
+                "id": "pos-ref-35",
+                "kind": "positive",
+                "doi": HERNANDEZ,
+                "sampled": True,
+                "review_is_retracted": False,
+                "retracted_trials": [{"doi": ABD}],
+            }
+        ],
+        "controls": [
+            {
+                "id": "ctrl-02",
+                "kind": "control",
+                "doi": CTRL,
+                "in_vitality_all_sheet": False,
+                "openalex_is_retracted": False,
+            }
+        ],
+    }
+    snapshot = {
+        "kind": "vitality_mooltrace_snapshot",
+        "by_depth": {
+            "2": {
+                "depth": 2,
+                "cases": {
+                    "pos-ref-35": {
+                        "id": "pos-ref-35",
+                        "decision": "block",
+                        "exit_code": 1,
+                        "incomplete": False,
+                        "errors": [],
+                        "reasons": [
+                            {
+                                "code": "retraction",
+                                "root_doi": ABD,
+                                "notice_doi": ABD_NOTICE,
+                                "hops": 2,
+                                "path_score": 0.3025,
+                                "steps": [{"doi": HERNANDEZ}, {"doi": ABD}],
+                            }
+                        ],
+                        "summary": "retraction path",
+                        "wall_ms": 12.0,
+                        "api_calls": 4,
+                    },
+                    "ctrl-02": {
+                        "id": "ctrl-02",
+                        "decision": "pass",
+                        "exit_code": 0,
+                        "incomplete": False,
+                        "errors": [],
+                        "reasons": [],
+                        "summary": "no notice",
+                        "wall_ms": 8.0,
+                        "api_calls": 2,
+                    },
+                },
+            },
+            "3": {
+                "depth": 3,
+                "cases": {
+                    "pos-ref-35": {
+                        "id": "pos-ref-35",
+                        "decision": "block",
+                        "exit_code": 1,
+                        "incomplete": False,
+                        "errors": [],
+                        "reasons": [
+                            {
+                                "code": "retraction",
+                                "root_doi": ABD,
+                                "notice_doi": ABD_NOTICE,
+                                "hops": 3,
+                                "path_score": 0.3025,
+                                "steps": [{"doi": HERNANDEZ}, {"doi": ABD}],
+                            }
+                        ],
+                        "summary": "retraction path depth 3",
+                        "wall_ms": 20.0,
+                        "api_calls": 6,
+                    },
+                    "ctrl-02": {
+                        "id": "ctrl-02",
+                        "decision": "warn",
+                        "exit_code": 2,
+                        "incomplete": False,
+                        "errors": [],
+                        "reasons": [
+                            {
+                                "code": "retraction",
+                                "root_doi": "10.1016/example.retract",
+                                "notice_doi": "10.1016/example.notice",
+                                "hops": 3,
+                                "path_score": 0.55,
+                                "steps": [],
+                            }
+                        ],
+                        "summary": "unrelated retraction at depth 3",
+                        "wall_ms": 18.0,
+                        "api_calls": 5,
+                    },
+                },
+            },
+        },
+    }
+    frozen_path = tmp_path / "frozen.json"
+    catalog_path = tmp_path / "crossref.json"
+    snap_path = tmp_path / "mooltrace.json"
+    frozen_path.write_text(json.dumps(frozen), encoding="utf-8")
+    catalog_path.write_text(json.dumps(catalog), encoding="utf-8")
+    snap_path.write_text(json.dumps(snapshot), encoding="utf-8")
+
+    report = run_vitality_eval(
+        frozen_path=frozen_path,
+        catalog_path=catalog_path,
+        snapshot_path=snap_path,
+    )
+    d2 = report["mooltrace"]["metrics"]
+    d3 = report["mooltrace_depth_3"]["metrics"]
+    assert report["mooltrace"]["depth"] == 2
+    assert report["mooltrace_depth_3"]["depth"] == 3
+    assert d2["same_trial_recall_finished"] == "1/1"
+    assert d2["false_alarms_finished"] == "0/1"
+    assert d3["same_trial_recall_finished"] == "1/1"
+    assert d3["false_alarms_finished"] == "1/1"
+    md = render_markdown(report)
+    assert "Numbers (depth 2 headline)" in md
+    assert "Depth 3 (separate row; does not replace depth 2)" in md
+    assert "1/1" in md
+    assert md.index("Numbers (depth 2 headline)") < md.index(
+        "Depth 3 (separate row; does not replace depth 2)"
+    )
+    assert "Depth 3 false alarms (finished): **1/1**" in md
+    assert "Depth 2 false alarms (finished): **0/1**" in md
+
+
 def test_vitality_results_md_quotes_recorded_metrics():
     import json
     from pathlib import Path
@@ -218,19 +417,28 @@ def test_vitality_results_md_quotes_recorded_metrics():
     report = json.loads((root / "results" / "vitality_2026-10-17.json").read_text(encoding="utf-8"))
     md = (root / "results" / "vitality_2026-10-17.md").read_text(encoding="utf-8")
     mt = report["mooltrace"]["metrics"]
+    d3 = report["mooltrace_depth_3"]["metrics"]
     base = report["baseline"]["metrics"]
     for value in (
         str(mt["same_trial_recall_finished"]),
         str(mt["false_alarms_finished"]),
         str(base["positives_flagged"]),
         str(base["controls_flagged"]),
+        str(d3["same_trial_recall_finished"]),
+        str(d3["false_alarms_finished"]),
+        f"Pending live checks | {d3['pending']}",
         ".venv/bin/python -m mooltrace vitality --out results/vitality_2026-10-17.json",
         "not a medical accuracy score",
+        "Depth 3 (separate row; does not replace depth 2)",
     ):
         assert value in md, value
     assert report["never_relabelled"] is True
     assert mt["openalex_429_positives"] == 0
     assert mt["pending"] == 0
+    assert d3["pending"] > 0
+    assert report["n_controls"] == 40
+    assert d3.get("pending_ids")
+    assert len(d3["pending_ids"]) == d3["pending"]
 
 
 def test_readme_and_claims_quote_vitality_results():
@@ -240,8 +448,10 @@ def test_readme_and_claims_quote_vitality_results():
     root = Path(__file__).resolve().parents[1]
     report = json.loads((root / "results" / "vitality_2026-10-17.json").read_text(encoding="utf-8"))
     mt = report["mooltrace"]["metrics"]
+    d3 = report["mooltrace_depth_3"]["metrics"]
     readme = (root / "README.md").read_text(encoding="utf-8")
     claims = (root / "CLAIMS.md").read_text(encoding="utf-8")
+    judges = (root / "JUDGES.md").read_text(encoding="utf-8")
     honest = readme.split("## Honest results", 1)[1]
     for value in (
         "VITALITY",
@@ -249,7 +459,17 @@ def test_readme_and_claims_quote_vitality_results():
         ".venv/bin/python -m mooltrace vitality --out results/vitality_2026-10-17.json",
         str(mt["same_trial_recall_finished"]),
         str(mt["false_alarms_finished"]),
+        str(d3["same_trial_recall_finished"]),
+        str(d3["false_alarms_finished"]),
     ):
         assert value in honest, value
         assert value in claims, value
+    assert f"pending={d3['pending']}" in claims
+    assert f"same_trial={d3['same_trial_recall_finished']}" in claims
+    assert str(mt["false_alarms_finished"]) in judges
+    assert "depth 3" in judges.lower()
+    assert str(d3["same_trial_recall_finished"]) in judges
     assert "never relabel" in honest.lower() or "not relabel" in honest.lower()
+    assert "depth 3" in honest.lower()
+    assert "pending" in honest.lower()
+    assert f"{d3['pending']} extra" in honest or f"pending {d3['pending']}" in honest.lower()

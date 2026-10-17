@@ -113,5 +113,5 @@ Stop at or before 90 s. Beats sum to 85 s.
 | `This retraction affects 1 stored answer.` | `what_rests_on("10.1056/nejmc1806491")` after seeding that preset; live remote MCP 16 Oct 2026 (T09 / T15 / CLAIMS.md) counted 1 |
 | Lancet CI exit 1 | `mooltrace batch examples/lancet.jsonl --fail-on block`, 16 Oct 2026 18:09 UTC, CLAIMS.md, throwaway DB, 14.06 s |
 | Direct-DOI recall 0.4286; MoolTrace recall 1.0; 15 only-multi-hop; n=52 | `results/baseline_2026-10-16.json` (`baseline.metrics.recall`, `mooltrace.metrics.recall`, `only_multihop_ids`) |
-| VITALITY Direct-DOI 0/40; MoolTrace same-trial **31/40**; false alarms 0/10 | `results/vitality_2026-10-17.json` |
+| VITALITY Direct-DOI 0/40; MoolTrace same-trial **31/40**; false alarms 1/40 (n=40); depth 3 14/18 pending 22 | `results/vitality_2026-10-17.json` |
 | Olive-oil URL is not one of those 15 labelled rows. The no-graph miss on this URL is the separate Direct-DOI pass above. | labelled ids in that JSON; Direct-DOI run T13 |

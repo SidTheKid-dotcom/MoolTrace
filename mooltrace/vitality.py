@@ -2,9 +2,9 @@
 
 Xu et al., BMJ 2025, is the answer key we did not write. A draft cites only
 the review DOI. Direct-DOI looks that DOI up on Crossref. MoolTrace walks
-depth 2. Recall is whether a path reaches the SAME retracted trial VITALITY
-names. An OpenAlex 429 warn is not that recall. Labels are never rewritten
-after seeing verdicts.
+depth 2 (headline) and depth 3 (separate recorded row). Recall is whether
+a path reaches the SAME retracted trial VITALITY names. An OpenAlex 429
+warn is not that recall. Labels are never rewritten after seeing verdicts.
 """
 
 from __future__ import annotations
@@ -269,25 +269,67 @@ def record_crossref(
     return catalog
 
 
+def _normalize_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
+    """Accept the T19 flat depth-2 file or a by_depth map for 2 and 3."""
+    payload.setdefault("kind", "vitality_mooltrace_snapshot")
+    by_depth = payload.get("by_depth")
+    if not isinstance(by_depth, dict):
+        by_depth = {}
+    if not by_depth:
+        depth = int(payload.get("depth") or 2)
+        by_depth = {
+            str(depth): {
+                "depth": depth,
+                "cases": dict(payload.get("cases") or {}),
+                "updated_at": payload.get("updated_at"),
+                "cache": payload.get("cache"),
+            }
+        }
+    for key, bucket in list(by_depth.items()):
+        if not isinstance(bucket, dict):
+            by_depth[key] = {"depth": int(key), "cases": {}}
+            continue
+        bucket.setdefault("depth", int(key))
+        bucket.setdefault("cases", {})
+    payload["by_depth"] = by_depth
+    d2 = by_depth.get("2") or {}
+    payload["depth"] = 2
+    payload["cases"] = dict(d2.get("cases") or {})
+    return payload
+
+
 def _load_snapshot(path: Path) -> dict[str, Any]:
     if not path.is_file():
-        return {
-            "kind": "vitality_mooltrace_snapshot",
-            "depth": 2,
-            "cases": {},
-        }
+        return _normalize_snapshot(
+            {
+                "kind": "vitality_mooltrace_snapshot",
+                "depth": 2,
+                "cases": {},
+            }
+        )
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise ValueError(f"{path} is not a snapshot")
-    payload.setdefault("kind", "vitality_mooltrace_snapshot")
-    payload.setdefault("depth", 2)
-    payload.setdefault("cases", {})
-    return payload
+    return _normalize_snapshot(payload)
+
+
+def _depth_bucket(snapshot: dict[str, Any], depth: int) -> dict[str, Any]:
+    snapshot = _normalize_snapshot(snapshot)
+    key = str(int(depth))
+    bucket = snapshot["by_depth"].setdefault(key, {"depth": int(depth), "cases": {}})
+    bucket.setdefault("depth", int(depth))
+    bucket.setdefault("cases", {})
+    return bucket
 
 
 def _save_snapshot(path: Path, snapshot: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    snapshot["updated_at"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    snapshot = _normalize_snapshot(snapshot)
+    now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    snapshot["updated_at"] = now
+    d2 = snapshot["by_depth"].get("2") or {}
+    snapshot["depth"] = 2
+    snapshot["cases"] = dict(d2.get("cases") or {})
     path.write_text(json.dumps(snapshot, indent=2) + "\n", encoding="utf-8")
 
 
@@ -350,19 +392,27 @@ def run_live(
 ) -> dict[str, Any]:
     _gentle_openalex()
     snapshot = _load_snapshot(snapshot_path)
-    snapshot["depth"] = depth
-    snapshot.setdefault("cache", os.environ.get("MOOLTRACE_HTTP_CACHE"))
+    bucket = _depth_bucket(snapshot, depth)
+    cache = os.environ.get("MOOLTRACE_HTTP_CACHE")
+    snapshot.setdefault("cache", cache)
+    bucket["cache"] = cache
     rows = cases(frozen)
     if limit is not None:
         rows = rows[: max(0, int(limit))]
     for row in rows:
-        entry = snapshot["cases"].get(row["id"])
+        entry = bucket["cases"].get(row["id"])
         if not _needs_live(entry, retry_429=retry_429):
-            print(f"  skip {row['id']}", file=sys.stderr, flush=True)
+            print(f"  skip d{depth} {row['id']}", file=sys.stderr, flush=True)
             continue
-        print(f"  live {row['id']} {row['doi']}", file=sys.stderr, flush=True)
+        print(f"  live d{depth} {row['id']} {row['doi']}", file=sys.stderr, flush=True)
         result = run_live_case(row, frozen, depth=depth)
-        snapshot["cases"][row["id"]] = result
+        result["depth"] = depth
+        bucket["cases"][row["id"]] = result
+        bucket["updated_at"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+        snapshot["by_depth"][str(depth)] = bucket
+        if depth == 2:
+            snapshot["cases"] = bucket["cases"]
+            snapshot["depth"] = 2
         _save_snapshot(snapshot_path, snapshot)
         print(
             f"    decision={result['decision']} finished={result['finished_expansion']} "
@@ -403,32 +453,24 @@ def _frac(num: int, den: int) -> str:
     return f"{num}/{den}"
 
 
-def run_vitality_eval(
+def _score_depth(
+    frozen: dict[str, Any],
+    case_payloads: dict[str, Any],
     *,
-    frozen_path: Path | None = None,
-    catalog_path: Path | None = None,
-    snapshot_path: Path | None = None,
-    lookup=None,
+    depth: int,
 ) -> dict[str, Any]:
-    frozen = load_frozen(frozen_path)
-    catalog = None
-    finder = lookup
-    if finder is None:
-        catalog = load_crossref_catalog(catalog_path or DEFAULT_CROSSREF)
-        finder = recorded_lookup(catalog)
-    snapshot = _load_snapshot(snapshot_path or DEFAULT_SNAPSHOT)
     positives = list(frozen["positives"])
     controls = list(frozen["controls"])
-    base_rows = [_baseline_row(row, frozen, finder) for row in positives + controls]
     mt_rows = []
     for row in positives + controls:
-        payload = snapshot.get("cases", {}).get(row["id"]) or {}
+        payload = case_payloads.get(row["id"]) or {}
         if not payload:
             mt_rows.append(
                 {
                     "id": row["id"],
                     "kind": row.get("kind"),
                     "doi": row["doi"],
+                    "depth": depth,
                     "pending": True,
                     "finished_expansion": False,
                     "same_trial": False,
@@ -444,6 +486,7 @@ def run_vitality_eval(
                 "id": row["id"],
                 "kind": row.get("kind"),
                 "doi": row["doi"],
+                "depth": depth,
                 "pending": False,
                 **scored,
                 "summary": payload.get("summary"),
@@ -470,12 +513,10 @@ def run_vitality_eval(
     ]
     pos_429 = sum(1 for row in pos_mt if row.get("miss_reason") == "openalex_429")
     ctrl_429 = sum(1 for row in ctrl_mt if row.get("miss_reason") == "openalex_429")
-    pos_base = [row for row in base_rows if row["kind"] == "positive"]
-    ctrl_base = [row for row in base_rows if row["kind"] == "control"]
     by_frozen = {str(row["id"]): row for row in positives + controls}
     misses = []
     for row in pos_mt:
-        if not row.get("miss_reason"):
+        if not row.get("miss_reason") or row.get("pending"):
             continue
         frozen_row = by_frozen.get(str(row["id"])) or {}
         want = trial_dois(frozen_row)
@@ -509,13 +550,14 @@ def run_vitality_eval(
             )
         elif row.get("decision") == "pass":
             note = (
-                "No notice path within 2 hops. VITALITY named "
+                f"No notice path within {depth} hops. VITALITY named "
                 f"{want}."
             )
         misses.append(
             {
                 "id": row["id"],
                 "doi": row["doi"],
+                "depth": depth,
                 "reason": row.get("miss_reason"),
                 "note": note,
                 "decision": row.get("decision"),
@@ -531,6 +573,75 @@ def run_vitality_eval(
     sampled_same = sum(1 for row in sampled_finished if row.get("same_trial"))
     walls = [float(row["wall_ms"]) for row in mt_rows if row.get("wall_ms") is not None]
     return {
+        "depth": depth,
+        "metrics": {
+            "positives_n": len(pos_mt),
+            "controls_n": len(ctrl_mt),
+            "finished_positives": len(pos_finished),
+            "finished_controls": len(ctrl_finished),
+            "same_trial_recall_finished": _frac(len(same), len(pos_finished))
+            if pos_finished
+            else "unevaluable (0 finished)",
+            "counted_notice_finished": _frac(len(counted), len(pos_finished))
+            if pos_finished
+            else "unevaluable (0 finished)",
+            "false_alarms_finished": _frac(len(false_alarms), len(ctrl_finished))
+            if ctrl_finished
+            else "unevaluable (0 finished)",
+            "openalex_429_positives": pos_429,
+            "openalex_429_controls": ctrl_429,
+            "pending": sum(1 for row in mt_rows if row.get("pending")),
+            "pending_ids": [row["id"] for row in mt_rows if row.get("pending")],
+            "sum_case_wall_s": round(sum(walls) / 1000, 1) if walls else None,
+            "mean_case_wall_ms": round(sum(walls) / len(walls), 1) if walls else None,
+            "sampled_15_same_trial_finished": _frac(sampled_same, len(sampled_finished))
+            if sampled_finished
+            else "unevaluable",
+            "note": (
+                f"Recall is same VITALITY trial on a finished depth-{depth} path. "
+                "Product warn/block from OpenAlex 429 is not recall. "
+                "A counted retraction on a different paper than VITALITY named "
+                "is a same-trial miss, not a relabel."
+            ),
+        },
+        "results": mt_rows,
+        "misses": misses,
+        "false_alarms": [
+            {"id": row["id"], "doi": row["doi"], "decision": row.get("decision"), "depth": depth}
+            for row in false_alarms
+        ],
+        "example_paths": [
+            row
+            for row in mt_rows
+            if row["id"] in {"pos-ref-35", "pos-ref-87", "pos-ref-56"}
+        ],
+    }
+
+
+def run_vitality_eval(
+    *,
+    frozen_path: Path | None = None,
+    catalog_path: Path | None = None,
+    snapshot_path: Path | None = None,
+    lookup=None,
+) -> dict[str, Any]:
+    frozen = load_frozen(frozen_path)
+    catalog = None
+    finder = lookup
+    if finder is None:
+        catalog = load_crossref_catalog(catalog_path or DEFAULT_CROSSREF)
+        finder = recorded_lookup(catalog)
+    snapshot = _load_snapshot(snapshot_path or DEFAULT_SNAPSHOT)
+    positives = list(frozen["positives"])
+    controls = list(frozen["controls"])
+    base_rows = [_baseline_row(row, frozen, finder) for row in positives + controls]
+    pos_base = [row for row in base_rows if row["kind"] == "positive"]
+    ctrl_base = [row for row in base_rows if row["kind"] == "control"]
+    d2_cases = ((snapshot.get("by_depth") or {}).get("2") or {}).get("cases") or {}
+    d3_cases = ((snapshot.get("by_depth") or {}).get("3") or {}).get("cases") or {}
+    d2 = _score_depth(frozen, d2_cases, depth=2)
+    d3 = _score_depth(frozen, d3_cases, depth=3)
+    return {
         "product": "MoolTrace",
         "kind": "vitality_eval",
         "ran_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
@@ -540,6 +651,7 @@ def run_vitality_eval(
         "osf": frozen.get("osf"),
         "never_relabelled": True,
         "control_check": frozen.get("control_check"),
+        "controls_frozen_at": frozen.get("controls_frozen_at"),
         "sampling": frozen.get("sampling"),
         "n_positives": len(positives),
         "n_controls": len(controls),
@@ -548,10 +660,20 @@ def run_vitality_eval(
         "crossref_catalog": str(catalog_path or DEFAULT_CROSSREF),
         "crossref_fetched_at": (catalog or {}).get("fetched_at") if catalog else None,
         "mooltrace_snapshot": str(snapshot_path or DEFAULT_SNAPSHOT),
-        "depth": snapshot.get("depth") or 2,
+        "depth": 2,
         "live": {
             "snapshot_updated_at": snapshot.get("updated_at"),
-            "http_cache": snapshot.get("cache"),
+            "depth_2_updated_at": ((snapshot.get("by_depth") or {}).get("2") or {}).get(
+                "updated_at"
+            ),
+            "depth_3_updated_at": ((snapshot.get("by_depth") or {}).get("3") or {}).get(
+                "updated_at"
+            ),
+            "http_cache": (
+                ((snapshot.get("by_depth") or {}).get("3") or {}).get("cache")
+                or ((snapshot.get("by_depth") or {}).get("2") or {}).get("cache")
+                or snapshot.get("cache")
+            ),
             "openalex_rps": 3,
             "throwaway_graphs": True,
             "configured_db": str(config.DB_PATH),
@@ -568,70 +690,19 @@ def run_vitality_eval(
             },
             "results": base_rows,
         },
-        "mooltrace": {
-            "metrics": {
-                "positives_n": len(pos_mt),
-                "controls_n": len(ctrl_mt),
-                "finished_positives": len(pos_finished),
-                "finished_controls": len(ctrl_finished),
-                "same_trial_recall_finished": _frac(len(same), len(pos_finished))
-                if pos_finished
-                else "unevaluable (0 finished)",
-                "counted_notice_finished": _frac(len(counted), len(pos_finished))
-                if pos_finished
-                else "unevaluable (0 finished)",
-                "false_alarms_finished": _frac(len(false_alarms), len(ctrl_finished))
-                if ctrl_finished
-                else "unevaluable (0 finished)",
-                "openalex_429_positives": pos_429,
-                "openalex_429_controls": ctrl_429,
-                "pending": sum(1 for row in mt_rows if row.get("pending")),
-                "sum_case_wall_s": round(sum(walls) / 1000, 1) if walls else None,
-                "mean_case_wall_ms": round(sum(walls) / len(walls), 1) if walls else None,
-                "sampled_15_same_trial_finished": _frac(sampled_same, len(sampled_finished))
-                if sampled_finished
-                else "unevaluable",
-                "note": (
-                    "Recall is same VITALITY trial on a finished depth-2 path. "
-                    "Product warn/block from OpenAlex 429 is not recall. "
-                    "A counted retraction on a different paper than VITALITY named "
-                    "is a same-trial miss, not a relabel."
-                ),
-            },
-            "results": mt_rows,
-        },
-        "misses": misses,
-        "false_alarms": [{"id": row["id"], "doi": row["doi"], "decision": row.get("decision")} for row in false_alarms],
-        "example_paths": [
-            row
-            for row in mt_rows
-            if row["id"] in {"pos-ref-35", "pos-ref-87", "pos-ref-56"}
-        ],
+        "mooltrace": d2,
+        "mooltrace_depth_3": d3,
+        "misses": d2["misses"],
+        "misses_depth_3": d3["misses"],
+        "false_alarms": d2["false_alarms"],
+        "false_alarms_depth_3": d3["false_alarms"],
+        "example_paths": d2["example_paths"],
     }
 
 
-def render_markdown(report: dict[str, Any]) -> str:
-    mt = report["mooltrace"]["metrics"]
-    base = report["baseline"]["metrics"]
-    lines = [
-        f"# VITALITY bench ({report['ran_at'][:10]})",
-        "",
-        report.get("paper") or "Xu et al., VITALITY Study I, BMJ 2025.",
-        "",
-        "Labels were frozen before this run and were **not** rewritten after seeing verdicts.",
-        "",
-        f"- Frozen positives: **{report['n_positives']}** (sampled 15 + extra; cap 40)",
-        f"- Frozen controls: **{report['n_controls']}**",
-        f"- Depth: {report.get('depth')}",
-        f"- Reproduce offline: `.venv/bin/python -m mooltrace vitality --out results/vitality_{report['ran_at'][:10]}.json`",
-        "",
-        "## Control check",
-        "",
-        str(report.get("control_check") or ""),
-        "",
-        "## Numbers",
-        "",
-        "| Slice | Result |",
+def _numbers_table(mt: dict[str, Any], base: dict[str, Any], *, depth_label: str) -> list[str]:
+    return [
+        f"| Slice ({depth_label}) | Result |",
         "| --- | --- |",
         f"| Direct-DOI positives flagged | {base['positives_flagged']} |",
         f"| Direct-DOI controls flagged | {base['controls_flagged']} |",
@@ -643,15 +714,90 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"| Pending live checks | {mt['pending']} |",
         f"| Sampled-15 same-trial (finished) | {mt.get('sampled_15_same_trial_finished')} |",
         f"| Sum of case walls | {mt.get('sum_case_wall_s')} s |",
+    ]
+
+
+def render_markdown(report: dict[str, Any]) -> str:
+    mt = report["mooltrace"]["metrics"]
+    base = report["baseline"]["metrics"]
+    d3 = (report.get("mooltrace_depth_3") or {}).get("metrics") or {}
+    lines = [
+        f"# VITALITY bench ({report['ran_at'][:10]})",
         "",
-        mt["note"],
+        report.get("paper") or "Xu et al., VITALITY Study I, BMJ 2025.",
         "",
-        "n_controls is 10, not 40: five sampled positives and the 25 extra frozen "
-        "reviews have no journal-year control. Do not invent matches after seeing verdicts.",
+        "Labels were frozen before this run and were **not** rewritten after seeing verdicts.",
         "",
-        "## Misses",
+        f"- Frozen positives: **{report['n_positives']}** (sampled 15 + extra; cap 40)",
+        f"- Frozen controls: **{report['n_controls']}**",
+        f"- Headline depth: 2 (depth 3 is a separate row below; it does not replace depth 2)",
+        f"- Controls frozen at: {report.get('controls_frozen_at') or 'see control_check'}",
+        f"- Ran at: {report['ran_at']}",
+        "- Reproduce offline: `.venv/bin/python -m mooltrace vitality --out results/vitality_2026-10-17.json`",
+        "",
+        "## Control check",
+        "",
+        str(report.get("control_check") or ""),
+        "",
+        "## Numbers (depth 2 headline)",
         "",
     ]
+    lines.extend(_numbers_table(mt, base, depth_label="depth 2"))
+    lines.extend(
+        [
+            "",
+            mt["note"],
+            "",
+            (
+                f"n_controls is {report['n_controls']}. "
+                "Controls were frozen before MoolTrace ran on the new rows. "
+                "Do not invent matches after seeing verdicts."
+            ),
+            "",
+            "## Depth 3 (separate row; does not replace depth 2)",
+            "",
+        ]
+    )
+    if d3:
+        lines.extend(_numbers_table(d3, base, depth_label="depth 3"))
+        lines.extend(["", d3.get("note") or "", ""])
+        lines.append(
+            f"Depth 3 false alarms (finished): **{d3.get('false_alarms_finished')}**. "
+            f"Depth 2 false alarms (finished): **{mt.get('false_alarms_finished')}**."
+        )
+        pending_ids = d3.get("pending_ids") or []
+        if d3.get("pending"):
+            lines.extend(
+                [
+                    "",
+                    (
+                        f"Pending depth-3 live checks: **{d3['pending']}** "
+                        f"({', '.join(str(item) for item in pending_ids)}). "
+                        "Not started this session; marked pending, not relabelled."
+                    ),
+                ]
+            )
+    alarms = report.get("false_alarms") or []
+    lines.extend(["", "## False alarms (depth 2)", ""])
+    if alarms:
+        lines.append("| id | DOI | decision |")
+        lines.append("| --- | --- | --- |")
+        for row in alarms:
+            lines.append(f"| {row['id']} | `{row['doi']}` | {row.get('decision') or ''} |")
+    else:
+        lines.append("None recorded.")
+    d3_alarms = report.get("false_alarms_depth_3") or []
+    lines.extend(["", "## False alarms (depth 3)", ""])
+    if d3_alarms:
+        lines.append("| id | DOI | decision |")
+        lines.append("| --- | --- | --- |")
+        for row in d3_alarms:
+            lines.append(f"| {row['id']} | `{row['doi']}` | {row.get('decision') or ''} |")
+    elif d3.get("pending") and not d3.get("finished_controls"):
+        lines.append("Unevaluable until depth-3 controls finish.")
+    else:
+        lines.append("None recorded among finished depth-3 controls.")
+    lines.extend(["", "## Misses (depth 2)", ""])
     misses = report.get("misses") or []
     if not misses:
         lines.append("None recorded.")
@@ -659,6 +805,18 @@ def render_markdown(report: dict[str, Any]) -> str:
         lines.append("| id | DOI | reason | decision | note |")
         lines.append("| --- | --- | --- | --- | --- |")
         for row in misses:
+            note = (row.get("note") or row.get("reason") or "").replace("|", "/")
+            lines.append(
+                f"| {row['id']} | `{row['doi']}` | {row.get('reason')} | {row.get('decision') or ''} | {note} |"
+            )
+    d3_misses = report.get("misses_depth_3") or []
+    lines.extend(["", "## Misses (depth 3)", ""])
+    if not d3_misses:
+        lines.append("None recorded or depth 3 still pending.")
+    else:
+        lines.append("| id | DOI | reason | decision | note |")
+        lines.append("| --- | --- | --- | --- | --- |")
+        for row in d3_misses:
             note = (row.get("note") or row.get("reason") or "").replace("|", "/")
             lines.append(
                 f"| {row['id']} | `{row['doi']}` | {row.get('reason')} | {row.get('decision') or ''} | {note} |"
@@ -682,10 +840,11 @@ def main(argv: list[str] | None = None) -> int:
         prog="mooltrace vitality",
         description=(
             "Sealed VITALITY Study I eval. A no-graph direct-DOI checker vs "
-            "MoolTrace depth 2 on drafts that cite only a review DOI. "
-            "Default is offline from recorded Crossref and recorded MoolTrace "
-            "fixtures. --live walks one throwaway graph at a time, OpenAlex "
-            "RPS<=3, shared HTTP cache, and resumes on 429."
+            "MoolTrace depth 2 (headline) and depth 3 (separate row) on drafts "
+            "that cite only a review DOI. Default is offline from recorded "
+            "Crossref and recorded MoolTrace fixtures. --live walks one "
+            "throwaway graph at a time, OpenAlex RPS<=3, shared HTTP cache, "
+            "and resumes on 429."
         ),
     )
     parser.add_argument("--frozen", type=Path, default=DEFAULT_FROZEN)
@@ -697,14 +856,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--live",
         action="store_true",
-        help="Run MoolTrace depth 2 on throwaway graphs (writes the snapshot).",
+        help="Run MoolTrace on throwaway graphs (writes the snapshot at --depth).",
     )
     parser.add_argument(
         "--record-crossref",
         action="store_true",
         help="Fetch Crossref for every frozen DOI into the catalog.",
     )
-    parser.add_argument("--depth", type=int, default=2)
+    parser.add_argument("--depth", type=int, default=2, help="Live hop budget. 2 is headline; 3 is a separate row.")
     args = parser.parse_args(argv)
     os.environ.setdefault("MOOLTRACE_MAILTO", MAILTO)
     frozen = load_frozen(args.frozen)
@@ -746,6 +905,7 @@ def main(argv: list[str] | None = None) -> int:
     elif args.md:
         args.md.write_text(render_markdown(report), encoding="utf-8")
     mt = report["mooltrace"]["metrics"]
+    d3 = report["mooltrace_depth_3"]["metrics"]
     base = report["baseline"]["metrics"]
     print(
         f"VITALITY baseline pos={base['positives_flagged']} "
@@ -754,10 +914,18 @@ def main(argv: list[str] | None = None) -> int:
         flush=True,
     )
     print(
-        f"VITALITY mooltrace same_trial={mt['same_trial_recall_finished']} "
+        f"VITALITY mooltrace d2 same_trial={mt['same_trial_recall_finished']} "
         f"false_alarms={mt['false_alarms_finished']} "
         f"oa429={mt['openalex_429_positives']}+{mt['openalex_429_controls']} "
         f"pending={mt['pending']}",
+        file=sys.stderr,
+        flush=True,
+    )
+    print(
+        f"VITALITY mooltrace d3 same_trial={d3['same_trial_recall_finished']} "
+        f"false_alarms={d3['false_alarms_finished']} "
+        f"oa429={d3['openalex_429_positives']}+{d3['openalex_429_controls']} "
+        f"pending={d3['pending']}",
         file=sys.stderr,
         flush=True,
     )

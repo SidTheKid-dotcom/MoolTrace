@@ -147,23 +147,28 @@ Live labelled (52 isolated graphs) was **not** re-run this session (486.0 s on 1
 .venv/bin/python -m mooltrace vitality --out results/vitality_2026-10-17.json
 ```
 
-Confirmed offline 17 Oct 2026 from recorded Crossref (`examples/vitality_crossref.json`, fetched 2026-10-16T21:08:11Z) plus the recorded MoolTrace snapshot (`examples/vitality_mooltrace.json`, live depth 2, throwaway graphs, `MOOLTRACE_OPENALEX_RPS=3`, shared `/tmp/mt-t19-cache`, `data/mooltrace.db` mtime `1792153156` unused, process 725.7 s):
+Confirmed offline 17 Oct 2026 06:30:30Z from recorded Crossref (`examples/vitality_crossref.json`, T19 fetch 2026-10-16T21:08:11Z plus 30 new control DOIs at `t22_controls_fetched_at` 2026-10-16T22:33:15Z) plus the recorded MoolTrace snapshot (`examples/vitality_mooltrace.json`, throwaway graphs, `MOOLTRACE_OPENALEX_RPS=3`, shared `/tmp/mt-t22-cache`, `data/mooltrace.db` mtime `1792153156` unused). New controls frozen 2026-10-16T22:33:00Z before those live rows.
 
 ```
-VITALITY baseline pos=0/40 ctrl=0/10
-VITALITY mooltrace same_trial=31/40 false_alarms=0/10 oa429=0+0 pending=0
+VITALITY baseline pos=0/40 ctrl=0/40
+VITALITY mooltrace d2 same_trial=31/40 false_alarms=1/40 oa429=0+0 pending=0
+VITALITY mooltrace d3 same_trial=14/18 false_alarms=1/40 oa429=0+0 pending=22
 ```
 
 | Slice | Result |
 | --- | --- |
 | Direct-DOI positives flagged | 0/40 |
-| Direct-DOI controls flagged | 0/10 |
-| MoolTrace same-trial recall (finished) | 31/40 |
-| Counted notice (finished) | 26/40 |
-| False alarms (finished controls) | 0/10 |
-| Sampled-15 same-trial | 12/15 |
+| Direct-DOI controls flagged | 0/40 |
+| MoolTrace same-trial recall (finished, depth 2) | 31/40 |
+| Counted notice (finished, depth 2) | 26/40 |
+| False alarms (finished controls, depth 2) | 1/40 |
+| Sampled-15 same-trial (depth 2) | 12/15 |
+| MoolTrace same-trial recall (finished, depth 3) | 14/18 |
+| Counted notice (finished, depth 3) | 10/18 |
+| False alarms (finished controls, depth 3) | 1/40 |
+| Pending depth 3 | 22 extra positives |
 
-Labels frozen 16 Oct 2026 from Xu et al. BMJ 2025 / OSF osf.io/7eazq. Not relabelled after seeing verdicts. n_ctrl=10, not 40. Control check is in `examples/vitality.json`. This is not a medical accuracy score.
+Depth 2 headline is **31/40** same-trial and **1/40** false alarms (`ctrl-35` / `10.1002/14651858.cd013856` warned unverified on withdrawn Cochrane `10.1002/14651858.cd006789`; not a VITALITY-named trial; not relabelled). Depth 3 is a separate recorded row: **14/18** same-trial, **1/40** false alarms (same `ctrl-35`), **22** extra positives pending. Labels frozen 16 Oct 2026 from Xu et al. BMJ 2025 / OSF osf.io/7eazq. Control check is in `examples/vitality.json`. This is not a medical accuracy score.
 
 ## Agent loop (offline)
 
