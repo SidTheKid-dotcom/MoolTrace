@@ -51,22 +51,22 @@ Same URL via the README `check-answer` form (not re-fetched; same cinnamon page)
 | Claim | Command | Confirmed |
 | --- | --- | --- |
 | Home is public, no sign-up | `curl -sI https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/` | HTTP 200 |
-| Click **Healthline olive oil (block)** | `curl -sS -X POST …/nw/check-answer -d '{"text":"","urls":["https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil"],"engine":"nutrition-coach","depth":3}'` | **BLOCK (exit 1)**. `decided_by algo.SPpaths`. Strength `0.30250000000000005` (docs print **0.30**). Both hops `mention` 0.55. Retraction `10.1056/nejmc1806491` (2018-06-13) on Estruch 2013. Hop trail hashes `350900e5…` / `583d26db…` (recorded live 16 Oct 2026 19:52 UTC). |
+| Click **Harvard vitamin D (block)** | `curl -sS -X POST …/nw/check-answer -d '{"text":"","urls":["https://nutritionsource.hsph.harvard.edu/vitamin-d/"],"engine":"nutrition-coach","depth":2}'` | **BLOCK (exit 1)**. `decided_by algo.SPpaths`. Seeded strength `0.4675` (docs print **0.47**). Hops `mention` 0.55 × `uses_data_or_method` 0.85. Ishida 2004 retraction `10.1016/j.amjmed.2004.05.019` (2004-10-15). Recorded live 17 Oct 2026 (T25); T26 PATH_RULE still blocks because the hop into Ishida is uses_data_or_method. |
+| Click **Healthline olive oil (warn)** | same POST, olive-oil URL, depth 3 | **WARN (exit 2)**. Strength `0.30250000000000005` (docs print **0.30**). Both hops `mention` 0.55. Retraction `10.1056/nejmc1806491` (2018-06-13) on Estruch 2013. Summary: cites a review that mentions a retracted trial (Estruch 2013); the review did not appear to rely on it. Hop trail hashes `350900e5…` / `583d26db…` (recorded live 16 Oct 2026 19:52 UTC). |
 | Toggle olive-oil **depth 1** | same POST, `"depth":1` | **PASS (exit 0)**. 0 notice paths. Live throwaway DB 16 Oct 2026 19:51 UTC, wall 13.6 s. Seeded replay matches. |
-| Toggle olive-oil **depth 2** | same POST, `"depth":2` | **BLOCK (exit 1)**. Same Estruch path as depth 3. Strength `0.30250000000000005`. |
+| Toggle olive-oil **depth 2** | same POST, `"depth":2` | **WARN (exit 2)**. Same Estruch mention path as depth 3. Strength `0.30250000000000005`. |
 | Click **Healthline cinnamon (warn)** | same POST, cinnamon URL, depth 2 | **WARN (exit 2)**. Strength `0.55`. Expression of Concern `10.2337/dc25-ec09`. Depth 1 is PASS (0 notice paths). |
 | Clean study (pass) | same POST, text `10.1016/j.jsps.2015.03.013`, engine `clean-check` | **pass** exit 0 at depths 1, 2, and 3 |
 | Click **Not in the graph** | same POST, NHS `https://www.nhs.uk/live-well/best-way-to-wash-your-hands/`, depth 2 | **WARN (exit 2)**. Coverage **expanded 0 of 0 cited works**. Summary: “Nothing in the graph connects this answer to a study. This is not proof it is safe; the source may not be modelled.” Recorded 16 Oct 2026T20:22:08Z, page hash `5c015843460b0e872bd9a0b01bf0c5bf91a810a04a9f21b72b0574b525495329`. Hosted signed-out POST 16 Oct 2026 (T18 / T20). |
 | Oversized free-text | POST 40k-char draft | HTTP **413** `Draft or URL list is too large for the public demo.` |
 
-The 2013 PREDIMED trial was retracted and republished in 2018 after re-analysis. Both olive-oil hops are `mention`. This does not say olive oil or the Mediterranean diet works or does not.
+The 2013 PREDIMED trial was retracted and republished in 2018 after re-analysis. Both olive-oil hops are `mention`; T26 PATH_RULE turns that into WARN. This does not say olive oil or the Mediterranean diet works or does not. Ishida 2004 is a retraction; Avenell 2014 called it an included trial.
 
-Reconfirmed signed-out 16 Oct 2026 22:03 UTC (T21, no cookies): home HTTP 200, `Set-Cookie` absent, HTML has no sign-in/signup/login/password/oauth, has depth toggle and **Not in the graph**. Olive depth 1 **pass** exit 0, 0 notice paths, coverage expanded 1 of 1. Olive depth 3 **block** exit 1 strength `0.30250000000000005` hops `mention` / `mention` retraction `10.1056/nejmc1806491`. Cinnamon depth 2 **warn** exit 2 strength 0.55 hops `mention` / `relies` EoC `10.2337/dc25-ec09`. Clean **pass** exit 0. Not in the graph **warn** exit 2, coverage **expanded 0 of 0 cited works**.
-
-Offline replay of the same four recorded presets (no HTTP; throwaway graph):
+Offline replay of the five recorded presets (no HTTP; throwaway graph; T26 PATH_RULE):
 
 ```
-nutrition-olive-oil block exit 1 strength 0.30250000000000005 decided algo.SPpaths
+nutrition-harvard-vitamin-d block exit 1 strength 0.4675 decided algo.SPpaths
+nutrition-olive-oil warn exit 2 strength 0.30250000000000005 decided algo.SPpaths
 nutrition-healthline warn exit 2 strength 0.55 decided algo.SPpaths
 clean-jsps pass exit 0 strength None decided algo.SPpaths
 not-in-graph warn exit 2 coverage expanded 0 of 0 cited works
@@ -78,7 +78,7 @@ not-in-graph warn exit 2 coverage expanded 0 of 0 cited works
 | --- | --- | --- |
 | pass | 0 | live clean preset; offline `clean-jsps`; `test_presets_recorded.py` |
 | warn | 2 | live cinnamon; fresh-clone `--summary`; `examples/answers.jsonl` |
-| block | 1 | live olive-oil; `examples/lancet.jsonl` |
+| block | 1 | Harvard vitamin D preset; `examples/lancet.jsonl` |
 | error | 3 | `tests/test_graph.py::test_sp_paths_ablation_returns_exit_3` (`sp_paths` raised → exit 3, no verdict) |
 
 README table rows: `| pass | 0 |`, `| block | 1 |`, `| error | 3 |`, warn is exit 2.
@@ -99,17 +99,13 @@ Confirmed 16 Oct 2026 18:09 UTC, throwaway `/tmp/mt-t12-lancet/mooltrace.db`, 14
 
 ## MCP
 
-Remote (official Python `Client`, 16 Oct 2026 18:41 UTC, signed-out):
+Remote MCP on hosted `:mooltrace.api.13` still served the pre-T26 olive-oil BLOCK. After T26, the Harvard vitamin D preset is the BLOCK (`check_answer` exit 1, Ishida 2004, seeded strength 0.4675). Olive-oil `check_answer` is WARN exit 2 (mention × mention). Seeded replay (no HTTP) matches `examples/presets_recorded.json`. Live signed-out MCP reconfirm is after the Lightsail pin.
 
 ```
-tools ['check_answer', 'what_rests_on', 'recheck_affected']
-check_answer block exit 1
-notice retraction 10.1056/nejmc1806491 score 0.30250000000000005
-decided_by algo.SPpaths
-what_rests_on This retraction affects 1 stored answer. counted 1
+# seeded replay, throwaway graph, T26 PATH_RULE
+nutrition-harvard-vitamin-d block exit 1 strength 0.4675
+nutrition-olive-oil warn exit 2 strength 0.30250000000000005
 ```
-
-Hosted `recheck_affected` on the same olive-oil notice, after the 17 Oct 2026 Lightsail rebuild (`:mooltrace.api.6` / `:mooltrace.web.7`), returns **block exit 1** (`incomplete` False) on the stored olive-oil answer. `what_rests_on` still counts 1 stored answer. Official MCP `Client` against `/mcp` this session.
 
 Local one-command (after the venv above): `.venv/bin/python -m mooltrace mcp`. Point Cursor/Claude at `mcp.example.json` (`args` `["-m", "mooltrace.mcp_server"]`). Stdio has the full tool list. Confirmed this session: `TOOLS` 9 names including `rewrite_answer`; empty draft → warn exit 2 `no_sources`.
 
@@ -203,7 +199,7 @@ Confirmed: `3 passed in 24.92s`. Weight 0.85 → warn, 0.2 → pass; `sp_paths` 
 docker compose up --build
 ```
 
-**Not booted this session** (Lightsail already serves the same four presets). Confirmed `docker compose config`: services `api` / `web`; published `127.0.0.1:4317` and `127.0.0.1:4318`; `MOOLTRACE_DB=/data/demo.db`; `MOOLTRACE_PUBLIC_DEMO=1`. Volume is not `data/mooltrace.db`.
+**Not booted this session** (Lightsail already serves the hosted demo). Confirmed `docker compose config`: services `api` / `web`; published `127.0.0.1:4317` and `127.0.0.1:4318`; `MOOLTRACE_DB=/data/demo.db`; `MOOLTRACE_PUBLIC_DEMO=1`. Volume is not `data/mooltrace.db`.
 
 ## Offline unit suite
 
@@ -211,7 +207,7 @@ docker compose up --build
 unshare --net --map-root-user .venv/bin/python -m pytest -q
 ```
 
-17 Oct 2026 07:16 UTC this checkout: 310 passed, 0 failed, 446.26 s, network namespace unshared.
+17 Oct 2026 08:22 UTC this checkout: 316 passed, 0 failed, 467.06 s, network namespace unshared.
 
 ## Limits quoted in README (spot-checks)
 

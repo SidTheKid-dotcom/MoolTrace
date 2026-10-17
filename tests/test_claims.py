@@ -94,7 +94,8 @@ def test_judges_is_five_minute_path():
     for needle in (
         TRACK,
         DEMO,
-        "Healthline olive oil (block)",
+        "Harvard vitamin D (block)",
+        "Healthline olive oil (warn)",
         "BLOCK",
         "0.30",
         "10.1056/nejmc1806491",

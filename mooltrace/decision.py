@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Any
 
 from mooltrace.ids import normalize_update_type
-from mooltrace.reliance import PATH_RULE, STRONG_RELIANCE, WEIGHT_FLOOR
+from mooltrace.reliance import PATH_RULE, STRONG_RELIANCE, WEIGHT_FLOOR, WEIGHTS
 
 PASSING_NOTE = "cites a flagged study only in passing"
 
@@ -23,6 +23,10 @@ PRESHIP_EOC = (
 PRESHIP_RETRACTION = (
     "Before your bot ships this answer, MoolTrace flags that a cited page "
     "or review reaches a retracted study."
+)
+PRESHIP_RETRACTION_MENTION = (
+    "cites a review that mentions a retracted trial{paper}; "
+    "the review did not appear to rely on it"
 )
 PRESHIP_WITHDRAWAL = (
     "Before your bot ships this answer, MoolTrace flags that a cited page "
@@ -131,13 +135,59 @@ def strongest_per_flagged_work(paths: list[dict[str, Any]]) -> list[dict[str, An
     return list(best.values()) + leftover
 
 
-def _clears_hop_rule(hops: list[dict[str, Any]]) -> bool:
-    """Single-hop mentions count. Multi-hop paths need a strong use."""
-    if len(hops) <= 1:
+def _last_hop(path: dict[str, Any]) -> dict[str, Any]:
+    hops = path.get("hops_evidence") or []
+    if hops:
+        last = hops[-1]
+        return last if isinstance(last, dict) else path
+    return path
+
+
+def _hop_count(path: dict[str, Any]) -> int:
+    hops = path.get("hops_evidence") or []
+    if hops:
+        return len(hops)
+    try:
+        return int(path.get("hops") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _strong_into_flagged(path: dict[str, Any]) -> bool:
+    """BLOCK-grade hop into the flagged work: included / relies / uses_data_or_method.
+
+    Direct 1-hop citation still blocks even when that hop is a mention
+    (the answer itself cited the retracted work). Multi-hop paths block
+    only when the last hop — the one into the retracted work — is strong
+    and every hop already passed the per-hop counted gate.
+    """
+    hops = path.get("hops_evidence") or []
+    if len(hops) <= 1 and _hop_count(path) <= 1:
         return True
-    return any(
-        (edge.get("reliance") or "").strip().lower() in STRONG_RELIANCE for edge in hops
-    )
+    last = _last_hop(path)
+    reliance = (last.get("reliance") or "").strip().lower()
+    try:
+        weight = float(last.get("weight") if last.get("weight") is not None else 0.0)
+    except (TypeError, ValueError):
+        weight = 0.0
+    return reliance in STRONG_RELIANCE and weight >= WEIGHTS["uses_data_or_method"]
+
+
+def _paper_label(path: dict[str, Any]) -> str:
+    root = path.get("root") or {}
+    author = str(root.get("first_author") or "").strip()
+    year = root.get("year")
+    if author and year not in (None, ""):
+        return f"{author} {year}"
+    if author:
+        return author
+    return ""
+
+
+def _mention_retraction_summary(paths: list[dict[str, Any]]) -> str:
+    label = next((item for item in (_paper_label(path) for path in paths) if item), "")
+    paper = f" ({label})" if label else ""
+    return PRESHIP_RETRACTION_MENTION.format(paper=paper)
 
 
 def path_score(path: dict[str, Any]) -> float:
@@ -279,9 +329,12 @@ def decide(
 ) -> dict[str, Any]:
     """Classify algo.SPpaths rows into pass, warn, or block.
 
-    block — counted path reaches a retraction, withdrawal, or removal.
-    warn  — counted path reaches an Expression of Concern, a reachable
-            flagged path is unverified, the check stopped early, or the
+    block — counted path reaches a retraction, withdrawal, or removal
+            and the hop into that work is included / relies /
+            uses_data_or_method (or the path is a direct 1-hop citation).
+    warn  — counted path reaches an Expression of Concern; a counted
+            retraction reached only via mention/background; a reachable
+            flagged path is unverified; the check stopped early; or the
             draft named no verifiable source.
     pass  — cited works were checked and no counted or unverified notice
             remains. Discounted paths (a hop below the 0.5 weight floor)
@@ -323,12 +376,37 @@ def decide(
     for item in discounted_reasons:
         item["status"] = "discount"
 
-    if "retraction" in kinds:
+    counted_by_kind: dict[str, list[dict[str, Any]]] = {
+        "retraction": [],
+        "withdrawal": [],
+        "expression_of_concern": [],
+    }
+    for path in counted:
+        kind = _kind((path.get("notice") or {}).get("type"))
+        if kind in counted_by_kind:
+            counted_by_kind[kind].append(path)
+
+    strong_retraction = [path for path in counted_by_kind["retraction"] if _strong_into_flagged(path)]
+    mention_retraction = [
+        path for path in counted_by_kind["retraction"] if not _strong_into_flagged(path)
+    ]
+    strong_withdrawal = [path for path in counted_by_kind["withdrawal"] if _strong_into_flagged(path)]
+    mention_withdrawal = [
+        path for path in counted_by_kind["withdrawal"] if not _strong_into_flagged(path)
+    ]
+
+    if strong_retraction:
         decision = "block"
         summary = PRESHIP_RETRACTION
-    elif "withdrawal" in kinds:
+    elif strong_withdrawal:
         decision = "block"
         summary = PRESHIP_WITHDRAWAL
+    elif mention_retraction:
+        decision = "warn"
+        summary = _mention_retraction_summary(mention_retraction)
+    elif mention_withdrawal:
+        decision = "warn"
+        summary = _mention_retraction_summary(mention_withdrawal)
     elif "expression_of_concern" in kinds:
         decision = "warn"
         summary = PRESHIP_EOC

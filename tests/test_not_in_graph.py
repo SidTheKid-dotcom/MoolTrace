@@ -41,13 +41,13 @@ def _retraction_path() -> dict:
             {
                 "reliance": "mention",
                 "weight": 0.55,
-                "sentence": "Schwingshackl review.",
+                "sentence": "Avenell 2014 Cochrane review.",
                 "judged": True,
             },
             {
-                "reliance": "mention",
-                "weight": 0.55,
-                "sentence": "Estruch 2013.",
+                "reliance": "uses_data_or_method",
+                "weight": 0.85,
+                "sentence": "Ishida 2004, an included trial, has been retracted",
                 "judged": True,
             },
         ],
@@ -104,8 +104,8 @@ def test_notice_path_does_not_keep_incomplete_flag_when_expansion_capped(
     graph = Graph(tmp_path / "demo.db")
     seed_offline_presets(graph)
     fixtures = {row["id"]: row for row in load_demo_fixtures()}
-    row = fixtures["nutrition-olive-oil"]
-    payload = check_answer(row["text"], row["urls"], row["engine"], 3, graph=graph)
+    row = fixtures["nutrition-harvard-vitamin-d"]
+    payload = check_answer(row["text"], row["urls"], row["engine"], 2, graph=graph)
     assert payload["decision"] == "block"
     assert payload["coverage"].startswith("expanded ")
     assert " cited works" in payload["coverage"]

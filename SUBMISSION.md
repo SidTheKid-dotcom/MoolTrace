@@ -16,7 +16,7 @@ Health-AI products (symptom checkers, nutrition coaches, patient chatbots) cite 
 
 ## How judges run it in two minutes
 
-Live demo (no sign-up): https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/ — click **Healthline olive oil (block)**. Toggle **depth 1**: **PASS** (0 notice paths). Toggle **depth 3**: **BLOCK (exit 1)** and `Decided by: algo.SPpaths, path strength 0.30` (page `mention` 0.55 × Schwingshackl→Estruch `mention` 0.55; retraction `10.1056/nejmc1806491` 2018-06-13; recorded 16 Oct 2026 in `examples/presets_recorded.json`). Click **Not in the graph** for the honest negative (NHS how-to, WARN, expanded 0 of 0 cited works). Never say the review relies on the trial. The 2013 trial was retracted and republished in 2018 after re-analysis. This does not say olive oil works or does not.
+Live demo (no sign-up): https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/ — click **Harvard vitamin D (block)**. **BLOCK (exit 1)** and `Decided by: algo.SPpaths, path strength 0.47` (page `mention` 0.55 × Avenell 2014 `uses_data_or_method` 0.85 → Ishida 2004 retraction `10.1016/j.amjmed.2004.05.019` 2004-10-15; recorded 17 Oct 2026 in `examples/presets_recorded.json`). Then **Healthline olive oil (warn)**: toggle **depth 1** **PASS** (0 notice paths); toggle **depth 3** **WARN (exit 2)** path strength 0.30 (mention × mention to Estruch 2013; the review did not appear to rely on it). Click **Not in the graph** for the honest negative (NHS how-to, WARN, expanded 0 of 0 cited works). The 2013 trial was retracted and republished in 2018 after re-analysis. This does not say olive oil or vitamin D works or does not.
 
 ```bash
 python3 -m venv .venv
@@ -31,7 +31,7 @@ Expect **WARN (exit 2)** and `Decided by: algo.SPpaths, path strength 0.55` (Hea
 .venv/bin/python -m mooltrace batch examples/lancet.jsonl --fail-on block; echo $?
 ```
 
-Expect exit **1** (Mehra 2020 retraction). Direct-DOI on the olive-oil URL with no graph is **pass** (no DOI in the draft; this session, `check_direct_doi`). Depth-1 MoolTrace is **pass** (0 notice paths). Depth-3 MoolTrace is **block**.
+Expect exit **1** (Mehra 2020 retraction). Direct-DOI on the olive-oil URL with no graph is **pass** (no DOI in the draft; this session, `check_direct_doi`). Olive-oil depth-1 MoolTrace is **pass** (0 notice paths). Olive-oil depth-3 MoolTrace is **warn** (mention × mention). Harvard vitamin D depth-2 is **block**.
 
 ## Cypher (deciding query)
 

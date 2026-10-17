@@ -6,7 +6,9 @@ Track 01: **Agents That Act on Connected Data**. No sign-up.
 
 https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/
 
-Click **Healthline olive oil (block)**. You should see **BLOCK** (exit 1), path strength **0.30**, both hops `mention` 0.55, and Estruch 2013 retraction `10.1056/nejmc1806491` (2018-06-13). `Decided by: algo.SPpaths`. Toggle **depth 1**: **PASS** (0 notice paths). Toggle **depth 3**: **BLOCK** with the same path. The 2013 trial was retracted and republished in 2018 after re-analysis. This does not say olive oil or the Mediterranean diet works or does not.
+Click **Harvard vitamin D (block)**. You should see **BLOCK** (exit 1), path strength **0.47**, hops `mention` 0.55 × `uses_data_or_method` 0.85, and Ishida 2004 retraction `10.1016/j.amjmed.2004.05.019` (2004-10-15). `Decided by: algo.SPpaths`. The Cochrane review called Ishida an included trial. This does not say vitamin D works or does not.
+
+Click **Healthline olive oil (warn)**. Toggle **depth 1**: **PASS** (0 notice paths). Toggle **depth 3**: **WARN** (exit 2), path strength **0.30**, both hops `mention` 0.55, Estruch 2013 retraction `10.1056/nejmc1806491` (2018-06-13). The review did not appear to rely on the trial. The 2013 trial was retracted and republished in 2018 after re-analysis. This does not say olive oil or the Mediterranean diet works or does not.
 
 Click **Healthline cinnamon (warn)** for an Expression of Concern (`relies` 1.0, path strength **0.55**). Depth 1 is PASS; depth 2/3 is WARN. An Expression of Concern is not a retraction.
 
@@ -43,24 +45,20 @@ Sealed VITALITY (Xu et al., BMJ 2025): `.venv/bin/python -m mooltrace vitality -
 }
 ```
 
-Claude Desktop can also use `"type": "http"` next to `url`. Tools are only `check_answer`, `what_rests_on`, `recheck_affected`. Call `check_answer` with the olive-oil preset:
+Claude Desktop can also use `"type": "http"` next to `url`. Tools are only `check_answer`, `what_rests_on`, `recheck_affected`. Call `check_answer` with the Harvard vitamin D preset:
 
 ```json
 {
   "text": "",
-  "urls": ["https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil"],
+  "urls": ["https://nutritionsource.hsph.harvard.edu/vitamin-d/"],
   "engine": "nutrition-coach",
-  "depth": 3
+  "depth": 2
 }
 ```
 
-Expect **block**, exit 1, retraction `10.1056/nejmc1806491`, path strength `0.3025`, `decided_by: algo.SPpaths`. Confirmed with the official Python MCP `Client` against that URL on 16 Oct 2026 18:09 UTC:
+Expect **block**, exit 1, retraction `10.1016/j.amjmed.2004.05.019`, path strength `0.4675`, hops `mention` × `uses_data_or_method`, `decided_by: algo.SPpaths`. Seeded replay of the recorded hops (T25 live 17 Oct 2026; T26 PATH_RULE).
 
-```
-tools ['check_answer', 'what_rests_on', 'recheck_affected']
-check_answer block exit 1
-notice retraction 10.1056/nejmc1806491 score 0.30250000000000005
-```
+Olive-oil MCP at depth 3 is **warn**, exit 2, Estruch 2013 mention × mention, path strength `0.3025`.
 
 Presets never 429.
 

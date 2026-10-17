@@ -86,7 +86,9 @@ def test_check_answer_and_summary_omit_pagerank(tmp_path: Path):
         assert "pageRank" not in summary
         assert "pagerank" not in summary.lower()
         assert "most-relied" not in summary.lower()
-        assert payload["decision"] == "block"
+        assert payload["decision"] == "warn"
+        assert payload["exit_code"] == 2
+        assert "did not appear to rely" in payload["summary"]
         assert (payload.get("reasons") or [])[0].get("root_doi") == TRIAL
     finally:
         graph.close()

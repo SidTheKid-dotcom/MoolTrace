@@ -2,13 +2,13 @@
 
 MoolTrace catches when your health AI's sources quietly rest on a flagged or retracted study, even three links deep.
 
-**Live demo (no sign-up):** https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/ — click **Healthline olive oil (block)**. Toggle depth **1** (PASS, 0 notice paths) then **3** (BLOCK with the path).
+**Live demo (no sign-up):** https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/ — click **Harvard vitamin D (block)**. Then **Healthline olive oil (warn)**: toggle depth **1** (PASS, 0 notice paths) then **3** (WARN: mention × mention; the review did not appear to rely on Estruch 2013).
 
 WeMakeDevs × FalkorDB Graph Hacks, Track 01: **Agents That Act on Connected Data**.
 
-![Healthline olive oil BLOCK path](assets/demo-olive-oil-block.png)
+![Harvard Nutrition Source vitamin D BLOCK path](assets/demo-harvard-vitamin-d-block.png)
 
-Signed-out headless Chrome 1280×2200 capture, 16 Oct 2026, of `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/?preset=olive-oil`. BLOCK (exit 1). Page `mention` 0.55 → Schwingshackl 2014 `mention` 0.55 → Estruch 2013 retraction `10.1056/nejmc1806491` (2018-06-13). `Decided by: algo.SPpaths, path strength 0.30`. Both hops are mention; the 2013 trial was retracted and republished in 2018 after re-analysis. This does not say olive oil or the Mediterranean diet works or does not.
+Signed-out headless Chrome 1280×2200 capture of `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/?preset=harvard-vitamin-d`. BLOCK (exit 1). Page `mention` 0.55 → Avenell 2014 Cochrane `uses_data_or_method` 0.85 → Ishida 2004 retraction `10.1016/j.amjmed.2004.05.019` (2004-10-15). `Decided by: algo.SPpaths, path strength 0.47`. The review called Ishida an included trial. This does not say vitamin D works or does not.
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -e .
@@ -16,7 +16,7 @@ export MOOLTRACE_MAILTO=you@example.com
 .venv/bin/python -m mooltrace check --url https://www.healthline.com/nutrition/cinnamon-and-diabetes --summary
 ```
 
-Expect **WARN (exit 2)** on that cinnamon URL (Expression of Concern, not a retraction). The live demo BLOCK above is the olive-oil path. Timed from a fresh clone in `/tmp` on 16 Oct 2026: quickstart **65.06 s** (clone 3.02 s + `pip install -e .` 9.67 s + cinnamon `--summary` 52.37 s, exit 2). Earlier same-day cold `--summary` repeats were 47.09 s / 49.18 s / 49.10 s (see **Honest results** and [CLAIMS.md](CLAIMS.md)). Five-minute path: [JUDGES.md](JUDGES.md).
+Expect **WARN (exit 2)** on that cinnamon URL (Expression of Concern, not a retraction). The live demo BLOCK above is the Harvard vitamin D path (Avenell 2014 pooled Ishida 2004). Timed from a fresh clone in `/tmp` on 16 Oct 2026: quickstart **65.06 s** (clone 3.02 s + `pip install -e .` 9.67 s + cinnamon `--summary` 52.37 s, exit 2). Earlier same-day cold `--summary` repeats were 47.09 s / 49.18 s / 49.10 s (see **Honest results** and [CLAIMS.md](CLAIMS.md)). Five-minute path: [JUDGES.md](JUDGES.md).
 
 **Who it is for:** teams shipping health AI — symptom checkers, nutrition coaches, patient chatbots. Paste an answer and the pages it cites. MoolTrace follows page → review → trial in FalkorDB and returns pass / warn / block before you ship. It reports a path to a publisher notice. It does not say the draft is medically correct or incorrect. **Pass is not a medical-accuracy check.**
 
@@ -27,10 +27,10 @@ Expect **WARN (exit 2)** on that cinnamon URL (Expression of Concern, not a retr
 | pass | 0 | No counted or unverified path to a publisher notice within this depth. **Pass is not a medical-accuracy check.** | Ship the fixture. Coverage is not shown beyond the depth cap. |
 | warn: concern | 2 | A counted path reaches an Expression of Concern. | Human review. Disclose or replace the source. `mooltrace rewrite` fixes only the affected sentence. |
 | warn: can't verify | 2 | A reachable path is unverified, a cited DOI could not be resolved, the check did not finish, or no verifiable source was provided (`no_sources`). | Do not treat this as a pass. Add a source or retry. |
-| block | 1 | A counted path reaches a retraction, withdrawal, or removal. | Fail the build. Disclose or replace the source. |
+| block | 1 | A counted path reaches a retraction, withdrawal, or removal **and** the hop into that work is `included` / `relies` / `uses_data_or_method` (or a direct 1-hop citation). | Fail the build. Disclose or replace the source. |
 | error | 3 | Graph timeout or exhausted upstream. | Retry later. Not a silent pass and not a block. |
 
-A **counted path** is the strongest `algo.SPpaths` route from the answer to a flagged Work (depth ≤ 3) whose every hop has a stored sentence and a `RESTS_ON` weight ≥ 0.5. Path strength is still the product of those weights (`exp(−Σ −ln(w))`); a multiplied floor is not applied, so a confirmed retraction or Expression of Concern in a counted or unverified chain at least warns. Counted + retraction → **block**. Counted + Expression of Concern → **warn**. Flagged but an unverified hop → **warn** (can't verify). A hop below 0.5 → **pass** with "cites a flagged study only in passing". `--summary` and the UI print `Decided by: algo.SPpaths, path strength 0.55` plus the Cypher. If `algo.SPpaths` errors, the check returns exit 3, not a verdict. Unweighted `shortestPath` is not the verdict. Unverified hops warn; they never silently pass. The draft cannot hedge-bypass: naming an Expression of Concern or writing "we excluded" in the pasted answer does not turn a cited flagged study into a pass. A scholarly review can still set a study aside. Depth is 1–3. Depth 4 is not implemented. `pass` means no counted or unverified notice was found within that depth. Coverage is **not shown** beyond it. Seeds past the expand cap are still notice-checked.
+A **counted path** is the strongest `algo.SPpaths` route from the answer to a flagged Work (depth ≤ 3) whose every hop has a stored sentence and a `RESTS_ON` weight ≥ 0.5. Path strength is still the product of those weights (`exp(−Σ −ln(w))`); a multiplied floor is not applied, so a confirmed retraction or Expression of Concern in a counted or unverified chain at least warns. Counted retraction **blocks** only when the hop into the retracted work is `included`, `relies`, or `uses_data_or_method` (weight ≥ 0.85), or the answer cited that work directly (1-hop). A counted retraction reached only via `mention` / `background` is **warn** ("cites a review that mentions a retracted trial; the review did not appear to rely on it"). Counted + Expression of Concern → **warn**. Flagged but an unverified hop → **warn** (can't verify). A hop below 0.5 → **pass** with "cites a flagged study only in passing". `--summary` and the UI print `Decided by: algo.SPpaths, path strength 0.55` plus the Cypher. If `algo.SPpaths` errors, the check returns exit 3, not a verdict. Unweighted `shortestPath` is not the verdict. Unverified hops warn; they never silently pass. The draft cannot hedge-bypass: naming an Expression of Concern or writing "we excluded" in the pasted answer does not turn a cited flagged study into a pass. A scholarly review can still set a study aside. Depth is 1–3. Depth 4 is not implemented. `pass` means no counted or unverified notice was found within that depth. Coverage is **not shown** beyond it. Seeds past the expand cap are still notice-checked.
 
 Notices come from Crossref. Citation lists come from OpenAlex. Diabetes Care `care/article/{volume}/{issue}/{page}` URLs resolve through Crossref on the ADA DOI pattern, then OpenAlex. Citation sentences come from Semantic Scholar contexts, PMC, the citing page, or the pasted draft.
 
@@ -131,7 +131,7 @@ jobs:
 
 ## MCP
 
-**Remote MCP** (read-only, no sign-up): `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/mcp` — streamable HTTP. Tools: `check_answer`, `what_rests_on`, `recheck_affected`. Same four presets as the demo (never 429), plus an allow-listed live URL when hosted live fetch is on. Copy-paste for Cursor or Claude Desktop (`mcp.http.example.json`):
+**Remote MCP** (read-only, no sign-up): `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/mcp` — streamable HTTP. Tools: `check_answer`, `what_rests_on`, `recheck_affected`. Same five presets as the demo (never 429), plus an allow-listed live URL when hosted live fetch is on. Copy-paste for Cursor or Claude Desktop (`mcp.http.example.json`):
 
 ```json
 {
@@ -188,7 +188,8 @@ Four labelled-pass disagreements (why precision is 0.8974, not 1.0): WebMD cinna
 - This does not give medical advice and does not say cinnamon, olive oil, hydroxychloroquine, or any intervention works.
 - Khan 2003 (`10.2337/diacare.26.12.3215`) carries Expression of Concern `10.2337/dc25-ec09` (2025-08-20), not a retraction. OpenAlex `is_retracted` can stay false.
 - Mehra et al., Lancet 2020 (`10.1016/s0140-6736(20)31180-6`) was retracted (`10.1016/s0140-6736(20)31324-6`).
-- Estruch 2013 PREDIMED (`10.1056/nejmoa1200303`) was retracted and republished in 2018 (`10.1056/nejmc1806491`). The olive-oil BLOCK is a path to that retracted 2013 version.
+- Estruch 2013 PREDIMED (`10.1056/nejmoa1200303`) was retracted and republished in 2018 (`10.1056/nejmc1806491`). The olive-oil preset reaches that 2013 version only as `mention` × `mention`, so it is **WARN**.
+- Ishida 2004 (`10.1016/j.amjmed.2004.05.019`) was retracted on 2004-10-15 (notice DOI same as the article). The Harvard vitamin D **BLOCK** is Avenell 2014 `uses_data_or_method` 0.85 into that trial.
 - Cleveland Clinic pages are not fetched in shipped presets or tests.
 - Everyday Health `/diabetes/cinnamon-for-diabetes/` is a public article URL (no login). The demo fetches it once to walk page → review → study → publisher notice. It is not a training crawl. Named AI crawlers are blocked in that site's robots.txt; this User-Agent identifies MoolTrace with a mailto. If that fetch is refused, use Allen 2013 as the DOI fixture.
 - Unverified or unfinished reachable paths warn. They never silently pass.
@@ -225,7 +226,7 @@ What MoolTrace adds on that ground, each tied to something those repos do not do
 docker compose up --build
 ```
 
-Open [http://127.0.0.1:4318](http://127.0.0.1:4318). API health is [http://127.0.0.1:4317/health](http://127.0.0.1:4317/health). Compose publishes those ports on loopback only. Four presets from recorded live runs on 16 Oct 2026. Toggle depth 1 / 2 / 3 on the same question: **Healthline olive oil** is PASS at depth 1 (0 notice paths) and BLOCK at depth 2/3 (URL-only counted 2-hop, page `mention` 0.55 → Schwingshackl 2014 `mention` 0.55 → Estruch 2013 retraction `10.1056/nejmc1806491` 2018-06-13, `Decided by: algo.SPpaths, path strength 0.30`), **Healthline cinnamon** is PASS at depth 1 and WARN at depth 2/3 (URL-only counted 2-hop, page → Silva 2022 `relies` 1.0 → Khan Expression of Concern, path strength 0.55), a clean DOI (pass at depth 1, 2, and 3), and **Not in the graph** (NHS “How to wash your hands”, WARN, **expanded 0 of 0 cited works** — not a pass and not proof the page is safe). Both olive-oil hops are `mention`; do not read that as the review relying on the trial. The 2013 trial was retracted and republished in 2018 after re-analysis. Expression of Concern is not a retraction. First boot seeds those four into `/data/demo.db` (a Compose volume, not `data/mooltrace.db`). After a warn or block, **Rewrite and recheck** drops the flagged citations. The Cypher panel shows `algo.SPpaths`. No copyrighted full text. This does not say olive oil, cinnamon, or the Mediterranean diet works or does not. Private, loopback, and credentialed URLs stay refused. Public HTTPS: https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/ (Lightsail micro, ap-south-1; teardown in `SHIP_CHECKLIST.md`).
+Open [http://127.0.0.1:4318](http://127.0.0.1:4318). API health is [http://127.0.0.1:4317/health](http://127.0.0.1:4317/health). Compose publishes those ports on loopback only. Five presets from recorded live runs (olive-oil / cinnamon / JSPS / NHS on 16 Oct 2026; Harvard vitamin D on 17 Oct 2026). **Harvard vitamin D** is BLOCK at depth 2/3 (URL-only counted 2-hop, page `mention` 0.55 → Avenell 2014 `uses_data_or_method` 0.85 → Ishida 2004 retraction `10.1016/j.amjmed.2004.05.019` 2004-10-15, `Decided by: algo.SPpaths, path strength 0.47`). Toggle depth 1 / 2 / 3 on **Healthline olive oil**: PASS at depth 1 (0 notice paths) and WARN at depth 2/3 (page `mention` 0.55 → Schwingshackl 2014 `mention` 0.55 → Estruch 2013 retraction `10.1056/nejmc1806491` 2018-06-13, path strength 0.30; the review did not appear to rely on the trial). **Healthline cinnamon** is PASS at depth 1 and WARN at depth 2/3 (page → Silva 2022 `relies` 1.0 → Khan Expression of Concern, path strength 0.55), a clean DOI (pass at depth 1, 2, and 3), and **Not in the graph** (NHS “How to wash your hands”, WARN, **expanded 0 of 0 cited works** — not a pass and not proof the page is safe). Both olive-oil hops are `mention`. The 2013 trial was retracted and republished in 2018 after re-analysis. Expression of Concern is not a retraction. First boot seeds those five into `/data/demo.db` (a Compose volume, not `data/mooltrace.db`). After a warn or block, **Rewrite and recheck** drops the flagged citations. The Cypher panel shows `algo.SPpaths`. No copyrighted full text. This does not say olive oil, cinnamon, or the Mediterranean diet works or does not. Private, loopback, and credentialed URLs stay refused. Public HTTPS: https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/ (Lightsail micro, ap-south-1; teardown in `SHIP_CHECKLIST.md`).
 
 ![Healthline cinnamon WARN path](assets/healthline-warn.png)
 
@@ -303,7 +304,7 @@ Take FalkorDB out and you lose: (1) multi-hop weighted search over a shared cita
 | Term | Meaning |
 | --- | --- |
 | Expression of Concern | A publisher notice that a paper's reliability is under review. It is not a retraction. |
-| retraction | The publisher withdrew the paper. A counted path to one **blocks**. |
+| retraction | The publisher withdrew the paper. A counted path **blocks** only when the hop into that work is included / relies / uses_data_or_method, or the answer cited it directly. Mention-only is **warn**. |
 | reliance weight | How strongly this hop uses the next work (`included` 1.0 … `background` 0.2). Stored on `RESTS_ON`. |
 | citation path / hop | One `RESTS_ON` edge: page → review, or review → trial. The sentence is stored on that edge. |
 | depth | Hop budget from the cited source, 1–3. Coverage is not shown beyond it. |
@@ -319,7 +320,7 @@ Every query the tools run is in `mooltrace/cypher.py`.
 | included | 1.0 | yes (strongest: listed among a review's included studies) |
 | relies | 1.0 | yes |
 | uses_data_or_method | 0.85 | yes |
-| mention | 0.55 | yes (0.55 ≥ 0.5). The olive-oil BLOCK is mention × mention. |
+| mention | 0.55 | yes (0.55 ≥ 0.5). A retraction reached only via mention is **warn**, not block. |
 | background | 0.2 | no |
 | critical | 0.0 | no |
 
@@ -353,7 +354,7 @@ Numbers below are dated per row. Re-run the command next to each line. Do not tr
 
 | Claim | Command | Result |
 | --- | --- | --- |
-| Full unit suite | `unshare --net --map-root-user .venv/bin/python -m pytest -q` | 17 Oct 2026 07:16 UTC this checkout: 310 passed, 0 failed, 446.26 s, network namespace unshared |
+| Full unit suite | `unshare --net --map-root-user .venv/bin/python -m pytest -q` | 17 Oct 2026 08:22 UTC this checkout: 316 passed, 0 failed, 467.06 s, network namespace unshared |
 | Flip + ablation | `.venv/bin/python -m pytest tests/test_graph.py::test_sp_weight_flip_changes_verdict tests/test_graph.py::test_sp_paths_ablation_returns_exit_3 tests/test_graph.py::test_sp_paths_strength_equals_brute_force_product -q` | 16 Oct 2026: weight 0.85 → warn, 0.2 → pass; `sp_paths` raised → exit 3, no verdict; algorithm strength equals brute-force product on 3 fixtures. |
 | Agent loop | `.venv/bin/python examples/agent_loop.py` | check warn, `algo.SPpaths`, rewrite recheck pass, 1 counted answer |
 | Fresh-clone quickstart in `/tmp` | `git clone … && python3 -m venv .venv && .venv/bin/pip install -e . && .venv/bin/python -m mooltrace check --url https://www.healthline.com/nutrition/cinnamon-and-diabetes --summary` | 16 Oct 2026: **65.06 s** (clone 3.02 s + install 9.67 s + check 52.37 s). WARN exit 2, EoC `10.2337/dc25-ec09`, `algo.SPpaths` 0.55. See [CLAIMS.md](CLAIMS.md). |
@@ -383,7 +384,7 @@ MoolTrace code in this repository was written with Cursor agents (including Grok
 2. `python -m mooltrace batch examples/answers.jsonl --fail-on block` (exit 0; warns are annotated).
 3. URL-only Healthline `--summary` twice on the same DB. 16 Oct 2026: cold 47–49 s (~119–121 API calls), warm 23 s (26 API calls), still warn. Do not claim zero API calls on the warm path.
 4. `python -m mooltrace batch examples/lancet.jsonl --fail-on block` (exit 1) → block on the retraction notice, not the earlier EoC.
-5. UI presets are Healthline olive oil (block at depth 3, path strength 0.30; pass at depth 1), Healthline cinnamon (warn, path strength 0.55), the clean DOI, and **Not in the graph** (WARN, expanded 0 of 0 cited works). The Cypher panel shows `algo.SPpaths`. Rewrite and recheck on a warn.
+5. UI presets are Harvard vitamin D (block at depth 2/3, path strength 0.47), Healthline olive oil (warn at depth 3, path strength 0.30; pass at depth 1), Healthline cinnamon (warn, path strength 0.55), the clean DOI, and **Not in the graph** (WARN, expanded 0 of 0 cited works). The Cypher panel shows `algo.SPpaths`. Rewrite and recheck on a warn.
 6. `ro_cypher` with `CONTAINS 'set'` is allowed; `CREATE` is rejected; GRAPH.RO_QUERY is the write barrier.
 7. Public repo, ≤90 s video, Track 01 **Agents That Act on Connected Data**, AWS/FalkorDB shown, AI tools listed.
 8. `python -m pytest tests/test_labelled.py` (schema). Optional live: `python -m mooltrace labelled --limit 2`.

@@ -30,14 +30,47 @@ def test_expression_of_concern_is_warn_not_block():
 
 
 def test_retraction_blocks():
-    verdict = decide([_path("retraction")], incomplete=False, depth=2)
+    path = _path("retraction")
+    path.update(
+        hops=2,
+        hops_evidence=[
+            {
+                "weight": 0.55,
+                "judged": True,
+                "reliance": "mention",
+                "sentence": "The page cites the review.",
+                "evidence_from": "page",
+            },
+            {
+                "weight": 0.85,
+                "judged": True,
+                "reliance": "uses_data_or_method",
+                "sentence": "The review analyses the retracted trial.",
+                "evidence_from": "pmc_html",
+            },
+        ],
+    )
+    verdict = decide([path], incomplete=False, depth=2)
     assert verdict["decision"] == "block"
     assert verdict["exit_code"] == EXIT_BLOCK
 
 
 def test_eoc_does_not_outrank_a_retraction():
+    retraction = _path("retraction", "10.1/other")
+    retraction.update(
+        hops=1,
+        hops_evidence=[
+            {
+                "weight": 1.0,
+                "judged": True,
+                "reliance": "relies",
+                "sentence": "The draft cites the retracted trial by DOI.",
+                "evidence_from": "draft",
+            }
+        ],
+    )
     verdict = decide(
-        [_path("expression_of_concern"), _path("retraction", "10.1/other")],
+        [_path("expression_of_concern"), retraction],
         incomplete=False,
         depth=2,
     )
@@ -566,6 +599,93 @@ def test_rank_is_counted_then_unverified_then_discounted():
     assert statuses[0] == "count"
     assert "unverified" in statuses
     assert statuses[-1] == "discount"
+
+
+def test_mention_only_retraction_warns_not_block():
+    """Olive-oil shape: mention × mention into a retracted trial is WARN."""
+    path = _path("retraction")
+    path.update(
+        hops=2,
+        hops_evidence=[
+            {
+                "weight": 0.55,
+                "judged": True,
+                "reliance": "mention",
+                "sentence": "The page cites Schwingshackl 2014 as further reading.",
+                "evidence_from": "page",
+            },
+            {
+                "weight": 0.55,
+                "judged": True,
+                "reliance": "mention",
+                "sentence": "The review names Estruch 2013 in the bibliography.",
+                "evidence_from": "pmc_html",
+            },
+        ],
+        root={
+            "doi": "10.1056/nejmoa1200303",
+            "title": "Primary Prevention of Cardiovascular Disease with a Mediterranean Diet",
+            "first_author": "Estruch",
+            "year": 2013,
+        },
+        notice={
+            "doi": "10.1056/nejmc1806491",
+            "type": "retraction",
+            "label": "Retraction and Republication",
+            "date": "2018-06-13",
+        },
+    )
+    verdict = decide([path], incomplete=False, depth=3)
+    assert verdict["decision"] == "warn"
+    assert verdict["exit_code"] == EXIT_WARN
+    assert "Estruch 2013" in verdict["summary"]
+    assert "did not appear to rely" in verdict["summary"]
+    assert verdict["reasons"][0]["code"] == "retraction"
+    assert verdict["reasons"][0]["status"] == "count"
+    assert verdict["decided_by"] == "algo.SPpaths"
+    assert verdict["discounted"] == []
+
+
+def test_included_retraction_still_blocks():
+    """Harvard shape: hop into the retracted trial is uses_data_or_method."""
+    path = _path("retraction")
+    path.update(
+        hops=2,
+        hops_evidence=[
+            {
+                "weight": 0.55,
+                "judged": True,
+                "reliance": "mention",
+                "sentence": "Vitamin D and vitamin D analogues for preventing fractures.",
+                "evidence_from": "page",
+            },
+            {
+                "weight": 0.85,
+                "judged": True,
+                "reliance": "uses_data_or_method",
+                "sentence": "Ishida 2004, an included trial, has been retracted",
+                "evidence_from": "pmc_html",
+            },
+        ],
+        root={
+            "doi": "10.1016/j.amjmed.2004.05.019",
+            "title": "Yamaguchi Osteoporosis Prevention Study",
+            "first_author": "Ishida",
+            "year": 2004,
+        },
+        notice={
+            "doi": "10.1016/j.amjmed.2004.05.019",
+            "type": "retraction",
+            "label": "Retraction",
+            "date": "2004-10-15",
+        },
+    )
+    verdict = decide([path], incomplete=False, depth=2)
+    assert verdict["decision"] == "block"
+    assert verdict["exit_code"] == EXIT_BLOCK
+    assert verdict["reasons"][0]["code"] == "retraction"
+    assert verdict["reasons"][0]["reliance"] == "uses_data_or_method"
+    assert verdict["decided_by"] == "algo.SPpaths"
 
 
 def test_new_version_is_not_a_path_kind_here():

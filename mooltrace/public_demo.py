@@ -1,4 +1,4 @@
-"""Read-only hosted demo: four presets, plus an allow-listed live URL.
+"""Read-only hosted demo: five presets, plus an allow-listed live URL.
 
 Set MOOLTRACE_PUBLIC_DEMO=1. Live catalog calls stay off unless
 MOOLTRACE_PUBLIC_LIVE=1. Then a user-pasted URL is fetched only when every
@@ -232,16 +232,16 @@ def guard_public_check(
                     ),
                 )
         if rate_limited(client_ip):
-            raise PublicDemoRejected(429, "Public demo rate limit. Try the four presets.")
+            raise PublicDemoRejected(429, "Public demo rate limit. Try the five presets.")
         return
     if rate_limited(client_ip):
-        raise PublicDemoRejected(429, "Public demo rate limit. Try the four presets.")
+        raise PublicDemoRejected(429, "Public demo rate limit. Try the five presets.")
     raise PublicDemoRejected(
         400,
         (
-            "This public demo only runs the four presets (Healthline olive oil block, "
-            "Healthline cinnamon warn, clean pass, NHS not-in-the-graph) with no live "
-            "page fetch. Clone the repo to check other URLs."
+            "This public demo only runs the five presets (Harvard vitamin D block, "
+            "Healthline olive oil warn, Healthline cinnamon warn, clean pass, NHS "
+            "not-in-the-graph) with no live page fetch. Clone the repo to check other URLs."
         ),
     )
 
@@ -270,12 +270,12 @@ def guard_remote_doi(doi: str) -> None:
     if is_preset_doi(doi):
         return
     if rate_limited():
-        raise PublicDemoRejected(429, "Public demo rate limit. Try the four presets.")
+        raise PublicDemoRejected(429, "Public demo rate limit. Try the five presets.")
     if public_live_enabled():
         return
     raise PublicDemoRejected(
         400,
-        "This public demo only looks up notice DOIs from the four presets. Clone the repo for the full graph.",
+        "This public demo only looks up notice DOIs from the five presets. Clone the repo for the full graph.",
     )
 
 
@@ -363,7 +363,7 @@ def _source_url(spec: dict[str, Any], answer_id: str) -> str:
 
 
 def seed_offline_presets(graph: Any) -> list[dict[str, str]]:
-    """Write the four UI presets from recorded fetches, with no HTTP."""
+    """Write the five UI presets from recorded fetches, with no HTTP."""
     from mooltrace.trace import _answer_id, _text_hash
 
     recorded = {row["id"]: row for row in load_recorded_presets()["presets"]}

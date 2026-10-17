@@ -2,8 +2,22 @@ from pathlib import Path
 
 import pytest
 
-from mooltrace.config import CLEAN_REWRITE_DOI, HEALTHLINE_CINNAMON_URL, ROOT
-from mooltrace.seed import BLOCK_ID, CLEAN_ID, SHARED_DB, WARN_ID, demo_db_path, load_demo_fixtures
+from mooltrace.config import (
+    CLEAN_REWRITE_DOI,
+    HARVARD_VITAMIN_D_URL,
+    HEALTHLINE_CINNAMON_URL,
+    HEALTHLINE_OLIVE_OIL_URL,
+    ROOT,
+)
+from mooltrace.seed import (
+    BLOCK_ID,
+    CLEAN_ID,
+    OLIVE_ID,
+    SHARED_DB,
+    WARN_ID,
+    demo_db_path,
+    load_demo_fixtures,
+)
 
 
 def test_demo_db_path_refuses_missing_env(monkeypatch):
@@ -22,21 +36,25 @@ def test_demo_db_path_refuses_shared_file(monkeypatch, tmp_path):
     assert demo_db_path() == other.resolve()
 
 
-def test_demo_fixtures_are_url_only_olive_oil_block_and_cinnamon_warn():
-    block, warn, clean, missing = load_demo_fixtures()
+def test_demo_fixtures_are_url_only_harvard_block_olive_warn_and_cinnamon_warn():
+    block, warn, olive, clean, missing = load_demo_fixtures()
     assert block["id"] == BLOCK_ID
     assert block["text"] == ""
-    assert block["urls"] == ["https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil"]
-    assert int(block.get("depth") or 0) == 3
+    assert block["urls"] == [HARVARD_VITAMIN_D_URL]
+    assert int(block.get("depth") or 0) == 2
     assert warn["id"] == WARN_ID
     assert warn["text"] == ""
     assert warn["urls"] == [HEALTHLINE_CINNAMON_URL]
+    assert olive["id"] == OLIVE_ID
+    assert olive["text"] == ""
+    assert olive["urls"] == [HEALTHLINE_OLIVE_OIL_URL]
+    assert int(olive.get("depth") or 0) == 3
     assert clean["id"] == CLEAN_ID
     assert CLEAN_REWRITE_DOI in clean["text"]
     assert missing["id"] == "not-in-graph"
     assert missing["text"] == ""
     assert missing["urls"] == ["https://www.nhs.uk/live-well/best-way-to-wash-your-hands/"]
-    joined = block["text"] + warn["text"] + clean["text"] + missing["text"]
+    joined = block["text"] + warn["text"] + olive["text"] + clean["text"] + missing["text"]
     assert "Introduction" not in joined
     assert "<html" not in joined.lower()
 

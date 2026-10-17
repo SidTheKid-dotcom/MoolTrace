@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from pathlib import Path
 
 from mooltrace.clients import InfraError, MoolTraceError
@@ -842,7 +843,7 @@ def test_depth_cap_is_honored(tmp_path: Path):
         graph.close()
 
 
-NOW = "2026-10-16T08:00:00+00:00"
+NOW = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 FLIP_URL = "https://example.com/cinnamon"
 FLIP_ENGINE = "flip-test"
 SILVA = "10.3390/nu14132773"

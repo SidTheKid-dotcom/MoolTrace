@@ -76,6 +76,7 @@ def _run_presets(tmp_path: Path) -> list[dict]:
     recorded = {row["id"]: row for row in load_recorded_presets()["presets"]}
     out = []
     for ident, depth in (
+        ("nutrition-harvard-vitamin-d", 2),
         ("nutrition-olive-oil", 3),
         ("nutrition-healthline", 2),
         ("clean-jsps", 2),
@@ -144,15 +145,29 @@ def test_recorded_presets_match_docs_and_captions(tmp_path: Path, monkeypatch):
         for match in STRENGTH.finditer(summary):
             observed_numbers.add(match.group(1))
 
-    blocked = by_id["nutrition-olive-oil"]
+    blocked = by_id["nutrition-harvard-vitamin-d"]
     assert blocked["decision"] == "block"
-    assert _fmt((blocked.get("algorithm") or {}).get("strength")) == "0.30"
+    assert _fmt((blocked.get("algorithm") or {}).get("strength")) == "0.47"
     block_hops = {
         hop.get("reliance")
         for reason in blocked.get("reasons") or []
         for hop in reason.get("hops_evidence") or []
     }
-    assert block_hops == {"mention"}
+    assert "uses_data_or_method" in block_hops
+    assert "mention" in block_hops
+
+    olive = by_id["nutrition-olive-oil"]
+    assert olive["decision"] == "warn"
+    assert olive["exit_code"] == 2
+    assert _fmt((olive.get("algorithm") or {}).get("strength")) == "0.30"
+    assert "Estruch 2013" in olive["summary"]
+    assert "did not appear to rely" in olive["summary"]
+    olive_hops = {
+        hop.get("reliance")
+        for reason in olive.get("reasons") or []
+        for hop in reason.get("hops_evidence") or []
+    }
+    assert olive_hops == {"mention"}
 
     hero = by_id["nutrition-healthline"]
     assert hero["decision"] == "warn"

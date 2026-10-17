@@ -60,6 +60,12 @@ def test_video_script_quotes_live_numbers_with_citations():
     for needle in (
         TRACK,
         DEMO,
+        "Harvard",
+        "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
+        "Avenell 2014",
+        "Ishida 2004",
+        "uses_data_or_method",
+        "path strength 0.47",
         "Healthline olive oil",
         "https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil",
         "Schwingshackl 2014",
@@ -70,6 +76,7 @@ def test_video_script_quotes_live_numbers_with_citations():
         "0 notice paths",
         "depth 3",
         "BLOCK (exit 1)",
+        "10.1016/j.amjmed.2004.05.019",
         "10.1056/nejmc1806491",
         "Not in the graph",
         "https://www.nhs.uk/live-well/best-way-to-wash-your-hands/",
@@ -79,10 +86,9 @@ def test_video_script_quotes_live_numbers_with_citations():
         "retracted and republished",
         "Direct-DOI check (no graph)",
         "pass",
-        "Estruch 2013",
-        "Vitamin D status is discussed separately.",
-        "Estruch et al. 2013 (PREDIMED)",
-        "retracted and republished on 13 Jun 2018",
+        "Ishida et al. 2004",
+        "Hand hygiene is discussed separately.",
+        "retracted on 15 Oct 2004",
         "Rewrite and recheck",
         "examples/lancet.jsonl --fail-on block",
         "exit 1",
@@ -102,20 +108,24 @@ def test_video_script_quotes_live_numbers_with_citations():
     assert "recheck_affected" not in text
     assert "algo.pageRank" not in text or "not called" in text
     assert "0.72" not in text
-    # Olive-oil hops are mention; do not quote cinnamon relies as the BLOCK path.
+    # Harvard BLOCK is uses_data_or_method; olive-oil depth toggle is mention → warn.
     block_section = text.split("## MoolTrace BLOCK and path", 1)[1].split("## Not in the graph", 1)[0]
+    assert "uses_data_or_method" in block_section
+    assert "Ishida 2004" in block_section
     assert "mention" in block_section
     assert "relies" not in block_section
     assert "depth 1" in block_section.lower()
     assert "pass" in block_section.lower()
     assert "depth 3" in block_section.lower()
+    assert "warn" in block_section.lower()
     assert "block" in block_section.lower()
     not_in = text.split("## Not in the graph", 1)[1].split("## Rewrite", 1)[0]
     assert "expanded 0 of 0 cited works" in not_in
     assert "not proof it is safe" in not_in.lower() or "not proof" in not_in.lower()
     rewrite = text.split("## Rewrite", 1)[1].split("## CI fails the PR", 1)[0]
     assert "Rewrite and recheck" in rewrite
-    assert "Estruch et al. 2013 (PREDIMED)" in rewrite
+    assert "Ishida et al. 2004" in rewrite
+    assert "Hand hygiene is discussed separately." in rewrite
     assert "A nutrition coach cites:" not in rewrite
     assert "This claim:" not in rewrite
     assert "paste this two-sentence draft" not in rewrite.lower()

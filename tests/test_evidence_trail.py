@@ -132,8 +132,11 @@ def test_cli_json_includes_hop_evidence_trail(tmp_path: Path, monkeypatch, capsy
     try:
         _seed_two_hop(graph)
         code = main(["check", "--json", "--url", PAGE_URL, "--engine", ENGINE, "--depth", "2"])
-        assert code == 1
+        assert code == 2
         payload = json.loads(capsys.readouterr().out)
+        assert payload["decision"] == "warn"
+        assert payload["exit_code"] == 2
+        assert "did not appear to rely" in payload["summary"]
         hops = (payload.get("reasons") or [{}])[0].get("hops_evidence") or []
         assert len(hops) == 2
         _assert_hop_trail(hops[0], url=PAGE_URL, fetched_at=PAGE_FETCHED, content_hash=PAGE_HASH)

@@ -43,6 +43,7 @@ DIABETES_CARE_ISSNS = ("0149-5992", "1935-5548")
 EVERYDAY_HEALTH_URL = "https://www.everydayhealth.com/diabetes/cinnamon-for-diabetes/"
 HEALTHLINE_CINNAMON_URL = "https://www.healthline.com/nutrition/cinnamon-and-diabetes"
 HEALTHLINE_OLIVE_OIL_URL = "https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil"
+HARVARD_VITAMIN_D_URL = "https://nutritionsource.hsph.harvard.edu/vitamin-d/"
 NHS_HANDWASH_URL = "https://www.nhs.uk/live-well/best-way-to-wash-your-hands/"
 # Clean rewrite target: in the labelled clean set, no notice at depth 2.
 CLEAN_REWRITE_DOI = "10.1016/j.jsps.2015.03.013"

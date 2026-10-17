@@ -91,9 +91,18 @@ type Rewrite = {
 
 const PRESETS = [
   {
+    id: "harvard-vitamin-d",
+    label: "Harvard vitamin D (block)",
+    hint: "Page mention → Avenell 2014 uses_data_or_method 0.85 → Ishida 2004 retraction. Depth 1 has no notice path on the seeded hops.",
+    engine: "nutrition-coach",
+    depth: 2,
+    text: "",
+    urls: ["https://nutritionsource.hsph.harvard.edu/vitamin-d/"],
+  },
+  {
     id: "olive-oil",
-    label: "Healthline olive oil (block)",
-    hint: "Same question: depth 1 PASS (0 notice paths), depth 3 BLOCK (mention × mention to Estruch 2013)",
+    label: "Healthline olive oil (warn)",
+    hint: "Same question: depth 1 PASS (0 notice paths), depth 3 WARN (mention × mention to Estruch 2013; the review did not appear to rely on it)",
     engine: "nutrition-coach",
     depth: 3,
     text: "",
@@ -128,6 +137,8 @@ const PRESETS = [
   },
 ]
 
+const HARVARD_REWRITE_DRAFT =
+  "Hand hygiene is discussed separately. A nutrition coach cites https://nutritionsource.hsph.harvard.edu/vitamin-d/."
 const OLIVE_OIL_REWRITE_DRAFT =
   "Vitamin D status is discussed separately. A nutrition coach cites https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil."
 
@@ -383,7 +394,13 @@ export function PreShip() {
     const startDepth = DEPTHS.includes(requested as (typeof DEPTHS)[number])
       ? requested
       : undefined
-    if (id === "olive-oil" || id === "healthline" || id === "clean" || id === "not-in-graph") {
+    if (
+      id === "harvard-vitamin-d" ||
+      id === "olive-oil" ||
+      id === "healthline" ||
+      id === "clean" ||
+      id === "not-in-graph"
+    ) {
       applyPreset(id, startDepth)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -446,7 +463,11 @@ export function PreShip() {
     setError("")
     const listed = urls.split(/\s+/).map((item) => item.trim()).filter(Boolean)
     const recordedDraft =
-      presetId === "olive-oil" && !text.trim() ? OLIVE_OIL_REWRITE_DRAFT : text
+      presetId === "harvard-vitamin-d" && !text.trim()
+        ? HARVARD_REWRITE_DRAFT
+        : presetId === "olive-oil" && !text.trim()
+          ? OLIVE_OIL_REWRITE_DRAFT
+          : text
     if (recordedDraft !== text) setText(recordedDraft)
     try {
       const response = await fetch("/nw/rewrite", {
@@ -656,10 +677,10 @@ export function PreShip() {
           <CardHeader>
             <CardTitle>Nothing checked yet</CardTitle>
             <CardDescription>
-              Four presets: Healthline olive oil (block), Healthline cinnamon (warn), Clean study
+              Five presets: Harvard vitamin D (block), Healthline olive oil (warn), Healthline cinnamon (warn), Clean study
               (pass), and Not in the graph (NHS how-to with no scholarly citations). Toggle depth 1 /
-              2 / 3 on the same question. Olive oil depth 1 is PASS (0 notice paths); depth 3 is BLOCK
-              with the path. Not in the graph says so plainly: nothing connects that page to a study.
+              2 / 3 on the same question. Olive oil depth 1 is PASS (0 notice paths); depth 3 is WARN
+              (mention × mention; the review did not appear to rely on Estruch 2013). Harvard vitamin D is BLOCK at depth 2/3 (uses_data_or_method into Ishida 2004). Not in the graph says so plainly: nothing connects that page to a study.
               This is not proof it is safe; the source may not be modelled. Coverage is expanded X of
               Y cited works on every verdict. You can also paste your own URL from healthline.com,
               everydayhealth.com, verywellhealth.com, medicalnewstoday.com, webmd.com,
@@ -686,12 +707,21 @@ export function PreShip() {
         </p>
       ) : null}
 
+      {presetId === "harvard-vitamin-d" ? (
+        <p className="text-sm leading-6 text-muted-foreground" data-testid="block-hero">
+          Harvard T.H. Chan Nutrition Source vitamin D. Depth 2/3: BLOCK — page mention 0.55 →
+          Avenell 2014 Cochrane uses_data_or_method 0.85 → Ishida 2004 retraction (same DOI as the
+          article, 2004-10-15). The review called Ishida an included trial. This does not say vitamin D
+          works or does not.
+        </p>
+      ) : null}
+
       {presetId === "olive-oil" ? (
         <p className="text-sm leading-6 text-muted-foreground" data-testid="depth-contrast">
-          Same olive-oil question. Depth 1: PASS (0 notice paths). Depth 3: BLOCK — page mention 0.55
-          → Schwingshackl 2014 mention 0.55 → Estruch 2013 retraction 10.1056/nejmc1806491. The path
-          explains why. Both hops are mention; the 2013 trial was retracted and republished in 2018
-          after re-analysis.
+          Same olive-oil question. Depth 1: PASS (0 notice paths). Depth 3: WARN — page mention 0.55
+          → Schwingshackl 2014 mention 0.55 → Estruch 2013 retraction 10.1056/nejmc1806491. Both hops
+          are mention; the review did not appear to rely on the trial. The 2013 trial was retracted
+          and republished in 2018 after re-analysis.
         </p>
       ) : null}
 
@@ -730,10 +760,11 @@ export function PreShip() {
       {rewrite?.recheck ? <ResultCard result={rewrite.recheck} /> : null}
 
       <footer className="text-xs leading-5 text-muted-foreground">
-        An Expression of Concern is not a retraction. The olive-oil path reaches Estruch 2013, which
-        was retracted and republished in 2018 after re-analysis (notice 10.1056/nejmc1806491). Khan
-        2003 carries an Expression of Concern. This demo does not say a food or a medicine works or
-        does not work. Both olive-oil hops are mention 0.55, not relies.
+        An Expression of Concern is not a retraction. BLOCK requires the hop into a retracted work to
+        be included, relies, or uses_data_or_method. The Harvard vitamin D path reaches Ishida 2004
+        that way. The olive-oil path reaches Estruch 2013 only as a mention, so it is WARN (notice
+        10.1056/nejmc1806491; retracted and republished in 2018). Khan 2003 carries an Expression of
+        Concern. This demo does not say a food or a medicine works or does not work.
         Citation-context sentences may include{" "}
         <a className="underline" href="https://www.semanticscholar.org/">
           Semantic Scholar

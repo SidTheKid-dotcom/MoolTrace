@@ -20,13 +20,17 @@ STRENGTH_FLOOR = 0.5
 PATH_SCORE_FLOOR = 0.25
 PATH_RULE = (
     "algo.SPpaths decides: strongest path per flagged Work; counted if "
-    "every hop is evidenced and each hop weight is ≥ 0.5; counted + "
-    "retraction → block; counted + EoC → warn; flagged with an "
-    "unverified hop → warn (can't verify); a hop below 0.5 → pass "
-    "(cites a flagged study only in passing). A multiplied path-strength "
-    "floor is not applied. Zero SPpaths rows is a pass; PATHS_TO_NOTICE "
-    "is not a second verdict. Python PATH_RULE is not a verdict. If the "
-    "algorithm errors, exit 3."
+    "every hop is evidenced and each hop weight is ≥ 0.5; counted "
+    "retraction blocks only when the hop into the retracted work is "
+    "included, relies, or uses_data_or_method (weight ≥ 0.85); a counted "
+    "retraction reached only via mention or background is warn (cites a "
+    "review that mentions a retracted trial; the review did not appear "
+    "to rely on it); counted + EoC → warn; flagged with an unverified "
+    "hop → warn (can't verify); a hop below 0.5 → pass (cites a flagged "
+    "study only in passing). Direct 1-hop citation of a retracted work "
+    "still blocks. A multiplied path-strength floor is not applied. Zero "
+    "SPpaths rows is a pass; PATHS_TO_NOTICE is not a second verdict. "
+    "Python PATH_RULE is not a verdict. If the algorithm errors, exit 3."
 )
 STRONG_RELIANCE = frozenset({"included", "relies", "uses_data_or_method"})
 # Unjudged RESTS_ON hops. Higher than -ln(0.2) so a judged background hop

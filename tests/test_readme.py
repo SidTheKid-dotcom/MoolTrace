@@ -78,7 +78,7 @@ def test_readme_top_follows_p3_13():
     order = [
         TAGLINE,
         DEMO,
-        "assets/demo-olive-oil-block.png",
+        "assets/demo-harvard-vitamin-d-block.png",
         "python3 -m venv .venv",
         "symptom checkers, nutrition coaches, patient chatbots",
         "| pass | 0 |",
@@ -165,7 +165,7 @@ def test_readme_demo_is_compose_and_honest():
     assert "Healthline cinnamon" in demo
     assert "Healthline olive oil" in demo
     assert "Not in the graph" in demo
-    assert "Four presets" in demo
+    assert "Five presets" in demo
     assert "counted 2-hop" in demo
     assert "path strength 0.30" in demo
     assert "algo.SPpaths" in demo

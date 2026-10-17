@@ -1,9 +1,9 @@
 {
-  "note": "Hero hops recorded from live MoolTrace runs on throwaway graphs (olive-oil / cinnamon / JSPS / NHS on 2026-10-16 UTC; Harvard vitamin D on 2026-10-17 UTC). data/mooltrace.db was not opened. Hosted demo replays the four UI presets. Live olive-oil depth 2/3 also reached other notices after expanding more cites; the demo seeds only the deciding Estruch 2013 path. Live cinnamon depth 3 likewise reached extra notices; the demo seeds only Silva 2022 -> Khan 2003. The NHS handwashing page (not-in-graph) was fetched 2026-10-16T20:22:08+00:00 with 0 scholarly identifiers and 0 Work nodes. nutrition-harvard-vitamin-d is a recorded BLOCK hero for T25/T26, not a UI preset. Live Harvard depth 2/3 also reached mention-only Sato retractions (SPpaths strength 0.3025); the recorded hops are the qualifying Avenell 2014 -> Ishida 2004 uses_data_or_method path only.",
+  "note": "Hero hops recorded from live MoolTrace runs on throwaway graphs (olive-oil / cinnamon / JSPS / NHS on 2026-10-16 UTC; Harvard vitamin D on 2026-10-17 UTC). data/mooltrace.db was not opened. Hosted demo replays the five UI presets. Live olive-oil depth 2/3 also reached other notices after expanding more cites; the demo seeds only the deciding Estruch 2013 path. Under PATH_RULE T26 those mention×mention hops are WARN (the 16 Oct live run was BLOCK before the hop-into-retracted-work rule). Live cinnamon depth 3 likewise reached extra notices; the demo seeds only Silva 2022 -> Khan 2003. The NHS handwashing page (not-in-graph) was fetched 2026-10-16T20:22:08+00:00 with 0 scholarly identifiers and 0 Work nodes. nutrition-harvard-vitamin-d is the UI BLOCK preset: Avenell 2014 -> Ishida 2004 uses_data_or_method. Live Harvard depth 2/3 also reached mention-only Sato retractions (SPpaths strength 0.3025); the recorded hops are the qualifying path only.",
   "presets": [
     {
       "id": "nutrition-olive-oil",
-      "decision": "block",
+      "decision": "warn",
       "fetch_date": "2026-10-16",
       "label": "recorded live run on 2026-10-16, content hash 350900e56d6746bf4acc01572808a9beebf01627bfde6878d0cbd59a7f7992d6",
       "sources": [
@@ -83,8 +83,8 @@
           "live_api_calls": 22
         },
         "2": {
-          "decision": "block",
-          "exit_code": 1,
+          "decision": "warn",
+          "exit_code": 2,
           "notice_paths": 1,
           "notice_type": "retraction",
           "notice_doi": "10.1056/nejmc1806491",
@@ -96,8 +96,8 @@
           "live_api_calls": 126
         },
         "3": {
-          "decision": "block",
-          "exit_code": 1,
+          "decision": "warn",
+          "exit_code": 2,
           "notice_paths": 1,
           "notice_type": "retraction",
           "notice_doi": "10.1056/nejmc1806491",
@@ -472,6 +472,16 @@
     }
   ],
   "rewrite_drafts": [
+    {
+      "id": "nutrition-harvard-vitamin-d-rewrite",
+      "seed_id": "nutrition-harvard-vitamin-d",
+      "engine": "nutrition-coach",
+      "text": "Hand hygiene is discussed separately. A nutrition coach cites https://nutritionsource.hsph.harvard.edu/vitamin-d/.",
+      "urls": [
+        "https://nutritionsource.hsph.harvard.edu/vitamin-d/"
+      ],
+      "depth": 2
+    },
     {
       "id": "nutrition-olive-oil-rewrite",
       "seed_id": "nutrition-olive-oil",

@@ -16,17 +16,31 @@ from mooltrace.trace import check_answer
 UI = ROOT / "web" / "src" / "components" / "pre-ship.tsx"
 
 EXPECTED = {
-    "nutrition-olive-oil": {
-        1: {"decision": "pass", "exit_code": 0, "notice_paths": 0},
+    "nutrition-harvard-vitamin-d": {
         2: {
             "decision": "block",
             "exit_code": 1,
             "notice_type": "retraction",
-            "notice_doi": "10.1056/nejmc1806491",
+            "notice_doi": "10.1016/j.amjmed.2004.05.019",
         },
         3: {
             "decision": "block",
             "exit_code": 1,
+            "notice_type": "retraction",
+            "notice_doi": "10.1016/j.amjmed.2004.05.019",
+        },
+    },
+    "nutrition-olive-oil": {
+        1: {"decision": "pass", "exit_code": 0, "notice_paths": 0},
+        2: {
+            "decision": "warn",
+            "exit_code": 2,
+            "notice_type": "retraction",
+            "notice_doi": "10.1056/nejmc1806491",
+        },
+        3: {
+            "decision": "warn",
+            "exit_code": 2,
             "notice_type": "retraction",
             "notice_doi": "10.1056/nejmc1806491",
         },
@@ -137,10 +151,19 @@ def test_recorded_presets_include_live_by_depth(tmp_path: Path, monkeypatch):
                         for hop in reason.get("hops_evidence") or []
                     }
                     assert hops == {"mention"}
+                    assert "did not appear to rely" in payload["summary"]
+                if ident == "nutrition-harvard-vitamin-d" and depth >= 2:
+                    assert _fmt(strength) == "0.47"
+                    hops = {
+                        hop.get("reliance")
+                        for reason in payload.get("reasons") or []
+                        for hop in reason.get("hops_evidence") or []
+                    }
+                    assert "uses_data_or_method" in hops
     graph.close()
 
 
-def test_public_demo_olive_oil_depth_one_pass_depth_three_block(
+def test_public_demo_olive_oil_depth_one_pass_depth_three_warn(
     tmp_path: Path, monkeypatch
 ):
     monkeypatch.setenv("MOOLTRACE_PUBLIC_DEMO", "1")
@@ -162,10 +185,23 @@ def test_public_demo_olive_oil_depth_one_pass_depth_three_block(
     assert shallow.json()["decision"] == "pass"
     assert shallow.json()["exit_code"] == 0
     assert not _notice_reasons(shallow.json())
-    assert deep.json()["decision"] == "block"
-    assert deep.json()["exit_code"] == 1
+    assert deep.json()["decision"] == "warn"
+    assert deep.json()["exit_code"] == 2
+    assert "did not appear to rely" in deep.json()["summary"]
     assert any(
         reason.get("notice_doi") == "10.1056/nejmc1806491"
         for reason in deep.json().get("reasons") or []
     )
+    harvard = client.post(
+        "/check-answer",
+        json={
+            "text": "",
+            "urls": ["https://nutritionsource.hsph.harvard.edu/vitamin-d/"],
+            "engine": "nutrition-coach",
+            "depth": 2,
+        },
+    )
+    assert harvard.status_code == 200, harvard.text
+    assert harvard.json()["decision"] == "block"
+    assert harvard.json()["exit_code"] == 1
     graph.close()

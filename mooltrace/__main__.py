@@ -204,7 +204,7 @@ def main(argv: list[str] | None = None) -> int:
     seed.add_argument(
         "--offline",
         action="store_true",
-        help="Write the four presets with no live HTTP (public demo).",
+        help="Write the five presets with no live HTTP (public demo).",
     )
 
     args = parser.parse_args(argv)
