@@ -110,3 +110,64 @@ def test_judges_is_five_minute_path():
         assert needle in judges, needle
     assert "click" in judges.lower()
     assert "mcp" in judges.lower()
+
+
+GUIDE = (
+    "https://www.wemakedevs.org/blogs/how-to-build-an-agent-that-reasons-over-a-graph"
+)
+POINTER = re.compile(r"`([A-Za-z0-9_./-]+\.[A-Za-z0-9]+):(\d+)`")
+RESULTS_FILE = re.compile(r"`(results/[A-Za-z0-9_./-]+\.(?:json|txt|md))`")
+TABLE_HEAD = "WeMakeDevs judging guide -> where MoolTrace does it"
+ROW_NEEDLES = (
+    "could not do without",
+    "depth 1",
+    "not in the graph",
+    "fixed tool",
+    "resolve names",
+    "algo.SPpaths",
+    "memory is more nodes",
+    "return the path",
+)
+
+
+def test_judges_maps_wemakedevs_guide_with_real_pointers():
+    judges = (ROOT / "JUDGES.md").read_text()
+    assert TABLE_HEAD in judges
+    assert GUIDE in judges
+    heading_at = judges.find(TABLE_HEAD)
+    first_numbered = judges.find("\n## 1.")
+    assert heading_at >= 0
+    assert first_numbered > heading_at, "judging-guide table must sit above the 5-minute path"
+    table = judges[heading_at:first_numbered]
+    lowered = table.lower()
+    for needle in ROW_NEEDLES:
+        assert needle.lower() in lowered, needle
+    assert "answered from memory" in lowered
+    assert "falkordblite" in lowered
+    assert "falkordb cloud" in lowered
+    assert "test_pagerank_unused.py" in table
+    pointers = POINTER.findall(table)
+    results = RESULTS_FILE.findall(table)
+    assert pointers, "table must cite file:line pointers"
+    missing: list[str] = []
+    bad_line: list[str] = []
+    for rel, raw_line in pointers:
+        path = ROOT / rel
+        if not path.is_file():
+            missing.append(rel)
+            continue
+        line_no = int(raw_line)
+        lines = path.read_text(errors="replace").splitlines()
+        if line_no < 1 or line_no > len(lines):
+            bad_line.append(f"{rel}:{raw_line}")
+        elif not lines[line_no - 1].strip():
+            bad_line.append(f"{rel}:{raw_line} empty")
+    for rel in results:
+        if not (ROOT / rel).is_file():
+            missing.append(rel)
+    assert not missing, missing
+    assert not bad_line, bad_line
+    assert DEMO.rstrip("/") in table
+    readme = README
+    assert "JUDGES.md" in readme
+    assert "judging guide" in readme.lower()

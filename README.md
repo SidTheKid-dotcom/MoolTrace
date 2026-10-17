@@ -22,7 +22,7 @@ export MOOLTRACE_MAILTO=you@example.com
 .venv/bin/python -m mooltrace check --url https://www.healthline.com/nutrition/cinnamon-and-diabetes --summary
 ```
 
-Expect **WARN (exit 2)** on that cinnamon URL (Expression of Concern, not a retraction). The live demo BLOCK above is the Harvard vitamin D path (Avenell 2014 pooled Ishida 2004). Timed from a fresh clone in `/tmp` on 16 Oct 2026: quickstart **65.06 s** (clone 3.02 s + `pip install -e .` 9.67 s + cinnamon `--summary` 52.37 s, exit 2). Earlier same-day cold `--summary` repeats were 47.09 s / 49.18 s / 49.10 s (see **Honest results** and [CLAIMS.md](CLAIMS.md)). Five-minute path: [JUDGES.md](JUDGES.md).
+Expect **WARN (exit 2)** on that cinnamon URL (Expression of Concern, not a retraction). The live demo BLOCK above is the Harvard vitamin D path (Avenell 2014 pooled Ishida 2004). Timed from a fresh clone in `/tmp` on 16 Oct 2026: quickstart **65.06 s** (clone 3.02 s + `pip install -e .` 9.67 s + cinnamon `--summary` 52.37 s, exit 2). Earlier same-day cold `--summary` repeats were 47.09 s / 49.18 s / 49.10 s (see **Honest results** and [CLAIMS.md](CLAIMS.md)). Five-minute path: [JUDGES.md](JUDGES.md). WeMakeDevs judging guide table (graph vs no-graph, depth toggle, not-in-graph, tools): [JUDGES.md](JUDGES.md).
 
 **Who it is for:** teams shipping health AI — symptom checkers, nutrition coaches, patient chatbots. Paste an answer and the pages it cites. MoolTrace follows page → review → trial in FalkorDB and returns pass / warn / block before you ship. It reports a path to a publisher notice. It does not say the draft is medically correct or incorrect. **Pass is not a medical-accuracy check.**
 

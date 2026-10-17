@@ -25,10 +25,11 @@ BEATS = (
     "Not in the graph",
     "Rewrite",
     "CI fails the PR",
-    "Agent calls what_rests_on over MCP",
+    "Agent acting on connected data",
     "Baseline result",
     "Close",
 )
+AGENT_RUN = ROOT / "examples" / "agent_runs" / "2026-10-17"
 BEAT_SECONDS = (5, 8, 5, 18, 8, 8, 8, 12, 8, 5)
 HEADING = re.compile(r"^#{2,3} (.+?) \((\d+) s\)\s*$", re.M)
 
@@ -92,8 +93,8 @@ def test_video_script_quotes_live_numbers_with_citations():
         "Rewrite and recheck",
         "examples/lancet.jsonl --fail-on block",
         "exit 1",
-        "what_rests_on",
-        "This retraction affects 2 stored answers.",
+        "examples/agent_runs/2026-10-17/",
+        "check_answer",
         str(base["recall"]),
         str(product["recall"]),
         str(len(hops)),
@@ -108,17 +109,24 @@ def test_video_script_quotes_live_numbers_with_citations():
     assert "recheck_affected" not in text
     assert "algo.pageRank" not in text or "not called" in text
     assert "0.72" not in text
-    # Harvard BLOCK is uses_data_or_method; olive-oil depth toggle is mention → warn.
+    problem = text.split("## Problem", 1)[1].split("## Paste AI answer", 1)[0]
+    assert "Harvard" in problem
+    assert "Healthline" not in problem
+    # First graph beat is the Harvard depth toggle; olive-oil may be shortened.
     block_section = text.split("## MoolTrace BLOCK and path", 1)[1].split("## Not in the graph", 1)[0]
     assert "uses_data_or_method" in block_section
     assert "Ishida 2004" in block_section
     assert "mention" in block_section
     assert "relies" not in block_section
-    assert "depth 1" in block_section.lower()
-    assert "pass" in block_section.lower()
-    assert "depth 3" in block_section.lower()
-    assert "warn" in block_section.lower()
-    assert "block" in block_section.lower()
+    lowered_block = block_section.lower()
+    assert lowered_block.find("depth 1") < lowered_block.find("depth 2")
+    assert "pass" in lowered_block
+    assert "block" in lowered_block
+    assert "0 notice paths" in lowered_block
+    assert "Why the graph decided" in block_section
+    assert "would ship" in block_section
+    assert "Graph depth 1: 0 notice paths → PASS" in block_section
+    assert "Graph depth 2: retraction 10.1016/j.amjmed.2004.05.019 → BLOCK" in block_section
     not_in = text.split("## Not in the graph", 1)[1].split("## Rewrite", 1)[0]
     assert "expanded 0 of 0 cited works" in not_in
     assert "not proof it is safe" in not_in.lower() or "not proof" in not_in.lower()
@@ -129,12 +137,19 @@ def test_video_script_quotes_live_numbers_with_citations():
     assert "A nutrition coach cites:" not in rewrite
     assert "This claim:" not in rewrite
     assert "paste this two-sentence draft" not in rewrite.lower()
-    assert "Why the graph decided" in block_section
-    assert "would ship" in block_section
-    agent = text.split("## Agent calls what_rests_on over MCP", 1)[1].split("## Baseline result", 1)[0]
-    assert "what_rests_on" in agent
-    assert "This retraction affects 2 stored answers." in agent
-    assert "shared demo graph" in agent.lower() or "shared hosted" in agent.lower() or "accumulat" in agent.lower()
+    assert "unrelated" in rewrite.lower()
+    assert "byte-identical" in rewrite.lower()
+    run_a = (AGENT_RUN / "run_a_with_mooltrace.txt").read_text()
+    run_b = (AGENT_RUN / "run_b_without_mooltrace.txt").read_text()
+    shipped_a = run_a.split("SHIPPED:", 1)[1].strip()
+    shipped_b = run_b.split("SHIPPED:", 1)[1].strip()
+    agent = text.split("## Agent acting on connected data", 1)[1].split("## Baseline result", 1)[0]
+    assert shipped_a in agent
+    assert shipped_b in agent
+    assert "check_answer" in agent
+    assert "rewrite" in agent.lower()
+    assert "BLOCK" in agent
+    assert "what_rests_on" not in agent
 
 
 def test_submission_has_track_links_cypher_algorithms_video_placeholder():

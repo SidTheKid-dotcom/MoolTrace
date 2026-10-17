@@ -2,6 +2,21 @@
 
 Track 01: **Agents That Act on Connected Data**. No sign-up.
 
+WeMakeDevs COO judging guide (15 Oct 2026): https://www.wemakedevs.org/blogs/how-to-build-an-agent-that-reasons-over-a-graph
+
+## WeMakeDevs judging guide -> where MoolTrace does it
+
+| Guide item | Where MoolTrace does it |
+| --- | --- |
+| Graph does work the agent could not do without it | Same Harvard URL: Direct-DOI would ship (`mooltrace/graph_why.py:44`); graph depth 2 **BLOCK** (`examples/presets_recorded.json:472`; live signed-out `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/?preset=harvard-vitamin-d`). Recorded agent: with MCP ships the rewrite (`examples/agent_runs/2026-10-17/run_a_with_mooltrace.txt:2`); without ships the Harvard citation (`examples/agent_runs/2026-10-17/run_b_without_mooltrace.txt:4`). Labelled no-graph misses: `results/baseline_2026-10-16.json`. |
+| Same question at depth 1, then deeper, with the path | Live signed-out Harvard toggle this session: depth 1 **PASS** (exit 0, 0 notice paths, Why `Graph depth 1: 0 notice paths → PASS`) then depth 2 **BLOCK** (exit 1, `mention` × `uses_data_or_method`, Why panel names Ishida 2004). Recorded: `examples/presets_recorded.json:459` / `examples/presets_recorded.json:472`. UI nudge `web/src/components/pre-ship.tsx:663`. |
+| Ask something not in the graph and let it say so | Click **Not in the graph** on the live demo. WARN, “Nothing in the graph connects this answer to a study. This is not proof it is safe; the source may not be modelled.” (`mooltrace/decision.py:41`, `mooltrace/decision.py:458`; preset `web/src/components/pre-ship.tsx:148`). |
+| Fixed tool catalogue; model never writes Cypher; params validated | Hosted MCP is only `check_answer`, `what_rests_on`, `recheck_affected` (`mooltrace/mcp_http.py:3`). Depth is `Field(ge=1, le=3)` (`mooltrace/mcp_http.py:78`). Local stdio also exposes `ro_cypher` (`mooltrace/mcp_server.py:249`); writes are rejected. The model does not compose the verdict query. |
+| Resolve names against the DB | `check_study` resolves a DOI/PMID then `MATCH (w:Work {doi: $doi})` (`mooltrace/trace.py:1269`, `mooltrace/graph.py:443`). Rewrite author/year comes from `graph.work_row` (`mooltrace/rewrite.py:296`). Remote reverse-lookup DOIs must be a recorded preset notice unless live fetch is on (`mooltrace/public_demo.py:264`). This is Work/DOI lookup, not Blast Radius service-name resolution. |
+| Algorithms as tools (`algo.SPpaths` etc) | Verdict is `CALL algo.SPpaths` inside `check_answer` (`mooltrace/cypher.py:52`, `mooltrace/graph.py:511`). It is not a separate MCP tool named `algo.SPpaths`. `algo.pageRank` is registered in FalkorDBLite and is **not** called (`tests/test_pagerank_unused.py:1`). Embedded FalkorDBLite (`mooltrace/graph.py:3`), not FalkorDB Cloud. |
+| Memory is more nodes | Each check `MERGE`s an `Answer` node (`mooltrace/graph.py:241`); `what_rests_on` counts stored answers (`mooltrace/mcp_http.py:103`). There is no dated “answered from memory” outcome. |
+| Return the path with the answer; check the sentence against graph rows | `nodes(path)` and hop sentences return with the verdict (`mooltrace/cypher.py:69`; Why panel `web/src/components/pre-ship.tsx:271`). Rewrite text is filled from those rows (`mooltrace/rewrite.py:3`). There is no LLM-sentence vs graph-names filter like Blast Radius `accepts()`. |
+
 ## 1. Open the live demo, click BLOCK, read the path (90 s)
 
 https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/
