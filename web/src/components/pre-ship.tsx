@@ -58,6 +58,23 @@ type Algorithm = {
   explanation?: string
   cypher?: string
 }
+type WhyHop = {
+  relation?: string
+  weight?: number | null
+  sentence?: string | null
+  sentence_snippet?: string | null
+  source_url?: string | null
+  fetched_at?: string | null
+}
+type WhyGraph = {
+  title?: string
+  cypher?: string
+  path?: { nodes?: string[]; hops?: WhyHop[]; readable?: string }
+  without_graph?: { line?: string; notice_count?: number; decision?: string; dois?: string[] }
+  with_graph?: { line?: string; depth?: number; decision?: string; notice_doi?: string | null }
+  contrast?: string
+  live_sppaths?: { strength?: number | null; root_doi?: string | null; hops?: string[] } | null
+}
 type Check = {
   decision: "pass" | "warn" | "block"
   exit_code?: number
@@ -79,6 +96,7 @@ type Check = {
   impact?: Impact | null
   algorithm?: Algorithm | null
   notices_checked_ago?: string | null
+  why_graph?: WhyGraph | null
 }
 type Rewrite = {
   rewritten?: boolean
@@ -253,6 +271,49 @@ function ResultCard({
         ) : null}
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
+        {result.why_graph ? (
+          <section
+            data-testid="why-the-graph-decided"
+            className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs leading-5"
+          >
+            {/* Contrast line is built from the run / recorded without_graph, never hard-coded. */}
+            <p className="font-medium">{result.why_graph.title || "Why the graph decided"}</p>
+            {result.why_graph.cypher ? (
+              <pre className="mt-1 max-h-20 overflow-auto whitespace-pre-wrap font-mono text-[11px] leading-4">
+                {result.why_graph.cypher}
+              </pre>
+            ) : null}
+            {result.why_graph.path?.readable ? (
+              <p className="mt-1">{result.why_graph.path.readable}</p>
+            ) : null}
+            {(result.why_graph.path?.hops || []).map((hop, index) => (
+              <p key={`${hop.relation}-${index}`} className="mt-0.5 text-muted-foreground">
+                {hop.relation}
+                {hop.weight != null ? ` ${hop.weight}` : ""}
+                {hop.sentence_snippet || hop.sentence
+                  ? ` — ${hop.sentence_snippet || hop.sentence}`
+                  : ""}
+                {hop.source_url || hop.fetched_at
+                  ? ` (${[hop.source_url, hop.fetched_at].filter(Boolean).join(" · ")})`
+                  : ""}
+              </p>
+            ))}
+            {result.why_graph.live_sppaths?.strength != null ? (
+              <p className="mt-1 text-muted-foreground">
+                Live SPpaths also returned {result.why_graph.live_sppaths.strength}
+                {result.why_graph.live_sppaths.hops?.length
+                  ? ` (${result.why_graph.live_sppaths.hops.join(" × ")} → ${result.why_graph.live_sppaths.root_doi})`
+                  : ""}
+              </p>
+            ) : null}
+            <p className="mt-1" data-testid="without-the-graph">
+              {result.why_graph.contrast ||
+                [result.why_graph.without_graph?.line, result.why_graph.with_graph?.line]
+                  .filter(Boolean)
+                  .join("  |  ")}
+            </p>
+          </section>
+        ) : null}
         {deciding ? (
           <PathDiagram
             key={`${deciding.notice_doi || ""}-${deciding.steps?.[0]?.url || deciding.steps?.[0]?.doi || ""}`}
@@ -346,7 +407,7 @@ function ResultCard({
             {rewriting ? "Rewriting and rechecking…" : "Rewrite and recheck"}
           </Button>
         ) : null}
-        {result.cypher ? (
+        {result.cypher && !result.why_graph ? (
           <div className="flex flex-col gap-2">
             <p
               className="text-xs text-muted-foreground"

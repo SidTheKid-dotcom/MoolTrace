@@ -148,3 +148,51 @@ def format_summary(payload: dict[str, Any]) -> str:
     if coverage.startswith("expanded "):
         lines.append(f"Coverage: {coverage}")
     return "\n".join(lines) + "\n"
+
+
+def format_explain(payload: dict[str, Any]) -> str:
+    """Verdict plus the compact Why-the-graph-decided panel."""
+    lines = [format_summary(payload).rstrip()]
+    panel = payload.get("why_graph") or {}
+    if not panel:
+        return "\n".join(lines) + "\n"
+    lines.append("")
+    lines.append(str(panel.get("title") or "Why the graph decided"))
+    cypher = (panel.get("cypher") or "").strip()
+    if cypher:
+        lines.append(cypher)
+    path = panel.get("path") or {}
+    readable = path.get("readable") or ""
+    if readable:
+        lines.append(readable)
+    for hop in path.get("hops") or []:
+        relation = hop.get("relation") or "RESTS_ON"
+        weight = hop.get("weight")
+        weight_txt = f" {weight}" if weight is not None else ""
+        snippet = hop.get("sentence_snippet") or hop.get("sentence") or ""
+        trail = " · ".join(
+            part for part in (hop.get("source_url") or "", hop.get("fetched_at") or "") if part
+        )
+        bit = f"{relation}{weight_txt}"
+        if snippet:
+            bit += f" — {snippet}"
+        if trail:
+            bit += f" ({trail})"
+        lines.append(bit)
+    extra = panel.get("live_sppaths") or {}
+    if extra.get("strength") is not None:
+        hops = ", ".join(extra.get("hops") or [])
+        lines.append(
+            f"Live SPpaths also returned {extra['strength']} "
+            f"({hops or 'hops'} → {extra.get('root_doi')})"
+        )
+    if panel.get("contrast"):
+        lines.append(panel["contrast"])
+    else:
+        without = (panel.get("without_graph") or {}).get("line")
+        with_graph = (panel.get("with_graph") or {}).get("line")
+        if without:
+            lines.append(without)
+        if with_graph:
+            lines.append(with_graph)
+    return "\n".join(lines) + "\n"

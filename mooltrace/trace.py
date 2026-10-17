@@ -34,6 +34,7 @@ from mooltrace.clients import (
 from mooltrace import cypher as C
 from mooltrace.decision import EXIT_INFRA, EXIT_PASS, EXIT_WARN, coverage_line, decide, path_score
 from mooltrace.evidence import attach_hop_trail
+from mooltrace.graph_why import attach_why_graph
 from mooltrace.reliance import WEIGHT_FLOOR
 from mooltrace.graph import Graph, get_graph
 from mooltrace.reliance import PATH_RULE
@@ -1040,10 +1041,20 @@ def check_answer(
     url_list = [url.strip() for url in (urls or []) if url and url.strip()]
     if not has_verifiable_source(text or "", url_list):
         if is_disclosure_only(text or "", url_list):
-            return _removed_claims_check(
-                text=text or "", urls=url_list, engine=engine, depth=depth
+            return attach_why_graph(
+                _removed_claims_check(
+                    text=text or "", urls=url_list, engine=engine, depth=depth
+                ),
+                text=text or "",
+                urls=url_list,
+                engine=engine,
             )
-        return _no_sources_check(text=text or "", urls=url_list, engine=engine, depth=depth)
+        return attach_why_graph(
+            _no_sources_check(text=text or "", urls=url_list, engine=engine, depth=depth),
+            text=text or "",
+            urls=url_list,
+            engine=engine,
+        )
     try:
         traced = trace_answer(text=text, urls=urls, engine=engine, depth=depth, graph=graph)
     except InfraError as exc:
@@ -1229,7 +1240,13 @@ def check_answer(
         payload["errors"] = [
             err for err in (payload.get("errors") or []) if not str(err).startswith("expanded ")
         ]
-    return payload
+    return attach_why_graph(
+        payload,
+        text=text or "",
+        urls=url_list,
+        engine=engine,
+        params=getattr(sp_run, "params", None) or {"answer_id": payload.get("answer_id")},
+    )
 
 
 def check_study(identifier: str, graph: Graph | None = None) -> dict[str, Any]:

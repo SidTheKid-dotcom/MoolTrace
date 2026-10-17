@@ -1,5 +1,5 @@
 {
-  "note": "Hero hops recorded from live MoolTrace runs on throwaway graphs (olive-oil / cinnamon / JSPS / NHS on 2026-10-16 UTC; Harvard vitamin D on 2026-10-17 UTC). data/mooltrace.db was not opened. Hosted demo replays the five UI presets. Live olive-oil depth 2/3 also reached other notices after expanding more cites; the demo seeds only the deciding Estruch 2013 path. Under PATH_RULE T26 those mention×mention hops are WARN (the 16 Oct live run was BLOCK before the hop-into-retracted-work rule). Live cinnamon depth 3 likewise reached extra notices; the demo seeds only Silva 2022 -> Khan 2003. The NHS handwashing page (not-in-graph) was fetched 2026-10-16T20:22:08+00:00 with 0 scholarly identifiers and 0 Work nodes. nutrition-harvard-vitamin-d is the UI BLOCK preset: Avenell 2014 -> Ishida 2004 uses_data_or_method. Live Harvard depth 1 (17 Oct 2026 08:55 UTC, after OUP DOI cleanup) is pass, 0 notice paths, incomplete false. Live Harvard depth 2/3 also reached mention-only Sato retractions (SPpaths strength 0.3025); the recorded hops are the qualifying path only.",
+  "note": "Hero hops recorded from live MoolTrace runs on throwaway graphs (olive-oil / cinnamon / JSPS / NHS on 2026-10-16 UTC; Harvard vitamin D on 2026-10-17 UTC). data/mooltrace.db was not opened. Hosted demo replays the five UI presets. Live olive-oil depth 2/3 also reached other notices after expanding more cites; the demo seeds only the deciding Estruch 2013 path. Under PATH_RULE T26 those mention\u00d7mention hops are WARN (the 16 Oct live run was BLOCK before the hop-into-retracted-work rule). Live cinnamon depth 3 likewise reached extra notices; the demo seeds only Silva 2022 -> Khan 2003. The NHS handwashing page (not-in-graph) was fetched 2026-10-16T20:22:08+00:00 with 0 scholarly identifiers and 0 Work nodes. nutrition-harvard-vitamin-d is the UI BLOCK preset: Avenell 2014 -> Ishida 2004 uses_data_or_method. Live Harvard depth 1 (17 Oct 2026 08:55 UTC, after OUP DOI cleanup) is pass, 0 notice paths, incomplete false. Live Harvard depth 2/3 also reached mention-only Sato retractions (SPpaths strength 0.3025); the recorded hops are the qualifying path only.",
   "presets": [
     {
       "id": "nutrition-olive-oil",
@@ -52,7 +52,7 @@
           "to_doi": "10.1056/nejmoa1200303",
           "reliance": "mention",
           "weight": 0.55,
-          "sentence": "Estruch R, Ros E, Salas-Salvado J, Covas MI, Corella D, Aros F, Gomez-Gracia E, Ruiz-Gutierrez V, Fiol M, Lapetra J, Lamuela-Raventos RM, Serra-Majem L, Pintó X, Basora J, Muñoz MA, Sorlí JV, Martínez JA, Martínez-González MA.",
+          "sentence": "Estruch R, Ros E, Salas-Salvado J, Covas MI, Corella D, Aros F, Gomez-Gracia E, Ruiz-Gutierrez V, Fiol M, Lapetra J, Lamuela-Raventos RM, Serra-Majem L, Pint\u00f3 X, Basora J, Mu\u00f1oz MA, Sorl\u00ed JV, Mart\u00ednez JA, Mart\u00ednez-Gonz\u00e1lez MA.",
           "evidence_from": "pmc_html",
           "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4198773/",
           "fetched_at": "2026-10-16T19:52:21+00:00",
@@ -108,6 +108,13 @@
           "live_incomplete": true,
           "live_api_calls": 34
         }
+      },
+      "without_graph": {
+        "decision": "pass",
+        "exit_code": 0,
+        "notice_count": 0,
+        "dois": [],
+        "line": "Direct DOI check: 0 notices \u2192 would ship"
       }
     },
     {
@@ -217,6 +224,13 @@
           "live_incomplete": true,
           "live_api_calls": 137
         }
+      },
+      "without_graph": {
+        "decision": "pass",
+        "exit_code": 0,
+        "notice_count": 0,
+        "dois": [],
+        "line": "Direct DOI check: 0 notices \u2192 would ship"
       }
     },
     {
@@ -235,7 +249,7 @@
       "works": [
         {
           "doi": "10.1016/j.jsps.2015.03.013",
-          "title": "Diabetes mellitus and oxidative stress—A concise review",
+          "title": "Diabetes mellitus and oxidative stress\u2014A concise review",
           "year": 2016,
           "first_author": "Asmat",
           "expanded": true,
@@ -292,6 +306,15 @@
           "live_incomplete": false,
           "live_api_calls": 0
         }
+      },
+      "without_graph": {
+        "decision": "pass",
+        "exit_code": 0,
+        "notice_count": 0,
+        "dois": [
+          "10.1016/j.jsps.2015.03.013"
+        ],
+        "line": "Direct DOI check: 0 notices \u2192 would ship"
       }
     },
     {
@@ -352,6 +375,13 @@
           "live_works_cited": 0,
           "live_coverage": "expanded 0 of 0 cited works"
         }
+      },
+      "without_graph": {
+        "decision": "pass",
+        "exit_code": 0,
+        "notice_count": 0,
+        "dois": [],
+        "line": "Direct DOI check: 0 notices \u2192 would ship"
       }
     },
     {
@@ -362,7 +392,7 @@
       "sources": [
         {
           "url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/",
-          "title": "Vitamin D • The Nutrition Source",
+          "title": "Vitamin D \u2022 The Nutrition Source",
           "site": "nutritionsource.hsph.harvard.edu",
           "fetched_at": "2026-10-17T07:34:43+00:00",
           "content_hash": "6a3480374fc8ad3145fa014a3a5f9279a91fa25e34bede4ac0f36ca910ced83a"
@@ -451,7 +481,13 @@
           "live_incomplete": false,
           "live_api_calls": 118,
           "live_works_cited": 25,
-          "live_coverage": "expanded 15 of 25 cited works"
+          "live_coverage": "expanded 15 of 25 cited works",
+          "live_sppaths_strength": 0.30250000000000005,
+          "live_sppaths_root_doi": "10.1161/01.str.28.4.736",
+          "live_sppaths_hops": [
+            "mention",
+            "mention"
+          ]
         },
         "3": {
           "decision": "block",
@@ -466,8 +502,21 @@
           "live_incomplete": false,
           "live_api_calls": 65,
           "live_works_cited": 25,
-          "live_coverage": "expanded 15 of 25 cited works"
+          "live_coverage": "expanded 15 of 25 cited works",
+          "live_sppaths_strength": 0.30250000000000005,
+          "live_sppaths_root_doi": "10.1161/01.str.28.4.736",
+          "live_sppaths_hops": [
+            "mention",
+            "mention"
+          ]
         }
+      },
+      "without_graph": {
+        "decision": "pass",
+        "exit_code": 0,
+        "notice_count": 0,
+        "dois": [],
+        "line": "Direct DOI check: 0 notices \u2192 would ship"
       }
     }
   ],

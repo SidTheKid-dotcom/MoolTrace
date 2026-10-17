@@ -12,7 +12,7 @@ from mooltrace.clients import InfraError, MoolTraceError
 from mooltrace.graph import get_graph
 from mooltrace.ssrf import UnsafeURL
 from mooltrace.rewrite import rewrite_answer
-from mooltrace.summary import format_rewrite_summary, format_summary
+from mooltrace.summary import format_explain, format_rewrite_summary, format_summary
 from mooltrace.trace import (
     check_answer,
     check_study,
@@ -76,6 +76,11 @@ def main(argv: list[str] | None = None) -> int:
         "--json",
         action="store_true",
         help="Print the full JSON payload (default when stdout is not a TTY).",
+    )
+    check.add_argument(
+        "--explain",
+        action="store_true",
+        help="Print the verdict plus Why the graph decided (filled Cypher, path, direct-DOI contrast).",
     )
 
     trace = sub.add_parser("trace", help="return paths to publisher notices")
@@ -219,7 +224,9 @@ def main(argv: list[str] | None = None) -> int:
                 args.depth,
             )
             want_summary = args.summary or (sys.stdout.isatty() and not args.json)
-            if want_summary and not args.json:
+            if args.explain and not args.json:
+                sys.stdout.write(format_explain(payload))
+            elif want_summary and not args.json:
                 sys.stdout.write(format_summary(payload))
             else:
                 _print(payload)
