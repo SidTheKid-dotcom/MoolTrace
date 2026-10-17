@@ -55,7 +55,7 @@ Signed-out, in this order:
 
 Stop. No pushes after Sun 18 Oct 2026, 11:59 PM IST. Keep the live link, public repo, and video up through judging.
 
-Live container images currently pinned in `deploy/lightsail-deployment.json`: `:mooltrace.api.13` and `:mooltrace.web.14` (T20). T26 could not re-pin: `aws sts get-caller-identity` returned session expired (`aws login` required). Local seeded demo on 17 Oct 2026 showed Harvard **BLOCK** and olive-oil **WARN**. Power micro, scale 1, `MOOLTRACE_PUBLIC_DEMO=1`, `MOOLTRACE_PUBLIC_LIVE=1`, no Azure env vars. Set `MOOLTRACE_MAILTO` via the Lightsail container environment at deploy time; do not put an address in that JSON file. After a new pin: click **Harvard vitamin D (block)** for BLOCK. Toggle depth 1 then 3 on olive oil: PASS (0 notice paths) then WARN. Click **Not in the graph** for the NHS how-to: WARN, expanded 0 of 0 cited works. Paste a non-preset healthline.com URL for a live check (about 60 s; one at a time).
+Live container images currently pinned in `deploy/lightsail-deployment.json`: `:mooltrace.api.15` and `:mooltrace.web.16` (T31, built from `a9fbc4e`). Power micro, scale 1, `MOOLTRACE_PUBLIC_DEMO=1`, `MOOLTRACE_PUBLIC_LIVE=1`, no Azure env vars. Set `MOOLTRACE_MAILTO` via the Lightsail container environment at deploy time; do not put an address in that JSON file. After the pin: click **Harvard vitamin D (block)** for BLOCK. Toggle depth 1 then 3 on olive oil: PASS (0 notice paths) then WARN. Click **Not in the graph** for the NHS how-to: WARN, expanded 0 of 0 cited works. Paste a non-preset healthline.com URL for a live check (about 60 s; one at a time).
 
 ## After judging (stops Lightsail billing)
 
