@@ -134,7 +134,7 @@ def post_check_answer(body: DraftIn, request: Request) -> dict:
 def post_rewrite(body: DraftIn, request: Request) -> dict:
     _guard_public_demo(body, request)
     try:
-        return rewrite_answer(body.text, body.urls, body.engine, body.depth)
+        return rewrite_answer(body.text, body.urls, body.engine, body.depth, graph=get_graph())
     except (MoolTraceError, UnsafeURL, InfraError) as exc:
         raise _raise(exc) from exc
 

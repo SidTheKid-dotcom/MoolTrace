@@ -24,12 +24,17 @@ DIABETES_CARE_RE = re.compile(
 URL_RE = re.compile(r"https?://[^\s\"'<>]+", re.I)
 DOI_FULL_RE = re.compile(r"10\.\d{4,9}/\S+")
 _EOC_DISCLOSE = re.compile(
-    r"Evidence for this claim is under review \([^)]{0,240}\)\.?",
+    r"Evidence for this claim is under review \([^)]{0,240}\)\.?"
+    r"|An earlier version of this answer cited .{0,240}?Expression of Concern"
+    r".{0,80}?so this claim was removed\.?",
     re.I,
 )
 _RETRACT_DISCLOSE = re.compile(
     r"the study this relied on \((?:[^()]|\([^()]*\))*\) was retracted on "
-    r".+?\. This claim has been removed\.?",
+    r".+?\. This claim has been removed\.?"
+    r"|An earlier version of this answer cited .{0,240}?"
+    r"(?:was retracted(?: and republished)? on |retracted and republished on )"
+    r".+? so this claim was removed\.?",
     re.I,
 )
 _PUBLISHER_SUFFIXES = (

@@ -354,5 +354,15 @@
         }
       }
     }
+  ],
+  "rewrite_drafts": [
+    {
+      "id": "nutrition-olive-oil-rewrite",
+      "seed_id": "nutrition-olive-oil",
+      "engine": "nutrition-coach",
+      "text": "Vitamin D status is discussed separately. A nutrition coach cites https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil.",
+      "urls": ["https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil"],
+      "depth": 3
+    }
   ]
 }

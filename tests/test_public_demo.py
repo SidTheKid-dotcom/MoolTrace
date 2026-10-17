@@ -162,6 +162,68 @@ def test_public_demo_recheck_affected_replays_olive_oil_block(tmp_path: Path, mo
     graph.close()
 
 
+OLIVE_REWRITE_DRAFT = (
+    "Vitamin D status is discussed separately. "
+    f"A nutrition coach cites {OLIVE_OIL_URL}."
+)
+ESTRUCH_REWRITE = (
+    "An earlier version of this answer cited Estruch et al. 2013 (PREDIMED); "
+    "that trial report was retracted and republished on 13 Jun 2018, "
+    "so this claim was removed."
+)
+
+
+def test_olive_oil_rewrite_draft_is_a_recorded_preset():
+    from mooltrace.config import ROOT
+
+    recorded = (ROOT / "examples" / "presets_recorded.json").read_text()
+    ui = (ROOT / "web" / "src" / "components" / "pre-ship.tsx").read_text()
+    assert OLIVE_REWRITE_DRAFT in recorded
+    assert OLIVE_REWRITE_DRAFT in ui
+    assert "Rewrite and recheck" in ui
+    assert is_preset("nutrition-coach", OLIVE_REWRITE_DRAFT, [OLIVE_OIL_URL])
+
+
+def test_public_demo_rewrite_draft_names_estruch_and_keeps_other_sentence(
+    tmp_path: Path, monkeypatch
+):
+    monkeypatch.setenv("MOOLTRACE_PUBLIC_DEMO", "1")
+    monkeypatch.delenv("MOOLTRACE_PUBLIC_LIVE", raising=False)
+    from mooltrace import public_demo
+
+    public_demo.reset_public_limits()
+    graph = Graph(tmp_path / "demo.db")
+    seed_offline_presets(graph)
+    monkeypatch.setattr("mooltrace.trace.get_graph", lambda: graph)
+    monkeypatch.setattr("mooltrace.graph.get_graph", lambda: graph)
+    monkeypatch.setattr("mooltrace.api.get_graph", lambda: graph)
+    try:
+        client = TestClient(app)
+        response = client.post(
+            "/rewrite",
+            json={
+                "text": OLIVE_REWRITE_DRAFT,
+                "urls": [OLIVE_OIL_URL],
+                "engine": "nutrition-coach",
+                "depth": 3,
+            },
+        )
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["rewritten"] is True
+        assert body["text"].startswith("Vitamin D status is discussed separately. ")
+        assert body["text"][: len("Vitamin D status is discussed separately. ")] == (
+            "Vitamin D status is discussed separately. "
+        )
+        assert body["text"] == f"Vitamin D status is discussed separately. {ESTRUCH_REWRITE}"
+        assert "Estruch et al. 2013 (PREDIMED)" in body["text"]
+        assert "This claim:" not in body["text"]
+        assert "the authors" not in body["text"]
+        assert OLIVE_OIL_URL not in body["text"]
+    finally:
+        graph.close()
+
+
 def test_entrypoint_documents_offline_seed():
     from pathlib import Path
 

@@ -159,9 +159,17 @@ def load_recorded_presets() -> dict[str, Any]:
     return payload
 
 
+def load_rewrite_drafts() -> list[dict[str, Any]]:
+    drafts = load_recorded_presets().get("rewrite_drafts") or []
+    return [row for row in drafts if isinstance(row, dict)]
+
+
 def is_preset(engine: str, text: str, urls: list[str] | None) -> bool:
     key = preset_key(engine, text, urls)
     for row in load_preset_rows():
+        if preset_key(str(row.get("engine") or ""), str(row.get("text") or ""), row.get("urls") or []) == key:
+            return True
+    for row in load_rewrite_drafts():
         if preset_key(str(row.get("engine") or ""), str(row.get("text") or ""), row.get("urls") or []) == key:
             return True
     return False

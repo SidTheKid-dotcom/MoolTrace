@@ -83,6 +83,7 @@ type Check = {
 type Rewrite = {
   rewritten?: boolean
   method?: string | null
+  before?: string
   text?: string
   urls?: string[]
   recheck?: Check
@@ -126,6 +127,9 @@ const PRESETS = [
     urls: ["https://www.nhs.uk/live-well/best-way-to-wash-your-hands/"],
   },
 ]
+
+const OLIVE_OIL_REWRITE_DRAFT =
+  "Vitamin D status is discussed separately. A nutrition coach cites https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil."
 
 const DEPTHS = [1, 2, 3] as const
 const LIVE_HOSTS = [
@@ -440,13 +444,17 @@ export function PreShip() {
   async function runRewrite() {
     setRewriting(true)
     setError("")
+    const listed = urls.split(/\s+/).map((item) => item.trim()).filter(Boolean)
+    const recordedDraft =
+      presetId === "olive-oil" && !text.trim() ? OLIVE_OIL_REWRITE_DRAFT : text
+    if (recordedDraft !== text) setText(recordedDraft)
     try {
       const response = await fetch("/nw/rewrite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text,
-          urls: urls.split(/\s+/).map((item) => item.trim()).filter(Boolean),
+          text: recordedDraft,
+          urls: listed,
           engine,
           depth,
         }),
@@ -456,7 +464,6 @@ export function PreShip() {
       }
       const payload = (await response.json()) as Rewrite
       setRewrite(payload)
-      if (payload.text) setText(payload.text)
       if (payload.urls) setUrls(payload.urls.join("\n"))
     } catch (exc) {
       setError(exc instanceof Error ? exc.message : "The rewrite did not finish.")
@@ -693,7 +700,7 @@ export function PreShip() {
       ) : null}
 
       {rewrite?.text ? (
-        <Card>
+        <Card data-testid="rewritten-draft">
           <CardHeader>
             <CardTitle>Rewritten draft</CardTitle>
             <CardDescription>
@@ -701,8 +708,21 @@ export function PreShip() {
               sentences stayed the same, then the check ran again.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm leading-6">{rewrite.text}</p>
+          <CardContent className="flex flex-col gap-3">
+            {rewrite.before ? (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Before</p>
+                <p className="text-sm leading-6" data-testid="rewrite-before">
+                  {rewrite.before}
+                </p>
+              </div>
+            ) : null}
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">After</p>
+              <p className="text-sm leading-6" data-testid="rewrite-after">
+                {rewrite.text}
+              </p>
+            </div>
           </CardContent>
         </Card>
       ) : null}

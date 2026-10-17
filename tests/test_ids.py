@@ -167,3 +167,23 @@ def test_extract_skips_rewrite_disclosures():
     eoc_named = "Evidence for this claim is under review (Khan 2003, Expression of Concern)."
     assert extract_identifiers(eoc_named).dois == []
     assert is_disclosure_only(eoc_named, [])
+    estruch = (
+        "An earlier version of this answer cited Estruch et al. 2013 (PREDIMED); "
+        "that trial report was retracted and republished on 13 Jun 2018, "
+        "so this claim was removed."
+    )
+    assert extract_identifiers(estruch).dois == []
+    assert is_disclosure_only(estruch, [])
+    khan = (
+        "An earlier version of this answer cited Khan et al. 2003; "
+        "that paper is under an Expression of Concern dated 20 Aug 2025, "
+        "so this claim was removed."
+    )
+    assert extract_identifiers(khan).dois == []
+    assert is_disclosure_only(khan, [])
+    mehra = (
+        "An earlier version of this answer cited Mehra et al. 2020; "
+        "that paper was retracted on 5 Jun 2020, so this claim was removed."
+    )
+    assert extract_identifiers(mehra).dois == []
+    assert is_disclosure_only(mehra, [])

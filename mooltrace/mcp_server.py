@@ -145,7 +145,7 @@ def rewrite_answer(
         int, Field(ge=1, le=3, description="Hop budget from 1 to 3.")
     ] = 2,
 ) -> dict:
-    return _call(run_rewrite, text=text, urls=urls, engine=engine, depth=depth)
+    return _call(run_rewrite, text=text, urls=urls, engine=engine, depth=depth, graph=get_graph())
 
 
 @server.tool(

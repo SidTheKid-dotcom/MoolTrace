@@ -17,7 +17,8 @@ from mooltrace.trace import check_answer
 
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9\"'])")
 _DISCLOSE_CHUNK = re.compile(
-    r"Evidence for this claim is under review \([^)]{0,240}\)",
+    r"Evidence for this claim is under review \([^)]{0,240}\)"
+    r"|An earlier version of this answer cited .{0,320}?so this claim was removed\.?",
     re.I,
 )
 _TITLE_PREFIX = re.compile(
@@ -40,7 +41,28 @@ _BAD_AUTHOR = frozenset(
         "concern",
         "notice",
         "publisher",
+        "cinnamon",
+        "primary",
+        "prevention",
+        "hydroxychloroquine",
+        "olive",
+        "mediterranean",
     }
+)
+PREDIMED_DOI = "10.1056/nejmoa1200303"
+_MONTHS = (
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
 )
 _UNFLAGGED_SIBLING = """
 MATCH (review)-[:RESTS_ON]->(flagged:Work {doi: $doi})
@@ -180,31 +202,57 @@ def _notice_label(payload: dict[str, Any]) -> tuple[str, str, str]:
     return label, doi, date
 
 
+def _pretty_date(value: str) -> str:
+    text = (value or "").strip()[:10]
+    match = re.fullmatch(r"((?:19|20)\d{2})-(\d{2})-(\d{2})", text)
+    if not match:
+        return text
+    year, month, day = match.groups()
+    try:
+        month_name = _MONTHS[int(month) - 1]
+    except (IndexError, ValueError):
+        return text
+    return f"{int(day)} {month_name} {year}"
+
+
+def _cite_name(author: str, year: str) -> str:
+    if author == "the authors":
+        return "the authors" if year == "n.d." else f"the authors {year}"
+    if year == "n.d.":
+        return f"{author} et al."
+    return f"{author} et al. {year}"
+
+
+def _is_predimed(payload: dict[str, Any], root: str) -> bool:
+    if clean_doi(root) == PREDIMED_DOI:
+        return True
+    reason = next((item for item in payload.get("reasons") or [] if item.get("code")), {})
+    label = str(reason.get("notice_label") or "")
+    title = str(reason.get("root_title") or (reason.get("root") or {}).get("title") or "")
+    return "republication" in label.lower() or "predimed" in title.lower()
+
+
 def _eoc_disclose(payload: dict[str, Any], span: str = "", graph=None) -> str:
-    label, _doi, date = _notice_label(payload)
+    _label, _doi, date = _notice_label(payload)
     author, year, _root = _study_cite(payload, span, graph)
-    if author != "the authors" and year != "n.d.":
-        return f"Evidence for this claim is under review ({author} {year}, {label})."
-    bits = [label]
-    if date:
-        bits.append(date)
-    return f"Evidence for this claim is under review ({', '.join(bits)})."
-
-
-def _claim_topic(span: str) -> str:
-    leftover = re.sub(r"https?://\S+", "", span or "", flags=re.I)
-    leftover = re.sub(r"10\.\d{4,9}/\S+", "", leftover)
-    leftover = re.sub(r"\s+", " ", leftover).strip(" .,:;")
-    if not leftover:
-        return "This claim"
-    words = leftover.split()[:8]
-    return " ".join(words).rstrip(":,")
+    who = _cite_name(author, year)
+    when = _pretty_date(date)
+    dated = f" dated {when}" if when else ""
+    return (
+        f"An earlier version of this answer cited {who}; "
+        f"that paper is under an Expression of Concern{dated}, "
+        f"so this claim was removed."
+    )
 
 
 def _family_name(value: Any) -> str:
     raw = _TITLE_PREFIX.sub("", str(value or "").strip())
-    token = raw.split()[0] if raw else ""
-    token = token.strip(".,;:()[]\"'")
+    if not raw:
+        return ""
+    parts = raw.split()
+    if len(parts) > 3:
+        return ""
+    token = parts[0].strip(".,;:()[]\"'")
     if not token or token.lower() in _BAD_AUTHOR:
         return ""
     if token.endswith(":") or token.upper() == "RETRACTED":
@@ -251,33 +299,23 @@ def _study_cite(
         if row:
             author = author or _family_name(row.get("first_author"))
             year = year or _year_text(row.get("year"))
-    if not author:
-        match = re.search(
-            r"\b([A-Z][a-z]{2,})\s+and\s+colleagues\b"
-            r"|\b([A-Z][a-z]{2,})\s+et\s+al\b",
-            span or "",
-        )
-        if match:
-            author = _family_name(match.group(1) or match.group(2))
-    if not author:
-        match = re.search(r"\b([A-Z][a-z]{2,})\b", span or "")
-        if match:
-            author = _family_name(match.group(1))
-    if not year:
-        match = re.search(r"\b((?:19|20)\d{2})\b", span or "")
-        if match:
-            year = match.group(1)
     return author or "the authors", year or "n.d.", root
 
 
 def _retraction_sentence(payload: dict[str, Any], span: str = "", graph=None) -> str:
     _label, _notice, date = _notice_label(payload)
-    author, year, _root = _study_cite(payload, span, graph)
-    topic = _claim_topic(span)
-    when = date or "an unknown date"
+    author, year, root = _study_cite(payload, span, graph)
+    who = _cite_name(author, year)
+    when = _pretty_date(date) or "an unknown date"
+    if _is_predimed(payload, root):
+        return (
+            f"An earlier version of this answer cited {who} (PREDIMED); "
+            f"that trial report was retracted and republished on {when}, "
+            f"so this claim was removed."
+        )
     return (
-        f"{topic}: the study this relied on ({author} {year}) was retracted on "
-        f"{when}. This claim has been removed."
+        f"An earlier version of this answer cited {who}; "
+        f"that paper was retracted on {when}, so this claim was removed."
     )
 
 
@@ -399,6 +437,7 @@ def rewrite_answer(
             "rewritten": False,
             "reason": "already pass",
             "method": None,
+            "before": text,
             "text": text,
             "urls": url_list,
             "check": first,
@@ -420,6 +459,7 @@ def rewrite_answer(
         "rewritten": changed,
         "reason": first.get("decision"),
         "method": proposal.get("method"),
+        "before": text,
         "text": new_text,
         "urls": proposal.get("urls") or [],
         "dropped": proposal.get("dropped") or [],

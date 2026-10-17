@@ -2,6 +2,7 @@ from mooltrace.config import (
     CLEAN_REWRITE_DOI,
     EOC_DOI,
     HEALTHLINE_CINNAMON_URL,
+    HEALTHLINE_OLIVE_OIL_URL,
     KHAN_DOI,
     LANCET_HCQ_DOI,
     LANCET_RETRACTION_DOI,
@@ -66,8 +67,9 @@ def test_template_rewrite_keeps_untouched_lancet_sentence():
     assert "Diabetes mellitus and oxidative stress" not in out["text"]
     assert "under review" not in out["text"].lower()
     assert "was retracted on" in out["text"]
-    assert "This claim has been removed." in out["text"]
-    assert "Mehra 2020" in out["text"]
+    assert "so this claim was removed." in out["text"]
+    assert "Mehra et al. 2020" in out["text"]
+    assert "This claim:" not in out["text"]
     assert "RETRACTED:" not in out["text"]
     assert "10.1016/s0140-6736(20)31324-6" not in out["text"]
     leading, _, trailing = out["text"].partition(DISCLAIMER)
@@ -82,8 +84,9 @@ def test_template_rewrite_replaces_healthline_named_claim():
     out = template_rewrite(payload, text, [HEALTHLINE_CINNAMON_URL])
     assert "according to Healthline" not in out["text"]
     assert "Cinnamon may modestly lower fasting blood sugar" not in out["text"]
-    assert "under review" in out["text"]
     assert "Expression of Concern" in out["text"]
+    assert "so this claim was removed." in out["text"]
+    assert "This claim:" not in out["text"]
     assert HEALTHLINE_CINNAMON_URL not in (out.get("urls") or [])
     assert not still_cites(out["text"], out["urls"], payload)
 
@@ -139,8 +142,8 @@ def test_template_rewrite_drops_flagged_url():
     out = template_rewrite(payload, HEALTHLINE_TEXT, [HEALTHLINE_CINNAMON_URL])
     assert CLEAN_REWRITE_DOI not in out["text"]
     assert "healthline" not in out["text"].lower()
-    assert "under review" in out["text"]
     assert "Expression of Concern" in out["text"]
+    assert "so this claim was removed." in out["text"]
     assert not still_cites(out["text"], out["urls"], payload)
     assert out["method"] == "template"
     assert HEALTHLINE_CINNAMON_URL not in (out.get("urls") or [])
@@ -168,7 +171,7 @@ def test_rewrite_answer_clean_draft_is_unchanged(monkeypatch):
 
 def test_rewrite_exit_code_matches_recheck_pass(monkeypatch):
     def fake_check(text, urls=None, engine="draft", depth=2, graph=None):
-        if "under review" in (text or ""):
+        if "so this claim was removed" in (text or ""):
             return {"decision": "pass", "exit_code": 0, "reasons": []}
         return {**_warn_payload(), "exit_code": 2}
 
@@ -187,9 +190,8 @@ def test_check_answer_retraction_disclosure_is_pass(tmp_path):
 
     graph = Graph(tmp_path / "mooltrace.db")
     text = (
-        "Hydroxychloroquine outcomes: the study this relied on "
-        "(Mehra 2020) was retracted on "
-        "2020-06-05. This claim has been removed."
+        "An earlier version of this answer cited Mehra et al. 2020; "
+        "that paper was retracted on 5 Jun 2020, so this claim was removed."
     )
     try:
         out = check_answer(text, [], "draft", 2, graph=graph)
@@ -300,7 +302,9 @@ def test_rewrite_hcq_mehra_2020_only_flagged_sentence(monkeypatch):
     assert out["rewritten"] is True
     assert out["text"].endswith(DISCLAIMER)
     assert out["text"][out["text"].rfind(DISCLAIMER) :] == DISCLAIMER
-    assert "Mehra 2020" in out["text"]
+    assert "Mehra et al. 2020" in out["text"]
+    assert "This claim:" not in out["text"]
+    assert "A draft patient note says" not in out["text"]
     assert "RETRACTED:" not in out["text"]
     assert "RETRACTED" not in out["text"]
     assert LANCET_RETRACTION_DOI not in out["text"]
@@ -320,8 +324,10 @@ def test_rewrite_healthline_with_text_keeps_other_sentences(monkeypatch):
     assert out["text"][: len(HEALTHLINE_CLEAN_SENTENCE)] == HEALTHLINE_CLEAN_SENTENCE
     assert HEALTHLINE_CINNAMON_URL not in out["text"]
     assert HEALTHLINE_CINNAMON_URL not in (out.get("urls") or [])
-    assert "Khan 2003" in out["text"]
+    assert "Khan et al. 2003" in out["text"]
+    assert "Cinnamon 2003" not in out["text"]
     assert "Expression of Concern" in out["text"]
+    assert "retract" not in out["text"].lower()
     assert EOC_DOI not in out["text"]
     assert "RETRACTED:" not in out["text"]
     assert not still_cites(out["text"], out["urls"], payload)
@@ -356,9 +362,212 @@ def test_rewrite_multi_claim_only_flagged_sentence(monkeypatch):
     assert out["text"][at : at + len(clean)] == clean
     assert out["text"].endswith(DISCLAIMER)
     assert out["text"][out["text"].rfind(DISCLAIMER) :] == DISCLAIMER
-    assert "Mehra 2020" in out["text"]
+    assert "Mehra et al. 2020" in out["text"]
+    assert "This claim:" not in out["text"]
     assert "RETRACTED:" not in out["text"]
     assert LANCET_RETRACTION_DOI not in out["text"]
     assert "reported outcomes for hydroxychloroquine" not in out["text"]
     assert CLEAN_REWRITE_DOI in out["text"]
     assert not still_cites(out["text"], out["urls"], payload)
+
+
+ESTRUCH_DOI = "10.1056/nejmoa1200303"
+ESTRUCH_NOTICE = "10.1056/nejmc1806491"
+OLIVE_REWRITE_DRAFT = (
+    "Vitamin D status is discussed separately. "
+    f"A nutrition coach cites {HEALTHLINE_OLIVE_OIL_URL}."
+)
+ESTRUCH_REWRITE = (
+    "An earlier version of this answer cited Estruch et al. 2013 (PREDIMED); "
+    "that trial report was retracted and republished on 13 Jun 2018, "
+    "so this claim was removed."
+)
+KHAN_REWRITE = (
+    "An earlier version of this answer cited Khan et al. 2003; "
+    "that paper is under an Expression of Concern dated 20 Aug 2025, "
+    "so this claim was removed."
+)
+MEHRA_REWRITE = (
+    "An earlier version of this answer cited Mehra et al. 2020; "
+    "that paper was retracted on 5 Jun 2020, so this claim was removed."
+)
+
+
+def _estruch_live_payload() -> dict:
+    """Hosted olive-oil shape: year and title, no first_author on the reason."""
+    return {
+        "decision": "block",
+        "exit_code": 1,
+        "reasons": [
+            {
+                "code": "retraction",
+                "notice_doi": ESTRUCH_NOTICE,
+                "notice_date": "2018-06-13",
+                "notice_label": "Retraction",
+                "root_doi": ESTRUCH_DOI,
+                "root_title": (
+                    "RETRACTED: Primary Prevention of Cardiovascular Disease "
+                    "with a Mediterranean Diet"
+                ),
+                "root_year": 2013,
+                "source_url": HEALTHLINE_OLIVE_OIL_URL,
+                "steps": [
+                    {"url": HEALTHLINE_OLIVE_OIL_URL, "title": "11 Proven Benefits of Olive Oil"},
+                    {
+                        "doi": ESTRUCH_DOI,
+                        "title": (
+                            "RETRACTED: Primary Prevention of Cardiovascular "
+                            "Disease with a Mediterranean Diet"
+                        ),
+                        "year": 2013,
+                    },
+                ],
+            }
+        ],
+    }
+
+
+def _khan_live_payload() -> dict:
+    """Hosted cinnamon shape: title starts with Cinnamon, no first_author."""
+    return {
+        "decision": "warn",
+        "exit_code": 2,
+        "reasons": [
+            {
+                "code": "expression_of_concern",
+                "notice_doi": EOC_DOI,
+                "notice_date": "2025-08-20",
+                "notice_label": "Expression of Concern",
+                "root_doi": KHAN_DOI,
+                "root_title": "Cinnamon Improves Glucose and Lipids of People With Type 2 Diabetes",
+                "root_year": 2003,
+                "source_url": HEALTHLINE_CINNAMON_URL,
+                "steps": [
+                    {"url": HEALTHLINE_CINNAMON_URL},
+                    {
+                        "doi": KHAN_DOI,
+                        "title": "Cinnamon Improves Glucose and Lipids of People With Type 2 Diabetes",
+                        "year": 2003,
+                    },
+                ],
+            }
+        ],
+    }
+
+
+def _mehra_live_payload() -> dict:
+    return {
+        "decision": "block",
+        "exit_code": 1,
+        "reasons": [
+            {
+                "code": "retraction",
+                "notice_doi": LANCET_RETRACTION_DOI,
+                "notice_date": "2020-06-05",
+                "root_doi": LANCET_HCQ_DOI,
+                "root_title": MEHRA_RETRACTED_TITLE,
+                "root_year": 2020,
+                "steps": [
+                    {
+                        "doi": LANCET_HCQ_DOI,
+                        "title": MEHRA_RETRACTED_TITLE,
+                        "year": 2020,
+                    }
+                ],
+            }
+        ],
+    }
+
+
+def _graph_with_authors(tmp_path):
+    from mooltrace.graph import Graph
+
+    graph = Graph(tmp_path / "rewrite-authors.db")
+    graph.merge_work(ESTRUCH_DOI, title="PREDIMED", year=2013, first_author="Estruch")
+    graph.merge_work(KHAN_DOI, title="Cinnamon Improves Glucose", year=2003, first_author="Khan")
+    graph.merge_work(LANCET_HCQ_DOI, title=MEHRA_RETRACTED_TITLE, year=2020, first_author="Mehra")
+    return graph
+
+
+def _assert_untouched(original: str, rewritten: str, fragment: str) -> None:
+    assert fragment in original
+    assert fragment in rewritten
+    at = rewritten.find(fragment)
+    assert rewritten[at : at + len(fragment)] == fragment
+    if original.startswith(fragment):
+        assert rewritten.startswith(fragment)
+        assert rewritten[: len(fragment)] == fragment
+
+
+def test_rewrite_estruch_names_author_no_splice(tmp_path):
+    payload = _estruch_live_payload()
+    graph = _graph_with_authors(tmp_path)
+    try:
+        out = template_rewrite(payload, OLIVE_REWRITE_DRAFT, [HEALTHLINE_OLIVE_OIL_URL], graph)
+        assert out["text"].startswith(HEALTHLINE_CLEAN_SENTENCE)
+        assert out["text"][: len(HEALTHLINE_CLEAN_SENTENCE)] == HEALTHLINE_CLEAN_SENTENCE
+        _assert_untouched(OLIVE_REWRITE_DRAFT, out["text"], HEALTHLINE_CLEAN_SENTENCE)
+        assert out["text"] == f"{HEALTHLINE_CLEAN_SENTENCE}{ESTRUCH_REWRITE}"
+        assert "Estruch et al. 2013 (PREDIMED)" in out["text"]
+        assert "retracted and republished" in out["text"]
+        assert "13 Jun 2018" in out["text"]
+        assert "This claim:" not in out["text"]
+        assert "the authors" not in out["text"]
+        assert "A nutrition coach cites:" not in out["text"]
+        assert "RETRACTED:" not in out["text"]
+        assert ESTRUCH_NOTICE not in out["text"]
+        assert HEALTHLINE_OLIVE_OIL_URL not in out["text"]
+    finally:
+        graph.close()
+
+
+def test_rewrite_khan_names_author_not_title_word(tmp_path):
+    claim = f"Cinnamon may help blood sugar ({HEALTHLINE_CINNAMON_URL})."
+    text = HEALTHLINE_CLEAN_SENTENCE + claim
+    payload = _khan_live_payload()
+    graph = _graph_with_authors(tmp_path)
+    try:
+        out = template_rewrite(payload, text, [HEALTHLINE_CINNAMON_URL], graph)
+        _assert_untouched(text, out["text"], HEALTHLINE_CLEAN_SENTENCE)
+        assert out["text"] == f"{HEALTHLINE_CLEAN_SENTENCE}{KHAN_REWRITE}"
+        assert "Khan et al. 2003" in out["text"]
+        assert "Cinnamon 2003" not in out["text"]
+        assert "Expression of Concern" in out["text"]
+        assert "retract" not in out["text"].lower()
+        assert "This claim:" not in out["text"]
+        assert "the authors" not in out["text"]
+        assert "Cinnamon may help blood sugar" not in out["text"]
+        assert EOC_DOI not in out["text"]
+    finally:
+        graph.close()
+
+
+def test_rewrite_mehra_names_author_no_mid_sentence_splice(tmp_path):
+    payload = _mehra_live_payload()
+    graph = _graph_with_authors(tmp_path)
+    try:
+        out = template_rewrite(payload, LANCET_TEXT, [], graph)
+        _assert_untouched(LANCET_TEXT, out["text"], DISCLAIMER)
+        assert out["text"].endswith(DISCLAIMER)
+        assert out["text"] == f"{MEHRA_REWRITE} {DISCLAIMER}"
+        assert "Mehra et al. 2020" in out["text"]
+        assert "A draft patient note says" not in out["text"]
+        assert "This claim:" not in out["text"]
+        assert "the authors" not in out["text"]
+        assert "RETRACTED:" not in out["text"]
+        assert "retracted and republished" not in out["text"]
+        assert LANCET_RETRACTION_DOI not in out["text"]
+        assert LANCET_HCQ_DOI.lower() not in out["text"].lower()
+        assert not still_cites(out["text"], out["urls"], payload)
+    finally:
+        graph.close()
+
+
+def test_rewrite_uses_the_authors_only_when_metadata_has_none():
+    payload = _khan_live_payload()
+    text = f"Cinnamon may help blood sugar ({HEALTHLINE_CINNAMON_URL})."
+    out = template_rewrite(payload, text, [HEALTHLINE_CINNAMON_URL], graph=None)
+    assert "Cinnamon 2003" not in out["text"]
+    assert "the authors" in out["text"]
+    assert "Expression of Concern" in out["text"]
+    assert "retract" not in out["text"].lower()

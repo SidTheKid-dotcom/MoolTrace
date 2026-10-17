@@ -81,6 +81,9 @@ def test_video_script_quotes_live_numbers_with_citations():
         "pass",
         "Estruch 2013",
         "Vitamin D status is discussed separately.",
+        "Estruch et al. 2013 (PREDIMED)",
+        "retracted and republished on 13 Jun 2018",
+        "Rewrite and recheck",
         "examples/lancet.jsonl --fail-on block",
         "exit 1",
         "what_rests_on",
@@ -110,6 +113,12 @@ def test_video_script_quotes_live_numbers_with_citations():
     not_in = text.split("## Not in the graph", 1)[1].split("## Rewrite", 1)[0]
     assert "expanded 0 of 0 cited works" in not_in
     assert "not proof it is safe" in not_in.lower() or "not proof" in not_in.lower()
+    rewrite = text.split("## Rewrite", 1)[1].split("## CI fails the PR", 1)[0]
+    assert "Rewrite and recheck" in rewrite
+    assert "Estruch et al. 2013 (PREDIMED)" in rewrite
+    assert "A nutrition coach cites:" not in rewrite
+    assert "This claim:" not in rewrite
+    assert "paste this two-sentence draft" not in rewrite.lower()
 
 
 def test_submission_has_track_links_cypher_algorithms_video_placeholder():

@@ -750,6 +750,7 @@ def _public_path(row: dict[str, Any]) -> dict[str, Any]:
                 "title": step.get("title"),
                 "url": step.get("url"),
                 "year": step.get("year"),
+                "first_author": step.get("first_author"),
             }
         )
     hops = [attach_hop_trail(hop) for hop in (row.get("hops_evidence") or [])]
@@ -763,6 +764,7 @@ def _public_path(row: dict[str, Any]) -> dict[str, Any]:
             "doi": row.get("root_doi"),
             "title": row.get("root_title"),
             "year": row.get("root_year"),
+            "first_author": row.get("root_author"),
         },
         "notice": {
             "doi": row.get("notice_doi"),
@@ -869,6 +871,8 @@ def trace_answer(
     pages = _page_urls(url_list, text or "", errors)
     if skip_http:
         incomplete = False
+        for url in pages:
+            graph.cite(answer_id, url)
         if not graph.seed_dois(answer_id):
             sourced = bool((graph.answer_inputs(answer_id).get("urls") or []))
             if not sourced:

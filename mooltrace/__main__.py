@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from mooltrace.clients import InfraError, MoolTraceError
+from mooltrace.graph import get_graph
 from mooltrace.ssrf import UnsafeURL
 from mooltrace.rewrite import rewrite_answer
 from mooltrace.summary import format_rewrite_summary, format_summary
@@ -229,6 +230,7 @@ def main(argv: list[str] | None = None) -> int:
                 _urls_from_file(args.urls_file, args.url),
                 args.engine,
                 args.depth,
+                graph=get_graph(),
             )
             want_summary = args.summary or (sys.stdout.isatty() and not args.json)
             if want_summary and not args.json:

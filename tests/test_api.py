@@ -97,9 +97,11 @@ def test_check_answer_credential_url_is_warn(tmp_path, monkeypatch):
 def test_rewrite_drops_flagged_citations(tmp_path, monkeypatch):
     graph = Graph(tmp_path / "mooltrace.db")
     monkeypatch.setattr("mooltrace.trace.get_graph", lambda: graph)
+    monkeypatch.setattr("mooltrace.graph.get_graph", lambda: graph)
+    monkeypatch.setattr("mooltrace.api.get_graph", lambda: graph)
 
     def fake_check(text, urls=None, engine="draft", depth=2, graph=None):
-        if "under review" in (text or ""):
+        if "so this claim was removed" in (text or ""):
             return {"decision": "warn", "exit_code": 2, "reasons": [{"code": "no_sources"}]}
         return {
             "decision": "warn",
@@ -132,7 +134,9 @@ def test_rewrite_drops_flagged_citations(tmp_path, monkeypatch):
         body = response.json()
         assert body["rewritten"] is True
         assert "10.1016/j.jsps.2015.03.013" not in body["text"]
-        assert "under review" in body["text"]
+        assert "Expression of Concern" in body["text"]
+        assert "so this claim was removed." in body["text"]
+        assert "This claim:" not in body["text"]
         assert body["exit_code"] == body["recheck"]["exit_code"]
     finally:
         graph.close()

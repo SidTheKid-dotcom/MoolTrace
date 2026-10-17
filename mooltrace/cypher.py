@@ -26,6 +26,7 @@ RETURN s.url AS source_url,
        w.doi AS root_doi,
        w.title AS root_title,
        w.year AS root_year,
+       w.first_author AS root_author,
        n.doi AS notice_doi,
        n.type AS notice_type,
        n.label AS notice_label,
@@ -33,7 +34,7 @@ RETURN s.url AS source_url,
        n.source AS notice_source,
        length(p) AS hops,
        path_score,
-       [x IN nodes(p) | {doi: x.doi, title: x.title, url: x.url, year: x.year}] AS steps,
+       [x IN nodes(p) | {doi: x.doi, title: x.title, url: x.url, year: x.year, first_author: x.first_author}] AS steps,
        [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, source_url: r.evidence_url, fetched_at: r.evidence_fetched_at, content_hash: r.evidence_sha256}] AS hops_evidence
 ORDER BY path_score DESC, hops ASC
 LIMIT 80
@@ -56,6 +57,7 @@ RETURN s.url AS source_url,
        w.doi AS root_doi,
        w.title AS root_title,
        w.year AS root_year,
+       w.first_author AS root_author,
        n.doi AS notice_doi,
        n.type AS notice_type,
        n.label AS notice_label,
@@ -64,7 +66,7 @@ RETURN s.url AS source_url,
        length(path) AS hops,
        reduce(score = 0.0, r IN rels | score + coalesce(r.cost, 20.0)) AS sp_cost,
        reduce(score = 1.0, r IN rels | score * coalesce(r.weight, 0.0)) AS path_score,
-       [x IN nodes(path) | {doi: x.doi, title: x.title, url: x.url, year: x.year}] AS steps,
+       [x IN nodes(path) | {doi: x.doi, title: x.title, url: x.url, year: x.year, first_author: x.first_author}] AS steps,
        [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, cost: r.cost, source_url: r.evidence_url, fetched_at: r.evidence_fetched_at, content_hash: r.evidence_sha256}] AS hops_evidence
 ORDER BY sp_cost ASC, hops ASC
 LIMIT 40

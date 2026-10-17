@@ -167,6 +167,8 @@ def _reason(path: dict[str, Any], kind: str) -> dict[str, Any]:
         "code": kind,
         "root_doi": (path.get("root") or {}).get("doi"),
         "root_title": (path.get("root") or {}).get("title"),
+        "root_author": (path.get("root") or {}).get("first_author"),
+        "root_year": (path.get("root") or {}).get("year"),
         "notice_doi": notice.get("doi"),
         "notice_type": notice.get("type"),
         "notice_label": notice.get("label"),

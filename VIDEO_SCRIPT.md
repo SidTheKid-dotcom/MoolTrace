@@ -48,11 +48,11 @@ On-screen: **WARN** (exit 2); “Nothing in the graph connects this answer to a 
 
 ## Rewrite (8 s)
 
-Click **Rewrite and recheck** (deterministic template, not a language-model edit). Paste this two-sentence draft if the preset is URL-only:
+Stay on the olive-oil preset. Click **Rewrite and recheck** (deterministic template, not a language-model edit). The demo fills this recorded two-sentence draft and shows Before / After. Do not paste free text.
 
 Before: `Vitamin D status is discussed separately. A nutrition coach cites https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil.`
 
-After: `Vitamin D status is discussed separately. A nutrition coach cites: the study this relied on (Estruch 2013) was retracted on 2018-06-13. This claim has been removed.`
+After: `Vitamin D status is discussed separately. An earlier version of this answer cited Estruch et al. 2013 (PREDIMED); that trial report was retracted and republished on 13 Jun 2018, so this claim was removed.`
 
 > Rewrite names Estruch 2013 and drops only that claim. Vitamin D status is discussed separately. stays byte-identical.
 
@@ -109,7 +109,7 @@ Stop at or before 90 s. Beats sum to 85 s.
 | Raw strength `0.30250000000000005` (UI prints 0.30) | same preset run |
 | Direct-DOI on the olive-oil URL: **pass**, exit 0, `dois []`, summary starts `Direct-DOI check (no graph)` | `mooltrace.baseline.check_direct_doi("", [olive-oil URL])` recorded Crossref catalog, no HTTP (T13 / CLAIMS.md) |
 | Not in the graph: NHS `https://www.nhs.uk/live-well/best-way-to-wash-your-hands/`, WARN exit 2, **expanded 0 of 0 cited works**, fetched 2026-10-16T20:22:08+00:00, hash `5c015843460b0e872bd9a0b01bf0c5bf91a810a04a9f21b72b0574b525495329` | `examples/presets_recorded.json` (`not-in-graph`); live throwaway DB 16 Oct 2026 (T18); hosted signed-out POST 16 Oct 2026 (T18 / T20) |
-| Rewrite keeps `Vitamin D status is discussed separately.` and names Estruch 2013, date 2018-06-13; never `RETRACTED:`; never notice DOI | `template_rewrite` on the recorded olive-oil payload (T13 `/tmp/mt-t13-ship2`; T14 rewrite replay) |
+| Rewrite keeps `Vitamin D status is discussed separately.` and names Estruch et al. 2013 (PREDIMED), retracted and republished on 13 Jun 2018; never `RETRACTED:`; never notice DOI; click **Rewrite and recheck** on the olive-oil preset (no free-text paste) | recorded rewrite draft in `examples/presets_recorded.json`; hosted `/nw/rewrite` on that preset |
 | `This retraction affects 1 stored answer.` | `what_rests_on("10.1056/nejmc1806491")` after seeding that preset; live remote MCP 16 Oct 2026 (T09 / T15 / CLAIMS.md) counted 1 |
 | Lancet CI exit 1 | `mooltrace batch examples/lancet.jsonl --fail-on block`, 16 Oct 2026 18:09 UTC, CLAIMS.md, throwaway DB, 14.06 s |
 | Direct-DOI recall 0.4286; MoolTrace recall 1.0; 15 only-multi-hop; n=52 | `results/baseline_2026-10-16.json` (`baseline.metrics.recall`, `mooltrace.metrics.recall`, `only_multihop_ids`) |

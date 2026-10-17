@@ -64,6 +64,7 @@ RETURN s.url AS source_url,
        w.doi AS root_doi,
        w.title AS root_title,
        w.year AS root_year,
+       w.first_author AS root_author,
        n.doi AS notice_doi,
        n.type AS notice_type,
        n.label AS notice_label,
@@ -71,7 +72,7 @@ RETURN s.url AS source_url,
        n.source AS notice_source,
        length(p) AS hops,
        path_score,
-       [x IN nodes(p) | {doi: x.doi, title: x.title, url: x.url, year: x.year}] AS steps,
+       [x IN nodes(p) | {doi: x.doi, title: x.title, url: x.url, year: x.year, first_author: x.first_author}] AS steps,
        [r IN rels | {weight: r.weight, reliance: r.reliance, sentence: r.sentence, evidence_from: r.evidence_from, judged: r.judged, source_url: r.evidence_url, fetched_at: r.evidence_fetched_at, content_hash: r.evidence_sha256}] AS hops_evidence
 ORDER BY path_score DESC, hops ASC
 LIMIT 80
@@ -352,7 +353,7 @@ Numbers below are dated per row. Re-run the command next to each line. Do not tr
 
 | Claim | Command | Result |
 | --- | --- | --- |
-| Full unit suite | `unshare --net --map-root-user .venv/bin/python -m pytest -q` | 17 Oct 2026 07:00 UTC this checkout: 304 passed, 0 failed, 435.51 s, network namespace unshared |
+| Full unit suite | `unshare --net --map-root-user .venv/bin/python -m pytest -q` | 17 Oct 2026 07:16 UTC this checkout: 310 passed, 0 failed, 446.26 s, network namespace unshared |
 | Flip + ablation | `.venv/bin/python -m pytest tests/test_graph.py::test_sp_weight_flip_changes_verdict tests/test_graph.py::test_sp_paths_ablation_returns_exit_3 tests/test_graph.py::test_sp_paths_strength_equals_brute_force_product -q` | 16 Oct 2026: weight 0.85 → warn, 0.2 → pass; `sp_paths` raised → exit 3, no verdict; algorithm strength equals brute-force product on 3 fixtures. |
 | Agent loop | `.venv/bin/python examples/agent_loop.py` | check warn, `algo.SPpaths`, rewrite recheck pass, 1 counted answer |
 | Fresh-clone quickstart in `/tmp` | `git clone … && python3 -m venv .venv && .venv/bin/pip install -e . && .venv/bin/python -m mooltrace check --url https://www.healthline.com/nutrition/cinnamon-and-diabetes --summary` | 16 Oct 2026: **65.06 s** (clone 3.02 s + install 9.67 s + check 52.37 s). WARN exit 2, EoC `10.2337/dc25-ec09`, `algo.SPpaths` 0.55. See [CLAIMS.md](CLAIMS.md). |
