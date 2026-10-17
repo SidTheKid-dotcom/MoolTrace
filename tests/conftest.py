@@ -1,6 +1,14 @@
 from __future__ import annotations
 
+import os
+
 import pytest
+
+# Recorded fixtures carry fixed fetch dates. Tests check logic, not freshness, so pin a long
+# notice-refresh window before mooltrace.config is imported; otherwise the suite starts
+# going to the network (and failing offline) 24 h after the fixtures were recorded.
+# Tests about refresh behaviour set their own TTL.
+os.environ.setdefault("MOOLTRACE_NOTICE_TTL_S", str(10 * 365 * 24 * 60 * 60))
 
 
 @pytest.fixture(autouse=True)

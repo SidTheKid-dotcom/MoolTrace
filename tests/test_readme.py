@@ -47,13 +47,11 @@ def test_ci_fixture_file_has_no_known_block_case():
 TRACK = "Agents That Act on Connected Data"
 DEMO = "https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/"
 TAGLINE = (
-    "MoolTrace catches when your health AI's sources quietly rest on a flagged "
-    "or retracted study, even three links deep."
+    "An agent that checks what a health answer rests on before it ships — "
+    "page → review → trial → retraction notice, walked in FalkorDB."
 )
 WHAT_IT_DOES = (
-    "Paste a health-AI answer or the URL it cites; MoolTrace walks page → review "
-    "→ trial in FalkorDB and returns pass, warn, or block when a counted path "
-    "rests on a publisher notice."
+    "What the agent does: give it a question (or a draft and its sources)."
 )
 MCP_ONE = ".venv/bin/python -m mooltrace mcp"
 HERO_STEM = "assets/demo-harvard-depth-toggle"
@@ -109,7 +107,7 @@ def test_readme_names_no_sources_and_fixture_recheck():
     assert "no_sources" in text
     assert "fresh fixture recheck" in text
     assert "not persistent monitoring" in text
-    assert text.splitlines()[2].startswith("MoolTrace catches when your health AI's sources quietly rest")
+    assert text.splitlines()[2].startswith("An agent that checks what a health answer rests on")
     assert DEMO in "\n".join(text.splitlines()[:8])
     assert "rewrite_answer" in text
     assert "algo.SPpaths" in text
@@ -122,8 +120,8 @@ def test_readme_top_follows_p3_13():
     text = (ROOT / "README.md").read_text()
     order = [
         TAGLINE,
-        WHAT_IT_DOES,
         DEMO,
+        WHAT_IT_DOES,
         HERO_STEM,
         MCP_ONE,
         "python3 -m venv .venv",
@@ -160,7 +158,7 @@ def test_readme_top_is_ten_second_fold():
     for needle in (TAGLINE, WHAT_IT_DOES, DEMO, HERO_STEM, MCP_ONE):
         assert needle in fold, needle
     assert TAGLINE not in WHAT_IT_DOES
-    assert fold.index(TAGLINE) < fold.index(WHAT_IT_DOES) < fold.index(DEMO)
+    assert fold.index(TAGLINE) < fold.index(DEMO) < fold.index(WHAT_IT_DOES)
     assert fold.index(DEMO) < fold.index(HERO_STEM) < fold.index(MCP_ONE)
     assert "python3 -m venv" not in fold
     assert "```mermaid" not in fold
