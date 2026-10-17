@@ -39,7 +39,7 @@ from mooltrace.trace import check_answer, explain_path, recheck_affected, what_r
 log = logging.getLogger("mooltrace.agent")
 
 AGENT_MAX_TOOL_CALLS = 6
-AGENT_TIMEOUT_S = 45.0
+AGENT_TIMEOUT_S = 100.0
 AGENT_MAX_COMPLETION_TOKENS = 768
 AGENT_CONTRAST_TOKENS = 384
 AGENT_PER_IP = 6
@@ -906,17 +906,22 @@ def _model_loop(defaults: dict[str, Any], graph, deadline: float) -> tuple[list[
     final = ""
     while len(steps) < AGENT_MAX_TOOL_CALLS:
         remaining = deadline - time.monotonic()
-        if remaining <= 1:
-            raise AgentUnavailable("timeout")
         payload = {
             "model": azure_model(),
             "messages": messages,
             "tools": TOOLS,
             "max_completion_tokens": AGENT_MAX_COMPLETION_TOKENS,
         }
-        if budget_reached():
-            raise AgentUnavailable("model budget reached")
-        body = _call_azure(payload, timeout_s=min(15.0, remaining))
+        try:
+            if remaining <= 1:
+                raise AgentUnavailable("timeout")
+            if budget_reached():
+                raise AgentUnavailable("model budget reached")
+            body = _call_azure(payload, timeout_s=min(15.0, remaining))
+        except AgentUnavailable:
+            if steps:
+                break  # keep the tool work done so far; the guard finishes the check
+            raise
         choice = ((body.get("choices") or [{}])[0].get("message")) or {}
         tool_calls = choice.get("tool_calls") or []
         if not tool_calls:
@@ -1039,7 +1044,11 @@ def run_question_only(
                 "summary": {"cited_urls": reports, "summary": reports},
             },
         ]
-        loop_steps, final = _model_loop(defaults, graph, deadline)
+        stopped = None
+        try:
+            loop_steps, final = _model_loop(defaults, graph, deadline)
+        except AgentUnavailable as exc:
+            loop_steps, final, stopped = [], "", exc.reason
         steps = steps + loop_steps
         shipped, grounding, steps, note = _finalize(final, steps, defaults, graph)
         without = {
@@ -1054,7 +1063,7 @@ def run_question_only(
             shipped=shipped,
             without=without,
             grounding=grounding,
-            fallback_reason=None,
+            fallback_reason=(f"model stopped early ({stopped}); MoolTrace finished the check" if stopped else None),
             elapsed_ms=(time.monotonic() - started) * 1000,
             extra={**_question_only_extra(cited_urls=reports), "agent_note": note},
         )

@@ -592,3 +592,30 @@ def test_ui_has_question_and_retraction_actions():
     assert "Ask the agent" in source
     assert "A retraction just landed" in source
     assert "HARVARD_AGENT_DRAFT" in source
+
+
+def test_question_only_keeps_work_when_model_stops(tmp_path, monkeypatch):
+    graph = _seed(tmp_path, monkeypatch)
+    replies = iter([
+        _message(content=f"Vitamin D helps bones. Source: {HARVARD_VITAMIN_D_URL}"),
+    ])
+
+    def fake_post(payload, timeout_s=15.0):
+        reply = next(replies, None)
+        if reply is None:
+            raise httpx.ConnectTimeout("slow")
+        return reply
+
+    _enable_model(monkeypatch, fake_post)
+    monkeypatch.setattr("mooltrace.agent.probe_cited_url", lambda url: 200)
+    try:
+        from mooltrace.agent import run_agent
+
+        out = run_agent(question="Does vitamin D prevent fractures?", draft="", urls=[], depth=2)
+        guards = [step["tool"] for step in out["steps"] if step.get("guard")]
+        assert guards[0] == "check_answer"
+        assert out["shipped_verdict"]["verdict"] in {"pass", "warn", "block"}
+        assert "MoolTrace finished the check" in (out["fallback_reason"] or "")
+        assert out["without_mooltrace"]["source"] == "blind_draft"
+    finally:
+        graph.close()
