@@ -52,7 +52,7 @@ Director: the first sentence is an unrelated control kept byte-identical. The pr
 
 Before: `Hand hygiene is discussed separately. A nutrition coach cites https://nutritionsource.hsph.harvard.edu/vitamin-d/.`
 
-After: `Hand hygiene is discussed separately. An earlier version of this answer cited Ishida et al. 2004; that paper was retracted in May 2025, so this claim was removed.`
+After: `Hand hygiene is discussed separately. An earlier version of this answer cited Ishida et al. 2004; that paper was retracted in May 2025, so that source was removed.`
 
 > Rewrite names Ishida 2004 and drops only that claim. Hand hygiene is discussed separately. stays byte-identical.
 

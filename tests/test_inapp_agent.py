@@ -97,7 +97,7 @@ def test_fallback_when_key_missing(tmp_path, monkeypatch):
         assert body["steps"][0]["summary"]["exit_code"] == 1
         assert "Ishida" in body["shipped"]
         assert body["without_mooltrace"]["text"] == HARVARD_DRAFT
-        assert "unchanged" in body["without_mooltrace"]["note"].lower()
+        assert body["without_mooltrace"]["note"] == "Without MoolTrace: this draft ships as written"
         assert FAKE_KEY not in json.dumps(body)
         assert "budget" in body
         assert "limit_usd" in body["budget"]
@@ -191,7 +191,7 @@ def test_tool_loop_calls_existing_tools(tmp_path, monkeypatch):
             content=(
                 "Ship the rewrite. An earlier version of this answer cited "
                 "Ishida et al. 2004; that paper was retracted in May 2025, "
-                "so this claim was removed."
+                "so that source was removed."
             )
         )
 
@@ -214,10 +214,12 @@ def test_tool_loop_calls_existing_tools(tmp_path, monkeypatch):
         assert out["steps"][0]["summary"]["exit_code"] == 1
         assert out["steps"][0]["ms"] >= 0
         assert "Ishida" in out["shipped"]
-        assert "without_mooltrace" in out
-        assert any(call.get("tools") for call in calls)
-        contrast = [call for call in calls if not call.get("tools")]
-        assert contrast, "expected one tool-less contrast call"
+        assert not out["shipped"].startswith("Ship the rewrite"), "model free text must never ship"
+        assert out["agent_note"].startswith("Ship the rewrite")
+        assert out["without_mooltrace"]["source"] == "draft"
+        assert out["without_mooltrace"]["text"] == HARVARD_DRAFT
+        assert out["without_mooltrace"]["note"] == "Without MoolTrace: this draft ships as written"
+        assert all(call.get("tools") for call in calls)
         blob = json.dumps(out)
         assert FAKE_KEY not in blob
         assert "CREATE" not in json.dumps(calls)
@@ -327,7 +329,11 @@ def test_max_tool_calls_cap(tmp_path, monkeypatch):
             depth=2,
             engine="nutrition-coach",
         )
-        tool_steps = [step for step in out["steps"] if step["tool"] != "contrast"]
+        tool_steps = [
+            step for step in out["steps"] if step["tool"] != "contrast" and not step.get("guard")
+        ]
+        guards = [step["tool"] for step in out["steps"] if step.get("guard")]
+        assert guards == ["check_answer", "rewrite_answer"], "model never checked, so MoolTrace did"
         assert len(tool_steps) == AGENT_MAX_TOOL_CALLS
         assert AGENT_MAX_TOOL_CALLS == 6
     finally:
@@ -487,3 +493,98 @@ def test_ui_has_run_the_agent_panel():
     assert "rule-based fallback, no model" in src
     assert "without MoolTrace" in src or "without-mooltrace" in src
     assert "harvard-vitamin-d" in src
+
+
+FORBIDDEN_IN_BLIND_DRAFT = ("mooltrace", "retract", "notice", "concern", "harvard", "vitamin")
+
+
+def test_blind_draft_prompt_is_blind(tmp_path, monkeypatch):
+    graph = _seed(tmp_path, monkeypatch)
+    calls: list[dict] = []
+    question = "Is fish oil good for the heart?"
+
+    def fake_post(payload, timeout_s=15.0):
+        calls.append(payload)
+        return _message(content="Fish oil may help some people. See https://www.webmd.com/heart.")
+
+    _enable_model(monkeypatch, fake_post)
+    monkeypatch.setattr("mooltrace.agent.probe_cited_url", lambda url: 200)
+    monkeypatch.setattr("mooltrace.agent.check_answer", lambda *a, **k: {"decision": "pass", "exit_code": 0})
+    try:
+        from mooltrace.agent import blind_draft_system, run_agent
+        from mooltrace.public_demo import LIVE_HOSTS
+
+        system = blind_draft_system().lower()
+        instructions = system
+        for host in LIVE_HOSTS:
+            instructions = instructions.replace(host, "")
+        for word in FORBIDDEN_IN_BLIND_DRAFT:
+            assert word not in instructions, word
+        out = run_agent(question=question, draft="", urls=[], depth=2)
+        first = calls[0]
+        assert "tools" not in first
+        assert first["messages"][0]["content"].lower() == system
+        assert first["messages"][1]["content"] == question
+        assert out["question_only"] is True
+        assert "It was not told about MoolTrace." in out["disclosure"]
+        assert out["without_mooltrace"]["source"] == "blind_draft"
+    finally:
+        graph.close()
+
+
+def test_question_only_reports_off_list_and_missing_urls(tmp_path, monkeypatch):
+    graph = _seed(tmp_path, monkeypatch)
+    ok_url = HARVARD_VITAMIN_D_URL
+    missing = "https://www.healthline.com/nutrition/page-that-does-not-exist"
+    draft = f"Some answer. Sources: {ok_url} {EVIL_URL} {missing}"
+    replies = iter([_message(content=draft)])
+
+    def fake_post(payload, timeout_s=15.0):
+        return next(replies, _message(content="Done."))
+
+    _enable_model(monkeypatch, fake_post)
+    monkeypatch.setattr("mooltrace.agent.probe_cited_url", lambda url: 404 if url == missing else 200)
+    try:
+        from mooltrace.agent import URL_NOT_FOUND, URL_NOT_ON_LIST, run_agent
+
+        out = run_agent(question="Does vitamin D prevent fractures?", draft="", urls=[], depth=2)
+        statuses = {item["url"]: item["status"] for item in out["cited_urls"]}
+        assert statuses == {ok_url: "ok", EVIL_URL: URL_NOT_ON_LIST, missing: URL_NOT_FOUND}
+        assert out["without_mooltrace"]["text"] == draft
+    finally:
+        graph.close()
+
+
+def test_question_only_needs_model_without_key(tmp_path, monkeypatch):
+    graph = _seed(tmp_path, monkeypatch)
+    try:
+        from mooltrace.agent import QUESTION_ONLY_NEEDS_MODEL, run_agent
+
+        out = run_agent(question="Is coffee healthy?", draft="", urls=[], depth=2)
+        assert out["mode"] == "fallback"
+        assert out["steps"] == []
+        assert out["without_mooltrace"]["note"] == QUESTION_ONLY_NEEDS_MODEL
+    finally:
+        graph.close()
+
+
+def test_retraction_landed_lists_affected_answers(tmp_path, monkeypatch):
+    graph = _seed(tmp_path, monkeypatch)
+    try:
+        from mooltrace.agent import ISHIDA_2004_DOI, run_agent
+
+        out = run_agent(action="retraction_landed", doi=ISHIDA_2004_DOI, depth=2)
+        assert out["action"] == "retraction_landed"
+        assert [step["tool"] for step in out["steps"]] == ["what_rests_on", "recheck_affected"]
+        assert out["affected_answers"], "the seeded Harvard preset rests on Ishida 2004"
+        assert any("Ishida" in (item.get("rewrite") or "") for item in out["affected_answers"])
+        assert "read-only" not in out["note"]
+    finally:
+        graph.close()
+
+
+def test_ui_has_question_and_retraction_actions():
+    source = UI.read_text(encoding="utf-8")
+    assert "Ask the agent" in source
+    assert "A retraction just landed" in source
+    assert "HARVARD_AGENT_DRAFT" in source

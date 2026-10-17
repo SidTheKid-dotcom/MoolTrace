@@ -26,7 +26,7 @@ DOI_FULL_RE = re.compile(r"10\.\d{4,9}/\S+")
 _EOC_DISCLOSE = re.compile(
     r"Evidence for this claim is under review \([^)]{0,240}\)\.?"
     r"|An earlier version of this answer cited .{0,240}?Expression of Concern"
-    r".{0,80}?so this claim was removed\.?",
+    r".{0,80}?so (?:this claim|that source) was removed\.?",
     re.I,
 )
 _RETRACT_DISCLOSE = re.compile(
@@ -35,7 +35,7 @@ _RETRACT_DISCLOSE = re.compile(
     r"|An earlier version of this answer cited .{0,240}?"
     r"(?:was retracted(?: and republished)?(?: on | in |\s+\(retraction date not confirmed\))"
     r"|retracted and republished(?: on | in |\s+\(retraction date not confirmed\)))"
-    r".*?so this claim was removed\.?",
+    r".*?so (?:this claim|that source) was removed\.?",
     re.I,
 )
 _PUBLISHER_SUFFIXES = (

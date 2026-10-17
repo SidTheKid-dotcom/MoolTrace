@@ -12,7 +12,7 @@ from mooltrace.clients import InfraError, MoolTraceError
 from mooltrace.config import API_HOST, API_PORT, CORS_ORIGINS
 from mooltrace.graph import get_graph
 from mooltrace.mcp_http import mcp_asgi, mcp_lifespan
-from mooltrace.agent import guard_agent, run_agent
+from mooltrace.agent import ISHIDA_2004_DOI, guard_agent, run_agent
 from mooltrace.public_demo import (
     PublicDemoRejected,
     execute_public_check,
@@ -59,6 +59,8 @@ class AgentIn(BaseModel):
     urls: list[str] = Field(default_factory=list)
     engine: str = "draft"
     depth: int = Field(default=2, ge=1, le=3)
+    action: str = "check"
+    doi: str = ""
 
 
 class StudyIn(BaseModel):
@@ -183,12 +185,16 @@ def post_shared(body: SharedIn) -> dict:
 
 @app.post("/agent")
 def post_agent(body: AgentIn, request: Request) -> dict:
-    _guard_public_demo(
-        DraftIn(text=body.draft, urls=body.urls, engine=body.engine, depth=body.depth),
-        request,
-    )
+    question_only = bool(body.question.strip()) and not body.draft.strip() and not body.urls
+    reverse = (body.action or "check").strip() == "retraction_landed"
+    if not question_only and not reverse:
+        _guard_public_demo(
+            DraftIn(text=body.draft, urls=body.urls, engine=body.engine, depth=body.depth),
+            request,
+        )
+    sized = body.draft or body.question or body.doi
     try:
-        guard_agent(body.engine, body.draft, body.urls, client_ip=_client_ip(request))
+        guard_agent(body.engine, sized, body.urls, client_ip=_client_ip(request))
     except PublicDemoRejected as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
     try:
@@ -198,6 +204,8 @@ def post_agent(body: AgentIn, request: Request) -> dict:
             urls=body.urls,
             depth=body.depth,
             engine=body.engine,
+            action=body.action,
+            doi=body.doi or ISHIDA_2004_DOI,
         )
     except (MoolTraceError, UnsafeURL, InfraError) as exc:
         raise _raise(exc) from exc

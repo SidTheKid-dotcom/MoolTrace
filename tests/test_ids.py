@@ -204,3 +204,9 @@ def test_extract_skips_rewrite_disclosures():
     )
     assert extract_identifiers(unconfirmed).dois == []
     assert is_disclosure_only(unconfirmed, [])
+    source = (
+        "An earlier version of this answer cited Ishida et al. 2004; "
+        "that paper was retracted in May 2025, so that source was removed."
+    )
+    assert extract_identifiers(source).dois == []
+    assert is_disclosure_only(source, [])

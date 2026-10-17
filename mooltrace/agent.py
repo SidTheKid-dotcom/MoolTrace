@@ -23,6 +23,7 @@ from mooltrace.graph import get_graph
 from mooltrace.ids import DOI_RE, URL_RE, clean_doi, valid_doi
 from mooltrace.public_demo import (
     LIVE_ALLOW_LIST,
+    LIVE_HOSTS,
     MAX_DRAFT_CHARS,
     MAX_URLS,
     PublicDemoRejected,
@@ -30,9 +31,10 @@ from mooltrace.public_demo import (
     load_preset_rows,
     public_demo_enabled,
 )
+from mooltrace.clients import CallStats, MoolTraceError, fetch_resource
 from mooltrace.rewrite import rewrite_answer
 from mooltrace.ssrf import UnsafeURL, public_http_url
-from mooltrace.trace import check_answer, explain_path, what_rests_on
+from mooltrace.trace import check_answer, explain_path, recheck_affected, what_rests_on
 
 log = logging.getLogger("mooltrace.agent")
 
@@ -48,6 +50,14 @@ DEFAULT_INPUT_USD_PER_M = 0.825
 DEFAULT_OUTPUT_USD_PER_M = 4.95
 FALLBACK_LABEL = "rule-based fallback, no model"
 MODEL_NAME = "gpt-5.4-mini"
+ISHIDA_2004_DOI = "10.1016/j.amjmed.2004.05.019"
+URL_NOT_ON_LIST = "not checked: not on the allowed list"
+URL_NOT_FOUND = "URL not found, not checked"
+WITHOUT_DRAFT_NOTE = "Without MoolTrace: this draft ships as written"
+QUESTION_ONLY_NEEDS_MODEL = (
+    "Question-only mode needs the model. Try a preset "
+    "(Harvard vitamin D, Healthline olive oil) or paste a draft with cited URLs."
+)
 
 _AUTHOR_YEAR = re.compile(
     r"\b([A-Z][A-Za-z'-]+)(?:\s+et\s+al\.?)?\s+\(?((?:19|20)\d{2})\)?"
@@ -715,6 +725,108 @@ def _apply_grounding(
     return shipped, {"replaced": True, "reason": reason, "problems": problems[:6]}, steps
 
 
+def _ensure_checked_and_fixed(
+    steps: list[dict[str, Any]], defaults: dict[str, Any], graph
+) -> list[dict[str, Any]]:
+    """The model may skip tools. The shipped text must still be checked, and fixed if not pass."""
+    checks = [step for step in steps if step.get("tool") == "check_answer" and step.get("ok")]
+    if not checks:
+        executed = _execute_tool("check_answer", {}, graph, defaults)
+        steps = steps + [{**_public_step("check_answer", executed), "guard": True}]
+        checks = [steps[-1]] if executed.get("ok") else []
+    decision = str(((checks[-1].get("result") or {}) if checks else {}).get("decision") or "")
+    rewritten = any(step.get("tool") == "rewrite_answer" and step.get("ok") for step in steps)
+    if decision != "pass" and not rewritten:
+        executed = _execute_tool("rewrite_answer", {}, graph, defaults)
+        steps = steps + [{**_public_step("rewrite_answer", executed), "guard": True}]
+    return steps
+
+
+def _finalize(
+    final: str, steps: list[dict[str, Any]], defaults: dict[str, Any], graph
+) -> tuple[str, dict[str, Any], list[dict[str, Any]], str]:
+    """Ship tool output only. The model's own words become a note, dropped if they cite anything unseen."""
+    steps = _ensure_checked_and_fixed(steps, defaults, graph)
+    draft = defaults.get("draft") or ""
+    shipped = _shipped_from_steps(steps, draft)
+    note = (final or "").strip()
+    corpus = _corpus_from(steps, draft, defaults.get("urls") or [], defaults.get("question") or "")
+    problems = grounding_problems(note, corpus) if note else []
+    if problems:
+        reason = (
+            "The model's text cited "
+            + ", ".join(problems[:6])
+            + " which did not appear in the tool results, so it was not shown or shipped."
+        )
+        return shipped, {"replaced": True, "reason": reason, "problems": problems[:6]}, steps, ""
+    return shipped, {"replaced": False, "reason": "shipped text is tool output"}, steps, note
+
+
+def drafting_disclosure() -> str:
+    return (
+        f"The drafting model was told to cite only from: {LIVE_ALLOW_LIST}. "
+        "It was not told about MoolTrace."
+    )
+
+
+def blind_draft_system() -> str:
+    hosts = ", ".join(sorted(LIVE_HOSTS))
+    return (
+        "Answer for a general audience. Cite 1-3 pages. "
+        f"Cite only pages on these publisher hosts: {hosts}."
+    )
+
+
+def extract_cited_urls(text: str) -> list[str]:
+    found: list[str] = []
+    seen: set[str] = set()
+    for item in URL_RE.findall(text or ""):
+        url = item.rstrip(").,;")
+        if url and url not in seen:
+            seen.add(url)
+            found.append(url)
+    return found
+
+
+def probe_cited_url(url: str) -> int:
+    status, _ctype, _body = fetch_resource(url, CallStats())
+    return int(status)
+
+
+def validate_cited_url(url: str) -> dict[str, Any]:
+    raw = (url or "").strip()
+    report: dict[str, Any] = {"url": raw, "ok": False, "status": URL_NOT_ON_LIST}
+    if not raw:
+        report["status"] = URL_NOT_FOUND
+        return report
+    if not live_host_allowed(raw):
+        return report
+    try:
+        status = probe_cited_url(raw)
+    except (MoolTraceError, UnsafeURL, OSError, ValueError, TypeError):
+        report["status"] = URL_NOT_FOUND
+        return report
+    report["http_status"] = status
+    if status >= 400:
+        report["status"] = URL_NOT_FOUND
+        return report
+    report["ok"] = True
+    report["status"] = "ok"
+    return report
+
+
+def validate_cited_urls(urls: list[str]) -> list[dict[str, Any]]:
+    return [validate_cited_url(item) for item in urls]
+
+
+def _without_draft(draft: str) -> dict[str, Any]:
+    return {
+        "text": draft,
+        "source": "draft",
+        "note": WITHOUT_DRAFT_NOTE,
+    }
+
+
 def _response(
     *,
     mode: str,
@@ -725,6 +837,7 @@ def _response(
     grounding: dict[str, Any],
     fallback_reason: str | None,
     elapsed_ms: float,
+    extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     label = FALLBACK_LABEL if mode == "fallback" else model
     payload = {
@@ -739,6 +852,7 @@ def _response(
                 "ms": step.get("ms") or 0,
                 "ok": step.get("ok"),
                 "summary": step.get("summary") or {},
+                **({"guard": True} if step.get("guard") else {}),
             }
             for step in steps
         ],
@@ -748,6 +862,8 @@ def _response(
         "budget": spend_snapshot(),
         "elapsed_ms": round(elapsed_ms, 2),
     }
+    if extra:
+        payload.update(extra)
     return payload
 
 
@@ -823,48 +939,224 @@ def _model_loop(defaults: dict[str, Any], graph, deadline: float) -> tuple[list[
     return steps, final
 
 
-def _contrast(question: str, draft: str, deadline: float) -> dict[str, Any]:
+def _question_only_extra(*, cited_urls: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    return {
+        "question_only": True,
+        "disclosure": drafting_disclosure(),
+        "cited_urls": cited_urls or [],
+    }
+
+
+def _question_only_needs_model(started: float, reason: str) -> dict[str, Any]:
+    return _response(
+        mode="fallback",
+        model="fallback",
+        steps=[],
+        shipped="",
+        without={
+            "text": "",
+            "source": "none",
+            "note": QUESTION_ONLY_NEEDS_MODEL,
+        },
+        grounding={"replaced": False, "reason": QUESTION_ONLY_NEEDS_MODEL},
+        fallback_reason=reason,
+        elapsed_ms=(time.monotonic() - started) * 1000,
+        extra=_question_only_extra(),
+    )
+
+
+def _blind_draft(question: str, deadline: float) -> str:
     remaining = deadline - time.monotonic()
-    if remaining <= 1 or budget_reached() or not azure_api_key() or not azure_endpoint():
-        return {
-            "text": draft,
-            "source": "draft",
-            "note": "Draft unchanged (no model).",
-        }
+    if remaining <= 1:
+        raise AgentUnavailable("timeout")
+    if budget_reached():
+        raise AgentUnavailable("model budget reached")
     payload = {
         "model": azure_model(),
         "messages": [
-            {
-                "role": "system",
-                "content": (
-                    "Answer the user's health question in a few sentences. "
-                    "You have no tools. Do not mention MoolTrace."
-                ),
-            },
-            {
-                "role": "user",
-                "content": f"{question}\n\nDraft you may use:\n{draft}",
-            },
+            {"role": "system", "content": blind_draft_system()},
+            {"role": "user", "content": question},
         ],
         "max_completion_tokens": AGENT_CONTRAST_TOKENS,
     }
-    try:
-        body = _call_azure(payload, timeout_s=min(12.0, remaining))
-    except AgentUnavailable:
-        return {
-            "text": draft,
-            "source": "draft",
-            "note": "Draft unchanged (no model).",
-        }
+    body = _call_azure(payload, timeout_s=min(12.0, remaining))
     choice = ((body.get("choices") or [{}])[0].get("message")) or {}
     text = str(choice.get("content") or "").strip()
     if not text:
-        return {
-            "text": draft,
-            "source": "draft",
-            "note": "Draft unchanged (no model).",
+        raise AgentUnavailable("http_error")
+    return text
+
+
+def run_question_only(
+    *,
+    question: str,
+    depth: int = 2,
+    engine: str = "draft",
+    graph=None,
+) -> dict[str, Any]:
+    started = time.monotonic()
+    deadline = started + AGENT_TIMEOUT_S
+    graph = graph or get_graph()
+    asked = (question or "").strip()
+    if not azure_api_key() or not azure_endpoint():
+        return _question_only_needs_model(started, "missing_key")
+    if budget_reached():
+        return _question_only_needs_model(started, "model budget reached")
+    try:
+        draft = _blind_draft(asked, deadline)
+        cited = extract_cited_urls(draft)
+        reports = validate_cited_urls(cited)
+        ok_urls = [item["url"] for item in reports if item.get("ok")]
+        defaults = {
+            "question": asked,
+            "draft": draft,
+            "urls": ok_urls,
+            "depth": clamp_depth(depth),
+            "engine": (engine or "draft")[:80],
         }
-    return {"text": text, "source": "model", "note": "Tool-less model answer."}
+        steps = [
+            {
+                "tool": "draft",
+                "args": {"question": asked},
+                "ms": 0,
+                "ok": True,
+                "summary": {"summary": draft},
+            },
+            {
+                "tool": "validate_urls",
+                "args": {"urls": cited},
+                "ms": 0,
+                "ok": True,
+                "summary": {"cited_urls": reports, "summary": reports},
+            },
+        ]
+        loop_steps, final = _model_loop(defaults, graph, deadline)
+        steps = steps + loop_steps
+        shipped, grounding, steps, note = _finalize(final, steps, defaults, graph)
+        without = {
+            "text": draft,
+            "source": "blind_draft",
+            "note": "Blind model draft (no MoolTrace).",
+        }
+        return _response(
+            mode="model",
+            model=azure_model(),
+            steps=steps,
+            shipped=shipped,
+            without=without,
+            grounding=grounding,
+            fallback_reason=None,
+            elapsed_ms=(time.monotonic() - started) * 1000,
+            extra={**_question_only_extra(cited_urls=reports), "agent_note": note},
+        )
+    except AgentUnavailable as exc:
+        return _question_only_needs_model(started, exc.reason)
+
+
+def run_retraction_landed(
+    *,
+    doi: str = "",
+    depth: int = 2,
+    graph=None,
+) -> dict[str, Any]:
+    started = time.monotonic()
+    graph = graph or get_graph()
+    cleaned = clean_doi((doi or "").strip() or ISHIDA_2004_DOI)
+    if not valid_doi(cleaned):
+        cleaned = ISHIDA_2004_DOI
+    impact = what_rests_on(cleaned, graph=graph, depth=depth)
+    rec = recheck_affected(cleaned, graph=graph, depth=depth)
+    affected: list[dict[str, Any]] = []
+    for item in rec.get("rechecks") or []:
+        answer_id = str(item.get("answer_id") or "")
+        inputs = graph.answer_inputs(answer_id) if answer_id else {}
+        urls = [
+            url
+            for url in (inputs.get("urls") or [])
+            if url and not str(url).startswith("urn:")
+        ]
+        dois = [entry for entry in (inputs.get("dois") or []) if entry]
+        text = "" if urls else " ".join(f"DOI {entry}" for entry in dois)
+        used_engine = str(inputs.get("engine") or "draft")
+        explained = explain_path(text, urls, used_engine, depth, graph=graph)
+        rewritten = rewrite_answer(text, urls, used_engine, depth, graph=graph)
+        hops = []
+        reason = explained.get("reason") if isinstance(explained.get("reason"), dict) else {}
+        for hop in (reason or {}).get("hops_evidence") or []:
+            word = hop.get("reliance")
+            if word:
+                hops.append(word)
+        path = " × ".join(hops) or explained.get("explanation") or item.get("summary")
+        affected.append(
+            {
+                "answer_id": answer_id,
+                "engine": used_engine,
+                "urls": urls,
+                "decision": item.get("decision"),
+                "exit_code": item.get("exit_code"),
+                "path": path,
+                "rewrite": rewritten.get("text"),
+                "rewritten": rewritten.get("rewritten"),
+                "recheck": {
+                    "decision": (rewritten.get("recheck") or {}).get("decision")
+                    or item.get("decision"),
+                    "exit_code": (rewritten.get("recheck") or {}).get("exit_code")
+                    or item.get("exit_code"),
+                },
+            }
+        )
+    read_only = False
+    note = (
+        "Rechecked the stored answers that rest on this work and drafted a fix for each. "
+        "Stored answers are not deleted or replaced."
+    )
+    return {
+        "action": "retraction_landed",
+        "mode": "reverse",
+        "model": "none",
+        "label": "A retraction just landed",
+        "fallback_reason": None,
+        "doi": cleaned,
+        "what_rests_on": {
+            "affected": impact.get("counted_answer_count"),
+            "summary": impact.get("summary"),
+            "counted_answer_ids": impact.get("counted_answer_ids") or [],
+        },
+        "recheck_affected": {
+            "affected": rec.get("affected"),
+            "summary": rec.get("summary"),
+        },
+        "affected_answers": affected,
+        "read_only": read_only,
+        "note": note,
+        "steps": [
+            {
+                "tool": "what_rests_on",
+                "args": {"doi": cleaned},
+                "ms": 0,
+                "ok": True,
+                "summary": {
+                    "affected": impact.get("counted_answer_count"),
+                    "summary": impact.get("summary"),
+                },
+            },
+            {
+                "tool": "recheck_affected",
+                "args": {"doi": cleaned},
+                "ms": 0,
+                "ok": True,
+                "summary": {
+                    "affected": rec.get("affected"),
+                    "summary": rec.get("summary"),
+                },
+            },
+        ],
+        "shipped": "",
+        "without_mooltrace": {"text": "", "source": "none", "note": note},
+        "grounding": {"replaced": False},
+        "budget": spend_snapshot(),
+        "elapsed_ms": round((time.monotonic() - started) * 1000, 2),
+    }
 
 
 def run_fallback(
@@ -889,11 +1181,7 @@ def run_fallback(
     steps = _planner(defaults, graph)
     candidate = _shipped_from_steps(steps, draft)
     shipped, grounding, steps = _apply_grounding(candidate, steps, defaults, graph)
-    without = {
-        "text": draft,
-        "source": "draft",
-        "note": "Draft unchanged (rule-based fallback, no model).",
-    }
+    without = _without_draft(draft)
     return _response(
         mode="fallback",
         model="fallback",
@@ -913,12 +1201,24 @@ def run_agent(
     urls: list[str] | None = None,
     depth: int = 2,
     engine: str = "draft",
+    action: str = "check",
+    doi: str = "",
     graph=None,
 ) -> dict[str, Any]:
     started = time.monotonic()
     deadline = started + AGENT_TIMEOUT_S
     url_list = [item.strip() for item in (urls or []) if item and item.strip()]
     graph = graph or get_graph()
+    if (action or "check").strip() == "retraction_landed":
+        return run_retraction_landed(doi=doi, depth=depth, graph=graph)
+    question_only = bool((question or "").strip()) and not (draft or "").strip() and not url_list
+    if question_only:
+        return run_question_only(
+            question=question.strip(),
+            depth=depth,
+            engine=engine,
+            graph=graph,
+        )
     defaults = {
         "question": question or "Check this health-AI draft before shipping.",
         "draft": draft or "",
@@ -948,9 +1248,8 @@ def run_agent(
         )
     try:
         steps, final = _model_loop(defaults, graph, deadline)
-        candidate = (final or "").strip() or _shipped_from_steps(steps, defaults["draft"])
-        shipped, grounding, steps = _apply_grounding(candidate, steps, defaults, graph)
-        without = _contrast(defaults["question"], defaults["draft"], deadline)
+        shipped, grounding, steps, note = _finalize(final, steps, defaults, graph)
+        without = _without_draft(defaults["draft"])
         return _response(
             mode="model",
             model=azure_model(),
@@ -960,6 +1259,7 @@ def run_agent(
             grounding=grounding,
             fallback_reason=None,
             elapsed_ms=(time.monotonic() - started) * 1000,
+            extra={"agent_note": note},
         )
     except AgentUnavailable as exc:
         return run_fallback(

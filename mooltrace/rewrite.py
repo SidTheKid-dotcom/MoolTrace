@@ -18,7 +18,7 @@ from mooltrace.trace import check_answer
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9\"'])")
 _DISCLOSE_CHUNK = re.compile(
     r"Evidence for this claim is under review \([^)]{0,240}\)"
-    r"|An earlier version of this answer cited .{0,320}?so this claim was removed\.?",
+    r"|An earlier version of this answer cited .{0,320}?so (?:this claim|that source) was removed\.?",
     re.I,
 )
 _TITLE_PREFIX = re.compile(
@@ -255,7 +255,7 @@ def _eoc_disclose(payload: dict[str, Any], span: str = "", graph=None) -> str:
     return (
         f"An earlier version of this answer cited {who}; "
         f"that paper is under an Expression of Concern{dated}, "
-        f"so this claim was removed."
+        f"so that source was removed."
     )
 
 
@@ -326,24 +326,24 @@ def _retraction_sentence(payload: dict[str, Any], span: str = "", graph=None) ->
             return (
                 f"An earlier version of this answer cited {who} (PREDIMED); "
                 f"that trial report was retracted and republished "
-                f"(retraction date not confirmed), so this claim was removed."
+                f"(retraction date not confirmed), so that source was removed."
             )
         prep = _date_preposition(date)
         return (
             f"An earlier version of this answer cited {who} (PREDIMED); "
             f"that trial report was retracted and republished {prep} {when}, "
-            f"so this claim was removed."
+            f"so that source was removed."
         )
     if not when:
         return (
             f"An earlier version of this answer cited {who}; "
             f"that paper was retracted (retraction date not confirmed), "
-            f"so this claim was removed."
+            f"so that source was removed."
         )
     prep = _date_preposition(date)
     return (
         f"An earlier version of this answer cited {who}; "
-        f"that paper was retracted {prep} {when}, so this claim was removed."
+        f"that paper was retracted {prep} {when}, so that source was removed."
     )
 
 
