@@ -249,6 +249,14 @@ What to do: disclose or replace this source. Run `mooltrace rewrite` to fix only
 
 Python 3.12+. Node 20+ only for the demo UI. One venv. Local UI without Compose: `cd web && npm ci && npm run dev -- --port 4318 --hostname 127.0.0.1` with `.venv/bin/python -m mooltrace.api` on 4317. `/nw/*` rewrites to the API.
 
+## Agent
+
+The demo **Run the agent** button (`POST /nw/agent`) is a tool-calling loop on Azure OpenAI `gpt-5.4-mini` with only existing MoolTrace tools: `check_answer`, `explain_path`, `rewrite_answer`, `what_rests_on`. The model never writes Cypher. Tool URLs must be on the public-demo allow-list (or a seeded preset). DOIs are normalised and must already be in the graph.
+
+Before shipping a health answer it checks the sources. On BLOCK it rewrites and rechecks. It ships only after recheck is pass, or warns with the disclosure, and cites the path. After the loop, every DOI, author-year, and URL in the shipped text must appear in the tool results; otherwise the deterministic rewrite is shipped instead.
+
+Hard limits: 6 tool calls, 45 s, bounded `max_completion_tokens`. When `MOOLTRACE_PUBLIC_DEMO=1`: 6 runs / 10 min per IP and 150 runs / day. Prompt and completion tokens from each Azure response are priced at gpt-5.4-mini Data Zone list rates (env-overridable; default $0.825 / 1M input, $4.95 / 1M output) and summed in a JSON file next to the graph. At `MOOLTRACE_AGENT_BUDGET_USD` (default 40) the model stops. Missing key, budget hit, or Azure errors: **rule-based fallback, no model** — same tools, same order. The response includes spent/limit (no key) and a without-MoolTrace column (one tool-less model call, or the draft unchanged).
+
 ## Use from an AI agent
 
 MoolTrace is a pre-ship check, not a medical model. The agent drafts. MoolTrace says whether a cited page or paper reaches a publisher notice. On warn or block, `rewrite_answer` rewrites only the affected sentences and rechecks. The rewrite is a deterministic template: it discloses the publisher notice or an on-topic sibling already in this answer's graph. It never invents a citation. Code strips flagged URLs and DOIs. Every unflagged sentence stays byte-identical.
@@ -386,7 +394,7 @@ Same-trial recall means a path reached the **same** retracted trial DOI VITALITY
 
 Solo author: Siddhant Vishnu. He chose the problem and the Harvard vitamin D hero, set the product rules (reliance policy; an Expression of Concern is warn, not a retraction; honest negatives; no invented numbers), reviewed every result, and owns the decisions.
 
-Code in this repository was written by Cursor agents running Grok 4.6. Planning, task specs, and review were orchestrated with Claude (Anthropic) in Claude Code. An in-app agent (being added) calls Azure OpenAI `gpt-5.4-mini`. Facts and publisher notices come from public APIs (OpenAlex, Crossref, NCBI, Semantic Scholar, PMC), not from a model. Verdicts come from `algo.SPpaths` rows, not from a model. Rewrite is a deterministic template; it is not an LLM edit.
+Code in this repository was written by Cursor agents running Grok 4.6. Planning, task specs, and review were orchestrated with Claude (Anthropic) in Claude Code. The in-app agent calls Azure OpenAI `gpt-5.4-mini`. Facts and publisher notices come from public APIs (OpenAlex, Crossref, NCBI, Semantic Scholar, PMC), not from a model. Verdicts come from `algo.SPpaths` rows, not from a model. Rewrite is a deterministic template; it is not an LLM edit.
 
 ## Demo checklist
 

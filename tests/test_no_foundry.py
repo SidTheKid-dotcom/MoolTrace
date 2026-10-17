@@ -25,9 +25,7 @@ BANNED = (
     "Azure AI Foundry",
     "azure-foundry",
     "AZURE_INFERENCE",
-    "AZURE_OPENAI",
     "mooltrace.foundry",
-    "openai.azure.com",
 )
 
 
@@ -51,6 +49,15 @@ def _warn_payload() -> dict:
 def test_foundry_module_is_gone():
     assert not (ROOT / "mooltrace" / "foundry.py").exists()
     assert not (ROOT / "mooltrace" / "foundry.pyi").exists()
+
+
+def test_openai_azure_host_is_not_hardcoded():
+    hits: list[str] = []
+    for path in (ROOT / "mooltrace").rglob("*.py"):
+        text = path.read_text(errors="replace")
+        if "openai.azure.com" in text:
+            hits.append(str(path.relative_to(ROOT)))
+    assert hits == []
 
 
 def test_product_files_do_not_mention_azure_foundry():

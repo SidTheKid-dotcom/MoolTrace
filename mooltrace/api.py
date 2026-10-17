@@ -12,6 +12,7 @@ from mooltrace.clients import InfraError, MoolTraceError
 from mooltrace.config import API_HOST, API_PORT, CORS_ORIGINS
 from mooltrace.graph import get_graph
 from mooltrace.mcp_http import mcp_asgi, mcp_lifespan
+from mooltrace.agent import guard_agent, run_agent
 from mooltrace.public_demo import (
     PublicDemoRejected,
     execute_public_check,
@@ -47,6 +48,14 @@ app.router.routes.append(Route("/mcp/", endpoint=mcp_asgi, methods=["GET", "POST
 
 class DraftIn(BaseModel):
     text: str = ""
+    urls: list[str] = Field(default_factory=list)
+    engine: str = "draft"
+    depth: int = Field(default=2, ge=1, le=3)
+
+
+class AgentIn(BaseModel):
+    question: str = ""
+    draft: str = ""
     urls: list[str] = Field(default_factory=list)
     engine: str = "draft"
     depth: int = Field(default=2, ge=1, le=3)
@@ -168,6 +177,28 @@ def get_rests_on(doi: str) -> dict:
 def post_shared(body: SharedIn) -> dict:
     try:
         return shared_ancestors(body.answer_a, body.answer_b, body.engine_a, body.engine_b)
+    except (MoolTraceError, UnsafeURL, InfraError) as exc:
+        raise _raise(exc) from exc
+
+
+@app.post("/agent")
+def post_agent(body: AgentIn, request: Request) -> dict:
+    _guard_public_demo(
+        DraftIn(text=body.draft, urls=body.urls, engine=body.engine, depth=body.depth),
+        request,
+    )
+    try:
+        guard_agent(body.engine, body.draft, body.urls, client_ip=_client_ip(request))
+    except PublicDemoRejected as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+    try:
+        return run_agent(
+            question=body.question,
+            draft=body.draft,
+            urls=body.urls,
+            depth=body.depth,
+            engine=body.engine,
+        )
     except (MoolTraceError, UnsafeURL, InfraError) as exc:
         raise _raise(exc) from exc
 

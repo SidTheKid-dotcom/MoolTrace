@@ -172,6 +172,8 @@ Depth 2 headline is **31/40** same-trial and **1/40** false alarms (`ctrl-35` / 
 
 ## Agent loop (offline)
 
+In-app `POST /nw/agent` (UI **Run the agent**) is covered by `tests/test_inapp_agent.py` (mocked Azure, network off). Missing key, budget, or Azure error uses the rule-based fallback, same tools, same order.
+
 ```bash
 .venv/bin/python examples/agent_loop.py
 ```

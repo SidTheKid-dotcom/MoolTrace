@@ -106,6 +106,31 @@ type Rewrite = {
   urls?: string[]
   recheck?: Check
 }
+type AgentStep = {
+  tool?: string
+  args?: Record<string, unknown>
+  ms?: number
+  ok?: boolean
+  summary?: {
+    verdict?: string | null
+    exit_code?: number | null
+    path?: string | null
+    error?: string | null
+    summary?: string | null
+  }
+}
+type AgentResult = {
+  mode?: string
+  model?: string
+  label?: string
+  fallback_reason?: string | null
+  steps?: AgentStep[]
+  shipped?: string
+  without_mooltrace?: { text?: string; source?: string; note?: string }
+  grounding?: { replaced?: boolean; reason?: string }
+  budget?: { spent_usd?: number; limit_usd?: number }
+  elapsed_ms?: number
+}
 
 const PRESETS = [
   {
@@ -159,6 +184,8 @@ const HARVARD_REWRITE_DRAFT =
   "Hand hygiene is discussed separately. A nutrition coach cites https://nutritionsource.hsph.harvard.edu/vitamin-d/."
 const OLIVE_OIL_REWRITE_DRAFT =
   "Vitamin D status is discussed separately. A nutrition coach cites https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil."
+const HARVARD_QUESTION = "Does vitamin D help prevent fractures in older adults?"
+const AGENT_MS = 50_000
 
 const DEPTHS = [1, 2, 3] as const
 const LIVE_HOSTS = [
@@ -444,6 +471,9 @@ export function PreShip() {
   const [byDepth, setByDepth] = useState<Partial<Record<number, Check>>>({})
   const [rewrite, setRewrite] = useState<Rewrite | null>(null)
   const [rewriting, setRewriting] = useState(false)
+  const [agentLoading, setAgentLoading] = useState(false)
+  const [agentError, setAgentError] = useState("")
+  const [agent, setAgent] = useState<AgentResult | null>(null)
   const listed = parseUrls(urls)
   const liveRunning = loading && isLivePaste(engine, text, listed)
 
@@ -548,6 +578,47 @@ export function PreShip() {
     }
   }
 
+  async function runAgent() {
+    setAgentLoading(true)
+    setAgentError("")
+    const listedUrls = urls.split(/\s+/).map((item) => item.trim()).filter(Boolean)
+    const recordedDraft =
+      presetId === "harvard-vitamin-d" && !text.trim()
+        ? HARVARD_REWRITE_DRAFT
+        : presetId === "olive-oil" && !text.trim()
+          ? OLIVE_OIL_REWRITE_DRAFT
+          : text
+    if (recordedDraft !== text) setText(recordedDraft)
+    const question =
+      presetId === "harvard-vitamin-d" ? HARVARD_QUESTION : "Check this health-AI draft before shipping."
+    try {
+      const response = await fetch("/nw/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question,
+          draft: recordedDraft,
+          urls: listedUrls,
+          engine,
+          depth,
+        }),
+        signal: AbortSignal.timeout(AGENT_MS),
+      })
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error("Agent rate limit. Try again in a few minutes, or use Check before shipping.")
+        }
+        throw new Error(`The agent returned HTTP ${response.status}.`)
+      }
+      setAgent((await response.json()) as AgentResult)
+    } catch (exc) {
+      setAgent(null)
+      setAgentError(exc instanceof Error ? exc.message : "The agent did not finish.")
+    } finally {
+      setAgentLoading(false)
+    }
+  }
+
   async function applyPreset(id: string, startDepth?: number) {
     const preset = PRESETS.find((item) => item.id === id)
     if (!preset) return
@@ -559,6 +630,8 @@ export function PreShip() {
     setPresetId(preset.id)
     setByDepth({})
     setRewrite(null)
+    setAgent(null)
+    setAgentError("")
     setLoading(true)
     setError("")
     syncQuery(preset.id, nextDepth)
@@ -594,6 +667,7 @@ export function PreShip() {
     const bound = Math.min(3, Math.max(1, nextDepth))
     setDepth(bound)
     setRewrite(null)
+    setAgent(null)
     syncQuery(presetId, bound)
     const cached = byDepth[bound]
     if (cached) {
@@ -676,6 +750,85 @@ export function PreShip() {
           <ResultCard result={result} onRewrite={() => void runRewrite()} rewriting={rewriting} />
         </div>
       ) : null}
+
+      <Card data-testid="run-the-agent" className={presetId === "harvard-vitamin-d" ? "border-primary/40" : ""}>
+        <CardHeader>
+          <CardTitle>Run the agent</CardTitle>
+          <CardDescription>
+            Tool-calling loop on the evidence graph: check_answer, explain_path, rewrite_answer,
+            what_rests_on. The model never writes Cypher. If Azure is missing, over budget, or
+            errors, this is a <span className="font-medium">rule-based fallback, no model</span>.
+            Side by side: the same question without MoolTrace.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <Button
+            type="button"
+            disabled={agentLoading || (!text.trim() && !urls.trim())}
+            onClick={() => void runAgent()}
+          >
+            {agentLoading ? "Agent running…" : "Run the agent"}
+          </Button>
+          {agent?.label ? (
+            <p className="text-xs text-muted-foreground" data-testid="agent-mode">
+              {agent.label}
+              {agent.fallback_reason ? ` · ${agent.fallback_reason}` : ""}
+              {agent.budget?.spent_usd != null && agent.budget?.limit_usd != null
+                ? ` · spent $${agent.budget.spent_usd} / $${agent.budget.limit_usd}`
+                : ""}
+              {agent.elapsed_ms != null ? ` · ${agent.elapsed_ms} ms` : ""}
+            </p>
+          ) : null}
+          {agentError ? (
+            <p className="text-sm text-muted-foreground">{agentError}</p>
+          ) : null}
+          {agent?.steps && agent.steps.length > 0 ? (
+            <ol className="flex flex-col gap-2" data-testid="agent-steps">
+              {agent.steps.map((step, index) => (
+                <li
+                  key={`${step.tool}-${index}`}
+                  className="rounded-md bg-muted px-3 py-2 text-sm"
+                  data-testid="agent-step"
+                >
+                  <p className="font-medium">
+                    {index + 1}. {step.tool}
+                    {step.summary?.verdict ? ` · ${step.summary.verdict}` : ""}
+                    {step.summary?.exit_code != null ? ` (exit ${step.summary.exit_code})` : ""}
+                    {step.ms != null ? ` · ${step.ms} ms` : ""}
+                  </p>
+                  <p className="mt-1 break-all font-mono text-[11px] leading-5 text-muted-foreground">
+                    {JSON.stringify(step.args || {})}
+                  </p>
+                  {step.summary?.path ? (
+                    <p className="mt-1 text-xs text-muted-foreground">{step.summary.path}</p>
+                  ) : null}
+                  {step.summary?.error ? (
+                    <p className="mt-1 text-xs text-muted-foreground">{step.summary.error}</p>
+                  ) : null}
+                </li>
+              ))}
+            </ol>
+          ) : null}
+          {agent?.shipped || agent?.without_mooltrace ? (
+            <div className="grid gap-3 sm:grid-cols-2" data-testid="agent-contrast">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Shipped with MoolTrace</p>
+                <p className="mt-1 text-sm leading-6">{agent.shipped}</p>
+                {agent.grounding?.replaced ? (
+                  <p className="mt-1 text-xs text-muted-foreground">{agent.grounding.reason}</p>
+                ) : null}
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">without MoolTrace</p>
+                <p className="mt-1 text-sm leading-6">{agent.without_mooltrace?.text}</p>
+                {agent.without_mooltrace?.note ? (
+                  <p className="mt-1 text-xs text-muted-foreground">{agent.without_mooltrace.note}</p>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
