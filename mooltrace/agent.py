@@ -827,6 +827,14 @@ def _without_draft(draft: str) -> dict[str, Any]:
     }
 
 
+def _shipped_verdict(steps: list[dict[str, Any]]) -> dict[str, Any]:
+    for step in reversed(steps):
+        if step.get("tool") in {"rewrite_answer", "check_answer"} and step.get("ok"):
+            summary = step.get("summary") or {}
+            return {"verdict": summary.get("verdict"), "exit_code": summary.get("exit_code")}
+    return {"verdict": None, "exit_code": None}
+
+
 def _response(
     *,
     mode: str,
@@ -857,6 +865,7 @@ def _response(
             for step in steps
         ],
         "shipped": shipped,
+        "shipped_verdict": _shipped_verdict(steps),
         "without_mooltrace": without,
         "grounding": grounding,
         "budget": spend_snapshot(),
@@ -1105,6 +1114,14 @@ def run_retraction_landed(
                 },
             }
         )
+    grouped: dict[tuple, dict[str, Any]] = {}
+    for item in affected:
+        key = (item["engine"], tuple(item["urls"]), item["decision"], item["rewrite"])
+        if key in grouped:
+            grouped[key]["count"] += 1
+        else:
+            grouped[key] = {**item, "count": 1}
+    affected = list(grouped.values())
     read_only = False
     note = (
         "Rechecked the stored answers that rest on this work and drafted a fix for each. "

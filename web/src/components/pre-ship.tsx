@@ -122,6 +122,7 @@ type AgentStep = {
 }
 type CitedUrl = { url?: string; ok?: boolean; status?: string; http_status?: number }
 type AffectedAnswer = {
+  count?: number
   answer_id?: string
   engine?: string
   urls?: string[]
@@ -143,6 +144,7 @@ type AgentResult = {
   elapsed_ms?: number
   question_only?: boolean
   agent_note?: string
+  shipped_verdict?: { verdict?: string | null; exit_code?: number | null }
   disclosure?: string
   cited_urls?: CitedUrl[]
   action?: string
@@ -927,12 +929,14 @@ export function PreShip() {
           {agent?.action === "retraction_landed" ? (
             <div className="flex flex-col gap-2" data-testid="agent-affected">
               <p className="text-sm">
-                {agent.affected_answers?.length || 0} stored answer
-                {agent.affected_answers?.length === 1 ? "" : "s"} rest on {agent.doi}.
+                {(agent.affected_answers || []).reduce((sum, item) => sum + (item.count || 1), 0)} stored answer
+                {(agent.affected_answers || []).reduce((sum, item) => sum + (item.count || 1), 0) === 1 ? "" : "s"} rest
+                on {agent.doi}.
               </p>
               {(agent.affected_answers || []).map((item, index) => (
                 <div key={`${item.answer_id}-${index}`} className="rounded-md bg-muted px-3 py-2 text-sm">
                   <p className="font-medium">
+                    {item.count && item.count > 1 ? `${item.count} × ` : ""}
                     {item.engine} · {item.decision}
                     {item.exit_code != null ? ` (exit ${item.exit_code})` : ""}
                   </p>
@@ -950,7 +954,18 @@ export function PreShip() {
             <div className="grid gap-3 sm:grid-cols-2" data-testid="agent-contrast">
               <div>
                 <p className="text-xs font-medium text-muted-foreground">Shipped with MoolTrace</p>
-                <p className="mt-1 text-sm leading-6">{agent.shipped}</p>
+                {agent.shipped_verdict?.verdict ? (
+                  <p className="mt-1 text-xs font-medium" data-testid="agent-shipped-verdict">
+                    {agent.shipped_verdict.verdict.toUpperCase()}
+                    {agent.shipped_verdict.exit_code != null ? ` (exit ${agent.shipped_verdict.exit_code})` : ""}
+                    {agent.shipped_verdict.verdict === "pass"
+                      ? " — no notice path found. Not a medical-accuracy check."
+                      : agent.shipped_verdict.verdict === "warn"
+                        ? " — review before shipping."
+                        : " — do not ship."}
+                  </p>
+                ) : null}
+                <p className="mt-1 whitespace-pre-line text-sm leading-6">{(agent.shipped || "").replace(/\*\*/g, "")}</p>
                 {agent.grounding?.replaced ? (
                   <p className="mt-1 text-xs text-muted-foreground">{agent.grounding.reason}</p>
                 ) : null}

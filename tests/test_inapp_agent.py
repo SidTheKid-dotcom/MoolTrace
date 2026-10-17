@@ -215,6 +215,7 @@ def test_tool_loop_calls_existing_tools(tmp_path, monkeypatch):
         assert out["steps"][0]["ms"] >= 0
         assert "Ishida" in out["shipped"]
         assert not out["shipped"].startswith("Ship the rewrite"), "model free text must never ship"
+        assert out["shipped_verdict"]["verdict"] == "pass"
         assert out["agent_note"].startswith("Ship the rewrite")
         assert out["without_mooltrace"]["source"] == "draft"
         assert out["without_mooltrace"]["text"] == HARVARD_DRAFT
@@ -578,6 +579,9 @@ def test_retraction_landed_lists_affected_answers(tmp_path, monkeypatch):
         assert [step["tool"] for step in out["steps"]] == ["what_rests_on", "recheck_affected"]
         assert out["affected_answers"], "the seeded Harvard preset rests on Ishida 2004"
         assert any("Ishida" in (item.get("rewrite") or "") for item in out["affected_answers"])
+        keys = [(item["engine"], tuple(item["urls"]), item["rewrite"]) for item in out["affected_answers"]]
+        assert len(keys) == len(set(keys)), "identical stored answers are grouped"
+        assert all(item["count"] >= 1 for item in out["affected_answers"])
         assert "read-only" not in out["note"]
     finally:
         graph.close()
