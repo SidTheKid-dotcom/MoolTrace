@@ -17,6 +17,7 @@ UI = ROOT / "web" / "src" / "components" / "pre-ship.tsx"
 
 EXPECTED = {
     "nutrition-harvard-vitamin-d": {
+        1: {"decision": "pass", "exit_code": 0, "notice_paths": 0},
         2: {
             "decision": "block",
             "exit_code": 1,

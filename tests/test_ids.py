@@ -89,6 +89,10 @@ def test_doi_cleanup():
         "10.3389/fendo.2019.00640/xml"
     )
     assert extract_identifiers(newer).dois == ["10.3389/fendo.2019.00640"]
+    oup = "https://academic.oup.com/ajcn/article/10.1093/ajcn/nqac107/6572356"
+    assert clean_doi(oup) == "10.1093/ajcn/nqac107"
+    assert clean_doi("10.1093/ajcn/nqac107/6572356") == "10.1093/ajcn/nqac107"
+    assert extract_identifiers(f"See {oup}").dois == ["10.1093/ajcn/nqac107"]
 
 
 def test_extract_encoded_and_noisy_dois():

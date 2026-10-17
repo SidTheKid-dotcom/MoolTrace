@@ -1,0 +1,24 @@
+{
+  "note": "Recorded Crossref and doi.org resolution for the Harvard vitamin-D OUP article-id DOI. The trailing /6572356 is an academic.oup.com article path, not the registered DOI.",
+  "recorded_at": "2026-10-17T08:54:44+00:00",
+  "registered_doi": "10.1093/ajcn/nqac107",
+  "with_article_id": "10.1093/ajcn/nqac107/6572356",
+  "lookups": {
+    "10.1093/ajcn/nqac107": {
+      "crossref_url": "https://api.crossref.org/works/10.1093/ajcn/nqac107",
+      "crossref_status": 200,
+      "crossref_doi": "10.1093/ajcn/nqac107",
+      "doi_org_url": "https://doi.org/10.1093/ajcn/nqac107",
+      "doi_org_status": 200,
+      "doi_org_doi": "10.1093/ajcn/nqac107"
+    },
+    "10.1093/ajcn/nqac107/6572356": {
+      "crossref_url": "https://api.crossref.org/works/10.1093/ajcn/nqac107/6572356",
+      "crossref_status": 404,
+      "crossref_doi": null,
+      "doi_org_url": "https://doi.org/10.1093/ajcn/nqac107/6572356",
+      "doi_org_status": 404,
+      "doi_org_doi": null
+    }
+  }
+}

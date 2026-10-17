@@ -143,10 +143,10 @@ def test_harvard_vitamin_d_recorded_preset_has_uses_data_or_method():
     assert works[ISHIDA]["first_author"] == "Ishida"
     assert works[ISHIDA]["year"] == 2004
     by_depth = spec["by_depth"]
-    assert by_depth["1"]["decision"] == "warn"
-    assert int(by_depth["1"]["exit_code"]) == 2
+    assert by_depth["1"]["decision"] == "pass"
+    assert int(by_depth["1"]["exit_code"]) == 0
     assert int(by_depth["1"]["notice_paths"] or 0) == 0
-    assert by_depth["1"]["live_incomplete"] is True
+    assert by_depth["1"]["live_incomplete"] is False
     assert by_depth["2"]["decision"] == "block"
     assert int(by_depth["2"]["exit_code"]) == 1
     assert by_depth["2"]["notice_type"] == "retraction"

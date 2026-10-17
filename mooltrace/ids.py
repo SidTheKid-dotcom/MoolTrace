@@ -106,6 +106,14 @@ def clean_doi(raw: str) -> str:
                     text = text[: -len(ext)]
                     changed = True
                     break
+    # academic.oup.com appends /<digits> (article id) after the registered DOI.
+    # Recorded Crossref/doi.org: 10.1093/ajcn/nqac107 is 200; …/6572356 is 404.
+    if text.startswith("10.1093/"):
+        parts = text.split("/")
+        while len(parts) >= 4 and parts[-1].isdigit() and any(ch.isalpha() for ch in parts[-2]):
+            parts.pop()
+            changed = True
+        text = "/".join(parts)
     return text
 
 

@@ -93,7 +93,7 @@ const PRESETS = [
   {
     id: "harvard-vitamin-d",
     label: "Harvard vitamin D (block)",
-    hint: "Page mention → Avenell 2014 uses_data_or_method 0.85 → Ishida 2004 retraction. Depth 1 has no notice path on the seeded hops.",
+    hint: "Page mention → Avenell 2014 uses_data_or_method 0.85 → Ishida 2004 retraction. Depth 1 PASS (0 notice paths); depth 2/3 BLOCK.",
     engine: "nutrition-coach",
     depth: 2,
     text: "",
@@ -709,10 +709,10 @@ export function PreShip() {
 
       {presetId === "harvard-vitamin-d" ? (
         <p className="text-sm leading-6 text-muted-foreground" data-testid="block-hero">
-          Harvard T.H. Chan Nutrition Source vitamin D. Depth 2/3: BLOCK — page mention 0.55 →
-          Avenell 2014 Cochrane uses_data_or_method 0.85 → Ishida 2004 retraction (same DOI as the
-          article, 2004-10-15). The review called Ishida an included trial. This does not say vitamin D
-          works or does not.
+          Harvard T.H. Chan Nutrition Source vitamin D. Depth 1: PASS (0 notice paths). Depth 2/3:
+          BLOCK — page mention 0.55 → Avenell 2014 Cochrane uses_data_or_method 0.85 → Ishida 2004
+          retraction (same DOI as the article, 2004-10-15). The review called Ishida an included trial.
+          This does not say vitamin D works or does not.
         </p>
       ) : null}
 
