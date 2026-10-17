@@ -1,0 +1,1099 @@
+{
+ "date": "2026-10-17",
+ "frame": "https://nutritionsource.hsph.harvard.edu/vitamins/ (article-body links)",
+ "commit": "MoolTrace a7ecbf1..ec1832a (same trace code)",
+ "pages": [
+  {
+   "n": 1,
+   "url": "https://nutritionsource.hsph.harvard.edu/vitamins/vitamin-a/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 4 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 4 of 4 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 2,
+   "url": "https://nutritionsource.hsph.harvard.edu/vitamins/vitamin-d/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 25 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "block",
+    "exit_code": 1,
+    "incomplete": false,
+    "coverage": "expanded 15 of 25 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": [
+     {
+      "type": "retraction",
+      "notice_doi": "10.1097/phm.0000000000000893",
+      "notice_date": "2018-01-18",
+      "notice_source": "retraction-watch",
+      "flagged_doi": "10.1097/00002060-199909000-00008",
+      "flagged_title": "EFFECT OF IPRIFLAVONE ON BONE IN ELDERLY HEMIPLEGIC STROKE PATIENTS WITH HYPOVITAMINOSIS D1[Retracted]",
+      "hops": [
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men.",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/"
+       },
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "Awaiting further clarification with regard to methods Open in a new tab (table/CD000227-tblf-0063/) Sato 1999a (#CD000227-bbs2-0124).",
+        "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7032685/"
+       }
+      ]
+     },
+     {
+      "type": "retraction",
+      "notice_doi": "10.1016/j.amjmed.2025.03.001",
+      "notice_date": "2025-05-01",
+      "notice_source": "publisher",
+      "flagged_doi": "10.1016/j.amjmed.2004.05.019",
+      "flagged_title": "RETRACTED: Comparative efficacy of hormone replacement therapy, etidronate, calcitonin, alfacalcidol, and vitamin K in postmenopausal women with osteoporosis: The Yamaguchi Osteoporosis Prevention Study",
+      "hops": [
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men.",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/"
+       },
+       {
+        "reliance": "uses_data_or_method",
+        "weight": 0.85,
+        "sentence": "Editor; Cochrane Bone, Joint and Muscle Trauma Group) What's new Date Event Description 1 June 2021 Amended Given the trial report of Ishida 2004, an included trial, has been retracted, changes were made to the review to alert the reader to this, including removing data from the analyses, and relabe",
+        "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7032685/"
+       }
+      ]
+     },
+     {
+      "type": "retraction",
+      "notice_doi": "10.1159/000480144",
+      "notice_date": "2017-09-23",
+      "notice_source": "publisher",
+      "flagged_doi": "10.1159/000087203",
+      "flagged_title": "Retracted Paper - Low-Dose Vitamin D Prevents Muscular Atrophy and Reduces Falls and Hip Fractures in Women after Stroke: A Randomized Controlled Trial",
+      "hops": [
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men.",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/"
+       },
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "Biochemical markers of bone formation and breakdown, PTH, 25(OH) vitamin D, 1,25(OH) 2 vitamin D Notes Awaiting further clarification with regard to methods Open in a new tab (table/CD000227-tblf-0065/) Sato 2005 (#CD000227-bbs2-0126).",
+        "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7032685/"
+       }
+      ]
+     },
+     {
+      "type": "retraction",
+      "notice_doi": "10.1136/jnnp.66.1.64ret",
+      "notice_date": "2017-08-28",
+      "notice_source": "publisher",
+      "flagged_doi": "10.1136/jnnp.66.1.64",
+      "flagged_title": "Amelioration of osteopenia and hypovitaminosis D by 1alpha -hydroxyvitamin D3 in elderly patients with Parkinson's disease",
+      "hops": [
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men.",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/"
+       },
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "Awaiting further clarification with regard to methods Open in a new tab (table/CD000227-tblf-0063/) Sato 1999a (#CD000227-bbs2-0124).",
+        "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7032685/"
+       }
+      ]
+     },
+     {
+      "type": "retraction",
+      "notice_doi": "10.1161/str.0000000000000187",
+      "notice_date": "2019-04-22",
+      "notice_source": "publisher",
+      "flagged_doi": "10.1161/01.str.28.4.736",
+      "flagged_title": "Amelioration of Hemiplegia-Associated Osteopenia More Than 4 Years After Stroke by 1\u03b1-Hydroxyvitamin D\n            <sub>3</sub>\n            and Calcium Supplementation",
+      "hops": [
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men.",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/"
+       },
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "Three previously included studies have been moved to Studies awaiting classification (#CD000227-bbs1-0003), whilst clarification is awaited for data queries (Sato 1997 (#CD000227-bbs2-0123); Sato 1999a (#CD000227-bbs2-0124); Sato 1999b (#CD000227-bbs2-0125)).",
+        "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7032685/"
+       }
+      ]
+     },
+     {
+      "type": "expression_of_concern",
+      "notice_doi": "10.1097/phm.0000000000000822",
+      "notice_date": "2017-09-01",
+      "notice_source": "retraction-watch",
+      "flagged_doi": "10.1097/00002060-199909000-00008",
+      "flagged_title": "EFFECT OF IPRIFLAVONE ON BONE IN ELDERLY HEMIPLEGIC STROKE PATIENTS WITH HYPOVITAMINOSIS D1[Retracted]",
+      "hops": [
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "Vitamin D and vitamin D analogues for preventing fractures in post-menopausal women and older men.",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/"
+       },
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "Awaiting further clarification with regard to methods Open in a new tab (table/CD000227-tblf-0063/) Sato 1999a (#CD000227-bbs2-0124).",
+        "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7032685/"
+       }
+      ]
+     },
+     {
+      "type": "expression_of_concern",
+      "notice_doi": "10.1002/jbmr.2583",
+      "notice_date": "2015-06-24",
+      "notice_source": "retraction-watch",
+      "flagged_doi": "10.1359/jbmr.050402",
+      "flagged_title": "Amelioration of Osteoporosis and Hypovitaminosis D by Sunlight Exposure in Hospitalized, Elderly Women With Alzheimer's Disease: A Randomized Controlled Trial",
+      "hops": [
+       {
+        "reliance": "relies",
+        "weight": 1.0,
+        "sentence": "No association was found between taking the supplements and a lower risk of major cardiovascular events (heart attack, stroke, or death from cardiovascular causes) compared with the placebo. [37] Type 2 diabetes Vitamin D deficiency may negatively affect the biochemical pathways",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/"
+       },
+       {
+        "reliance": "unverified",
+        "weight": 0.0,
+        "sentence": "Sato Y, Iwamoto J, Kanoko T, Satoh K. Amelioration of osteoporosis and hypovitaminosis D by sunlight exposure in hospitalized, elderly women with Alzheimer's disease: a randomized controlled trial. J Bone Miner Res. 2005. 20. 1327-1333",
+        "source_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=DOI:10.1056%2Fnejmra070553&format=json&resultType=core&pageSize=1"
+       }
+      ]
+     },
+     {
+      "type": "retraction",
+      "notice_doi": "10.1002/jbmr.2725",
+      "notice_date": "2015-10-30",
+      "notice_source": "retraction-watch",
+      "flagged_doi": "10.1359/jbmr.050402",
+      "flagged_title": "Amelioration of Osteoporosis and Hypovitaminosis D by Sunlight Exposure in Hospitalized, Elderly Women With Alzheimer's Disease: A Randomized Controlled Trial",
+      "hops": [
+       {
+        "reliance": "relies",
+        "weight": 1.0,
+        "sentence": "No association was found between taking the supplements and a lower risk of major cardiovascular events (heart attack, stroke, or death from cardiovascular causes) compared with the placebo. [37] Type 2 diabetes Vitamin D deficiency may negatively affect the biochemical pathways",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/vitamin-d/"
+       },
+       {
+        "reliance": "unverified",
+        "weight": 0.0,
+        "sentence": "Sato Y, Iwamoto J, Kanoko T, Satoh K. Amelioration of osteoporosis and hypovitaminosis D by sunlight exposure in hospitalized, elderly women with Alzheimer's disease: a randomized controlled trial. J Bone Miner Res. 2005. 20. 1327-1333",
+        "source_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=DOI:10.1056%2Fnejmra070553&format=json&resultType=core&pageSize=1"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "n": 3,
+   "url": "https://nutritionsource.hsph.harvard.edu/vitamins/vitamin-e/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 46 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": true,
+    "coverage": "expanded 15 of 46 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 4,
+   "url": "https://nutritionsource.hsph.harvard.edu/vitamin-k/",
+   "d1": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": false,
+    "coverage": "expanded 0 of 0 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": false,
+    "coverage": "expanded 0 of 0 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 5,
+   "url": "https://nutritionsource.hsph.harvard.edu/vitamins/vitamin-c/",
+   "d1": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": true,
+    "coverage": "expanded 0 of 1 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": true,
+    "coverage": "expanded 1 of 1 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 6,
+   "url": "https://nutritionsource.hsph.harvard.edu/vitamin-b6/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 6 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 6 of 6 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 7,
+   "url": "https://nutritionsource.hsph.harvard.edu/vitamin-b12/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 2 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 2 of 2 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 8,
+   "url": "https://nutritionsource.hsph.harvard.edu/folic-acid/",
+   "d1": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": true,
+    "coverage": "expanded 0 of 11 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": true,
+    "coverage": "expanded 11 of 11 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 9,
+   "url": "https://nutritionsource.hsph.harvard.edu/calcium/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 8 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 8 of 8 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 10,
+   "url": "https://nutritionsource.hsph.harvard.edu/salt-and-sodium/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 4 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "block",
+    "exit_code": 1,
+    "incomplete": false,
+    "coverage": "expanded 4 of 4 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": [
+     {
+      "type": "retraction",
+      "notice_doi": "10.1002/14651858.cd009217.pub2",
+      "notice_date": "2013-11-12",
+      "notice_source": "retraction-watch",
+      "flagged_doi": "10.1002/14651858.cd009217",
+      "flagged_title": "Reduced dietary salt for the prevention of cardiovascular disease",
+      "hops": [
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "BMJ (https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD004937.pub2/abstract).",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/salt-and-sodium/"
+       },
+       {
+        "reliance": "relies",
+        "weight": 1.0,
+        "sentence": "Reduced Dietary Salt for the Prevention of Cardiovascular Disease: A Meta\u2010Analysis of Randomized Controlled Trials (Cochrane Review).",
+        "source_url": ""
+       }
+      ]
+     },
+     {
+      "type": "expression_of_concern",
+      "notice_doi": "10.1042/cs-20070193_eoc",
+      "notice_date": "2020-07-17",
+      "notice_source": "publisher",
+      "flagged_doi": "10.1042/cs20070193",
+      "flagged_title": "Normal-sodium diet compared with low-sodium diet in compensated congestive heart failure: is sodium an old enemy or a new friend?",
+      "hops": [
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "BMJ (https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD004937.pub2/abstract).",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/salt-and-sodium/"
+       },
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "Among the 7 trials included in Taylor et al\u2019s meta\u2010analysis, one in heart failure should not have been included as the participants were severely salt and water depleted due to aggressive diuretic therapy (Paterna 2008 (#CD004937-bbs2-0299)).",
+        "source_url": ""
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "n": 11,
+   "url": "https://nutritionsource.hsph.harvard.edu/potassium/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 2 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": false,
+    "coverage": "expanded 2 of 2 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": [
+     {
+      "type": "expression_of_concern",
+      "notice_doi": "10.1042/cs-20070193_eoc",
+      "notice_date": "2020-07-17",
+      "notice_source": "publisher",
+      "flagged_doi": "10.1042/cs20070193",
+      "flagged_title": "Normal-sodium diet compared with low-sodium diet in compensated congestive heart failure: is sodium an old enemy or a new friend?",
+      "hops": [
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "24-Hour Urinary Sodium and Potassium Excretion and Cardiovascular Risk.",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/potassium/"
+       },
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "Paterna S, Gaspare P, Fasullo S, Filippo, Pietro.",
+        "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9153854/"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "n": 12,
+   "url": "https://nutritionsource.hsph.harvard.edu/copper/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 3 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 3 of 3 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 13,
+   "url": "https://nutritionsource.hsph.harvard.edu/iodine/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 1 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 1 of 1 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 14,
+   "url": "https://nutritionsource.hsph.harvard.edu/zinc/",
+   "d1": {
+    "decision": "block",
+    "exit_code": 1,
+    "incomplete": false,
+    "coverage": "expanded 0 of 4 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": [
+     {
+      "type": "retraction",
+      "notice_doi": "10.1002/14651858.cd001364.pub5",
+      "notice_date": "2015-04-30",
+      "notice_source": "retraction-watch",
+      "flagged_doi": "10.1002/14651858.cd001364.pub3",
+      "flagged_title": "Zinc for the common cold",
+      "hops": [
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "In the 1990s, a new proposed remedy for the common cold in the form of zinc lozenges became almost as popular as chicken soup.",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/zinc/"
+       }
+      ]
+     }
+    ]
+   },
+   "d2": {
+    "decision": "block",
+    "exit_code": 1,
+    "incomplete": false,
+    "coverage": "expanded 4 of 4 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": [
+     {
+      "type": "retraction",
+      "notice_doi": "10.1002/14651858.cd001364.pub5",
+      "notice_date": "2015-04-30",
+      "notice_source": "retraction-watch",
+      "flagged_doi": "10.1002/14651858.cd001364.pub3",
+      "flagged_title": "Zinc for the common cold",
+      "hops": [
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "In the 1990s, a new proposed remedy for the common cold in the form of zinc lozenges became almost as popular as chicken soup.",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/zinc/"
+       }
+      ]
+     },
+     {
+      "type": "retraction",
+      "notice_doi": "10.1002/14651858.cd001364.pub5",
+      "notice_date": "2015-04-30",
+      "notice_source": "retraction-watch",
+      "flagged_doi": "10.1002/14651858.cd001364",
+      "flagged_title": "Zinc for the common cold",
+      "hops": [
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "In the 1990s, a new proposed remedy for the common cold in the form of zinc lozenges became almost as popular as chicken soup.",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/zinc/"
+       },
+       {
+        "reliance": "unverified",
+        "weight": 0.0,
+        "sentence": "Macknin ML. Zinc lozenges for the common cold. Cleve Clin J Med. 1999. 66. 27-32",
+        "source_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=DOI:10.1002%2F14651858.cd001364.pub3&format=json&resultType=core&pageSize=1"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "n": 15,
+   "url": "https://nutritionsource.hsph.harvard.edu/vitamin-b1/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 1 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 1 of 1 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 16,
+   "url": "https://nutritionsource.hsph.harvard.edu/riboflavin-vitamin-b2/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 4 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 4 of 4 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 17,
+   "url": "https://nutritionsource.hsph.harvard.edu/niacin-vitamin-b3/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 4 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": false,
+    "coverage": "expanded 4 of 4 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": [
+     {
+      "type": "expression_of_concern",
+      "notice_doi": "10.1093/cvr/cvaa248",
+      "notice_date": "2020-08-21",
+      "notice_source": "retraction-watch",
+      "flagged_doi": "10.1093/cvr/cvu220",
+      "flagged_title": "Intracellular NAMPT\u2013NAD+\u2013SIRT1 cascade improves post-ischaemic vascular repair by modulating Notch signalling in endothelial progenitors",
+      "hops": [
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "American Journal of Physiology-Heart and Circulatory Physiology (https://journals.physiology.org/doi/abs/10.1152/ajpheart.00039.2019).",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/niacin-vitamin-b3/"
+       },
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "Csiszar A, Sosnowska D, Wang M, Lakatta EG, Sonntag WE, Ungvari Z.",
+        "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6620681/"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "n": 18,
+   "url": "https://nutritionsource.hsph.harvard.edu/pantothenic-acid-vitamin-b5/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 3 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 3 of 3 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 19,
+   "url": "https://nutritionsource.hsph.harvard.edu/biotin-vitamin-b7/",
+   "d1": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": false,
+    "coverage": "expanded 0 of 0 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": false,
+    "coverage": "expanded 0 of 0 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 20,
+   "url": "https://nutritionsource.hsph.harvard.edu/choline/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 6 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 6 of 6 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 21,
+   "url": "https://nutritionsource.hsph.harvard.edu/chloride/",
+   "d1": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": false,
+    "coverage": "expanded 0 of 0 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": false,
+    "coverage": "expanded 0 of 0 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 22,
+   "url": "https://nutritionsource.hsph.harvard.edu/chromium/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 6 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 6 of 6 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 23,
+   "url": "https://nutritionsource.hsph.harvard.edu/fluoride/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 10 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 10 of 10 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 24,
+   "url": "https://nutritionsource.hsph.harvard.edu/iron/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 1 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 1 of 1 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 25,
+   "url": "https://nutritionsource.hsph.harvard.edu/magnesium/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 10 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": false,
+    "coverage": "expanded 10 of 10 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": [
+     {
+      "type": "retraction",
+      "notice_doi": "10.1523/jneurosci.1265-14.2014",
+      "notice_date": "2014-04-16",
+      "notice_source": "retraction-watch",
+      "flagged_doi": "10.1523/jneurosci.4610-12.2013",
+      "flagged_title": "Elevation of Brain Magnesium Prevents and Reverses Cognitive Deficits and Synaptic Loss in Alzheimer's Disease Mouse Model",
+      "hops": [
+       {
+        "reliance": "unverified",
+        "weight": 0.0,
+        "sentence": "",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/magnesium/"
+       },
+       {
+        "reliance": "relies",
+        "weight": 1.0,
+        "sentence": "Magnesium treatment reduced A\u03b2 plaque and prevented synapse loss and memory decline in a transgenic mouse model of AD [135].",
+        "source_url": "https://api.semanticscholar.org/graph/v1/paper/DOI:10.3390%2Fnu7095388/references?fields=contexts,citedPaper.externalIds&limit=200&offset=0"
+       }
+      ]
+     },
+     {
+      "type": "retraction",
+      "notice_doi": "10.1056/nejmc1806491",
+      "notice_date": "2018-06-13",
+      "notice_source": "retraction-watch",
+      "flagged_doi": "10.1056/nejmoa1200303",
+      "flagged_title": "RETRACTED: Primary Prevention of Cardiovascular Disease with a Mediterranean Diet",
+      "hops": [
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "Nutrition therapy recommendations for the management of adults with diabetes.",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/magnesium/"
+       },
+       {
+        "reliance": "unverified",
+        "weight": 0.0,
+        "sentence": "",
+        "source_url": ""
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "n": 26,
+   "url": "https://nutritionsource.hsph.harvard.edu/manganese/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 2 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 2 of 2 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 27,
+   "url": "https://nutritionsource.hsph.harvard.edu/molybdenum/",
+   "d1": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": false,
+    "coverage": "expanded 0 of 0 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": false,
+    "coverage": "expanded 0 of 0 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 28,
+   "url": "https://nutritionsource.hsph.harvard.edu/nickel/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 2 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 2 of 2 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 29,
+   "url": "https://nutritionsource.hsph.harvard.edu/phosphorus/",
+   "d1": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": true,
+    "coverage": "expanded 0 of 3 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": true,
+    "coverage": "expanded 2 of 3 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 30,
+   "url": "https://nutritionsource.hsph.harvard.edu/selenium/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 3 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": false,
+    "coverage": "expanded 3 of 3 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": [
+     {
+      "type": "expression_of_concern",
+      "notice_doi": "10.1017/s0007114521002014",
+      "notice_date": "2021-08-06",
+      "notice_source": "retraction-watch",
+      "flagged_doi": "10.1017/s0007114515003852",
+      "flagged_title": "The favourable effects of long-term selenium supplementation on regression of cervical tissues and metabolic profiles of patients with cervical intraepithelial neoplasia: a randomised, double-blind, placebo-controlled trial",
+      "hops": [
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "Cochrane database of systematic reviews (https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD005195.pub4/abstract).",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/selenium/"
+       },
+       {
+        "reliance": "mention",
+        "weight": 0.55,
+        "sentence": "of considerable interest that has been investigated so far in very few phase 2 and phase 3 trials (Goossens 2016 (#CD005195-bbs2-0176); Karamali 2015 (#CD005195-bbs2-0207); Muecke 2014 (#CD005195-bbs2-0233); Stratton 2010 (#CD005195-bbs2-0276)) (although other trials appear to be under way such as V",
+        "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6491296/"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "n": 31,
+   "url": "https://nutritionsource.hsph.harvard.edu/what-should-you-eat/vegetables-and-fruits/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 5 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 5 of 5 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 32,
+   "url": "https://nutritionsource.hsph.harvard.edu/what-should-you-eat/whole-grains/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 17 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": true,
+    "coverage": "expanded 15 of 17 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 33,
+   "url": "https://nutritionsource.hsph.harvard.edu/what-should-you-eat/protein/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 9 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 9 of 9 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 34,
+   "url": "https://nutritionsource.hsph.harvard.edu/what-should-you-eat/fats-and-cholesterol/types-of-fat/",
+   "d1": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": false,
+    "coverage": "expanded 0 of 0 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "warn",
+    "exit_code": 2,
+    "incomplete": false,
+    "coverage": "expanded 0 of 0 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  },
+  {
+   "n": 35,
+   "url": "https://nutritionsource.hsph.harvard.edu/multivitamin/",
+   "d1": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 0 of 2 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   },
+   "d2": {
+    "decision": "pass",
+    "exit_code": 0,
+    "incomplete": false,
+    "coverage": "expanded 2 of 2 cited works",
+    "direct_doi": "Direct DOI check: 0 notices \u2192 would ship",
+    "notices": []
+   }
+  }
+ ]
+}
