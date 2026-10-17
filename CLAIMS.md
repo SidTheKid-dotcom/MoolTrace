@@ -209,7 +209,7 @@ docker compose up --build
 unshare --net --map-root-user .venv/bin/python -m pytest -q
 ```
 
-17 Oct 2026 09:15 UTC this checkout: 323 passed, 0 failed, 480.06 s, network namespace unshared.
+17 Oct 2026 09:25 UTC this checkout: 323 passed, 0 failed, 473.79 s, network namespace unshared.
 
 ## Limits quoted in README (spot-checks)
 
@@ -221,7 +221,7 @@ unshare --net --map-root-user .venv/bin/python -m pytest -q
 | SSRF refuses loopback / private / credentials | `pytest tests/test_ssrf.py` | passed this session |
 | Rewrite changes only the flagged sentence; never `RETRACTED:`; never the notice DOI | `pytest tests/test_rewrite.py::test_rewrite_hcq_mehra_2020_only_flagged_sentence` | passed this session |
 | Hosted live URL is allow-listed | POST a non-preset `healthline.com` URL with `MOOLTRACE_PUBLIC_LIVE=1`; `example.com` is 400 | allow-list + SSRF + per-IP 429 + concurrency 1 + 120 s timeout. Presets never 429. UI: Running live, about 60 s. `pytest tests/test_public_live.py` |
-| `assets/healthline-warn.png` is a signed-out live WARN capture | `/?preset=healthline` on the Lightsail demo, 17 Oct 2026 | path strength 0.55, EoC `10.2337/dc25-ec09`; not 0.72 |
+| `assets/healthline-warn.png` is a signed-out WARN capture | local seeded `http://127.0.0.1:4318/?preset=healthline`, 17 Oct 2026 (Lightsail pin pending `aws login`) | path strength 0.55, EoC `10.2337/dc25-ec09`; not 0.72 |
 
 ## Seeded gate (T26, three runs)
 
