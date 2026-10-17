@@ -2,7 +2,6 @@
   "kind": "direct_doi_crossref_catalog",
   "fetched_at": "2026-10-16T15:31:06+00:00",
   "source": "https://api.crossref.org/works/{doi}",
-  "mailto": "siddhant.m.vishnu@gmail.com",
   "n": 17,
   "api_calls": 17,
   "cache_hits": 0,

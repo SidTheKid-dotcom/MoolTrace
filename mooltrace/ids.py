@@ -41,6 +41,7 @@ _PUBLISHER_SUFFIXES = (
     "/pdf",
     "/html",
     "/full",
+    "/xml",
 )
 
 # Crossref update types that are not a publisher flag on the study.

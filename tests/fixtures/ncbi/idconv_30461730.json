@@ -8,9 +8,8 @@
       "warnings": [],
       "format": "json",
       "ids": ["30461730"],
-      "email": "siddhant.m.vishnu@gmail.com",
       "tool": "mooltrace",
-      "echo": "ids=30461730&format=json&tool=mooltrace&email=siddhant.m.vishnu%40gmail.com",
+      "echo": "ids=30461730&format=json&tool=mooltrace",
       "versions": "no",
       "showaiid": "no",
       "idtype": "pmid"

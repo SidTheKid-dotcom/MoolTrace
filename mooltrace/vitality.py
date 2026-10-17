@@ -36,7 +36,6 @@ DEFAULT_CROSSREF = config.ROOT / "examples" / "vitality_crossref.json"
 DEFAULT_SNAPSHOT = config.ROOT / "examples" / "vitality_mooltrace.json"
 COUNTED = frozenset({"retraction", "withdrawal", "expression_of_concern"})
 FLAGGED = frozenset({"warn", "block"})
-MAILTO = "siddhant.m.vishnu@gmail.com"
 
 
 def load_frozen(path: Path | None = None) -> dict[str, Any]:
@@ -227,7 +226,7 @@ def _fresh_graph() -> Graph:
 
 
 def _gentle_openalex() -> None:
-    os.environ.setdefault("MOOLTRACE_MAILTO", MAILTO)
+    os.environ.setdefault("MOOLTRACE_MAILTO", config.MAILTO)
     os.environ["MOOLTRACE_OPENALEX_RPS"] = "3"
     from mooltrace import clients
 
@@ -258,7 +257,6 @@ def record_crossref(
         "kind": "direct_doi_crossref_catalog",
         "fetched_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "source": "https://api.crossref.org/works/{doi}",
-        "mailto": os.environ.get("MOOLTRACE_MAILTO", MAILTO),
         "n": len(works),
         "api_calls": stats.api_calls,
         "cache_hits": stats.cache_hits,
@@ -865,7 +863,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--depth", type=int, default=2, help="Live hop budget. 2 is headline; 3 is a separate row.")
     args = parser.parse_args(argv)
-    os.environ.setdefault("MOOLTRACE_MAILTO", MAILTO)
+    os.environ.setdefault("MOOLTRACE_MAILTO", config.MAILTO)
     frozen = load_frozen(args.frozen)
     if args.record_crossref:
         print("recording Crossref catalog", file=sys.stderr, flush=True)

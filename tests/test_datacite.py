@@ -48,7 +48,7 @@ def _transport(hits: list[str]):
 
 
 def _install_http(monkeypatch, hits: list[str]) -> None:
-    monkeypatch.setenv("MOOLTRACE_MAILTO", "siddhant.m.vishnu@gmail.com")
+    monkeypatch.setenv("MOOLTRACE_MAILTO", "mooltrace-test@example.com")
     reset_http_state()
     monkeypatch.setattr(
         "mooltrace.clients._http",

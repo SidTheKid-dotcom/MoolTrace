@@ -12,7 +12,7 @@ Five-minute path: [JUDGES.md](JUDGES.md).
 
 Fresh-clone quickstart wall time on 16 Oct 2026: **65.06 s**.
 
-Literal README 3-line run from a fresh clone in `/tmp` (16 Oct 2026 18:06–18:08 UTC). Clone from `origin.cursor.com`. `pip` used the local wheel cache. Cinnamon check used `MOOLTRACE_MAILTO=siddhant.m.vishnu@gmail.com` and `MOOLTRACE_OPENALEX_RPS=3`. The clone wrote `/tmp/mt-t12-qs/MoolTrace/data/mooltrace.db`. Repo `data/mooltrace.db` mtime stayed `1792153156`.
+Literal README 3-line run from a fresh clone in `/tmp` (16 Oct 2026 18:06–18:08 UTC). Clone from `origin.cursor.com`. `pip` used the local wheel cache. Cinnamon check used `MOOLTRACE_MAILTO` from the environment and `MOOLTRACE_OPENALEX_RPS=3`. The clone wrote `/tmp/mt-t12-qs/MoolTrace/data/mooltrace.db`. Repo `data/mooltrace.db` mtime stayed `1792153156`.
 
 | Step | Command | Wall |
 | --- | --- | --- |
@@ -211,7 +211,7 @@ docker compose up --build
 unshare --net --map-root-user .venv/bin/python -m pytest -q
 ```
 
-16 Oct 2026 22:21 UTC this checkout: 297 passed, 0 failed, 434.85 s, network namespace unshared (earlier same session 431.03 s, also 297).
+17 Oct 2026 07:00 UTC this checkout: 304 passed, 0 failed, 435.51 s, network namespace unshared.
 
 ## Limits quoted in README (spot-checks)
 
@@ -228,7 +228,7 @@ unshare --net --map-root-user .venv/bin/python -m pytest -q
 ## Seeded gate (T21, three runs)
 
 ```bash
-MOOLTRACE_MAILTO=siddhant.m.vishnu@gmail.com MOOLTRACE_OPENALEX_RPS=3 \
+MOOLTRACE_OPENALEX_RPS=3 \
 MOOLTRACE_HTTP_CACHE=/tmp/mt-t21-gate-cache MOOLTRACE_DB=/tmp/mt-t21-unused/mooltrace.db \
 .venv/bin/python -m mooltrace.gate
 ```
@@ -245,7 +245,7 @@ Files: `results/gate_2026-10-17_t21_run1.json`, `run2`, `run3`.
 
 ## Prior art (re-fetched 16 Oct 2026 18:43 UTC)
 
-`pytest tests/test_readme.py::test_readme_prior_art_links_verified_repos` — shaky-ground, scite, GhostCite, Bedrock links. Signed-out HEAD of https://shaky-ground-production.up.railway.app/ returned **HTTP 501**. GitHub repos `aryangorde6/shaky-ground`, `musharna/ghostcite`, `ibnweb3/bedrock` returned HTTP 200. `scite.ai/features` returned HTTP 403 from this host (CloudFront). Raw `shaky/retractionwatch.py` line 61 still keeps only `RetractionNature == "Retraction"`.
+`pytest tests/test_readme.py::test_readme_prior_art_links_verified_repos` — shaky-ground, scite, GhostCite, Bedrock links. Signed-out HEAD of https://shaky-ground-production.up.railway.app/ still returns **HTTP 501** (Railway). A normal GET on 17 Oct 2026 06:42 UTC returned **HTTP 200** (Content-Length 4848, title “Shaky Ground”, no sign-up; Blast radius / Foundation check UI). `GET /api/config` is `allow_runs: false`. Tracing a DOI not already in their graph is refused (`the server is read only`). GitHub repos `aryangorde6/shaky-ground`, `musharna/ghostcite`, `ibnweb3/bedrock` returned HTTP 200. `scite.ai/features` returned HTTP 403 from this host (CloudFront). Raw `shaky/retractionwatch.py` line 61 still keeps only `RetractionNature == "Retraction"`.
 
 ## Not re-run this session
 

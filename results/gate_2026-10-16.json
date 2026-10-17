@@ -3,7 +3,6 @@
   "kind": "seeded_regression_cold_repeats",
   "date": "2026-10-16",
   "note": "Each case used a fresh throwaway Graph under /tmp (mooltrace.gate _fresh_graph). data/mooltrace.db was not opened. HTTP cache was shared at /tmp/mooltrace-t02-http-cache. Run 1 Everyday Health was exit 3 (Crossref 429), not a decision pass. Runs 2\u20134 are the three complete cold 7/7 0/6 repeats.",
-  "mailto": "siddhant.m.vishnu@gmail.com",
   "target": {
     "caught": "7/7",
     "alarms": "0/6"

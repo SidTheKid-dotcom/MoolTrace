@@ -202,7 +202,7 @@ Four labelled-pass disagreements (why precision is 0.8974, not 1.0): WebMD cinna
 
 Facts only. Each claim was read from that project's public repo or docs on 16 Oct 2026. This is not a claim of unique multi-hop, unique MCP, or continuous monitoring.
 
-[Shaky Ground](https://github.com/aryangorde6/shaky-ground) traces papers that *build on* retracted work through reliance-weighted citation chains, with hop sentences stored on the edges. It ships stdio MCP (`check_foundations`, `retraction_blast_radius`, `explain_chain`) and a web UI. Their [`docs/DEPLOY.md`](https://github.com/aryangorde6/shaky-ground/blob/main/docs/DEPLOY.md) documents a public demo at https://shaky-ground-production.up.railway.app (`ALLOW_RUNS=0`). A signed-out HEAD of that URL on 16 Oct 2026 17:40 UTC returned HTTP 501. Input is a paper DOI, OpenAlex ID, or PMID — not a health-AI answer or a consumer page. Expression of Concern rows are dropped: [`shaky/retractionwatch.py`](https://github.com/aryangorde6/shaky-ground/blob/main/shaky/retractionwatch.py) keeps only notices where `RetractionNature == "Retraction"` (line 61 as fetched 16 Oct 2026).
+[Shaky Ground](https://github.com/aryangorde6/shaky-ground) traces papers that *build on* retracted work through reliance-weighted citation chains, with hop sentences stored on the edges. It ships stdio MCP (`check_foundations`, `retraction_blast_radius`, `explain_chain`) and a web UI. Their [`docs/DEPLOY.md`](https://github.com/aryangorde6/shaky-ground/blob/main/docs/DEPLOY.md) documents a public demo at https://shaky-ground-production.up.railway.app (`ALLOW_RUNS=0`). A signed-out HEAD of that URL still returns HTTP 501 (Railway). A normal GET on 17 Oct 2026 06:42 UTC returned HTTP 200 (Content-Length 4848, title “Shaky Ground”, no sign-up). The page shows Blast radius / Foundation check, a DOI / OpenAlex ID / PubMed ID field, and Trace. `GET /api/config` is `allow_runs: false`. A paper not already in their graph is refused (`GET /api/blast?paper=10.1056/nejmoa1200303` → “the server is read only”). Stored `/api/checks` rows from 15 Oct 2026 are listed. Input is a paper DOI, OpenAlex ID, or PMID — not a health-AI answer or a consumer page. Expression of Concern rows are dropped: [`shaky/retractionwatch.py`](https://github.com/aryangorde6/shaky-ground/blob/main/shaky/retractionwatch.py) keeps only notices where `RetractionNature == "Retraction"` (line 61 as fetched 16 Oct 2026).
 
 [scite](https://scite.ai/features) Reference Check evaluates the references in a manuscript PDF and flags cited papers that were retracted or received an [expression of concern or other editorial notice](https://scite.ai/blog/reference-check-an-easy-way-to-check-the-reliability-of-your-references-b2afcd64abc6). It does not walk a consumer page → review → trial chain.
 
@@ -348,11 +348,11 @@ The report prints precision and recall on a binary flagged class (`warn` or `blo
 
 ## Honest results
 
-Numbers below are from this checkout on 16 Oct 2026. Re-run the command next to each line. Do not treat them as a medical accuracy score.
+Numbers below are dated per row. Re-run the command next to each line. Do not treat them as a medical accuracy score.
 
-| Claim | Command | Result (16 Oct 2026) |
+| Claim | Command | Result |
 | --- | --- | --- |
-| Full unit suite | `unshare --net --map-root-user .venv/bin/python -m pytest -q` | 17 Oct 2026 06:38 UTC this checkout: 299 passed, 0 failed, 442.67 s, network namespace unshared |
+| Full unit suite | `unshare --net --map-root-user .venv/bin/python -m pytest -q` | 17 Oct 2026 07:00 UTC this checkout: 304 passed, 0 failed, 435.51 s, network namespace unshared |
 | Flip + ablation | `.venv/bin/python -m pytest tests/test_graph.py::test_sp_weight_flip_changes_verdict tests/test_graph.py::test_sp_paths_ablation_returns_exit_3 tests/test_graph.py::test_sp_paths_strength_equals_brute_force_product -q` | 16 Oct 2026: weight 0.85 → warn, 0.2 → pass; `sp_paths` raised → exit 3, no verdict; algorithm strength equals brute-force product on 3 fixtures. |
 | Agent loop | `.venv/bin/python examples/agent_loop.py` | check warn, `algo.SPpaths`, rewrite recheck pass, 1 counted answer |
 | Fresh-clone quickstart in `/tmp` | `git clone … && python3 -m venv .venv && .venv/bin/pip install -e . && .venv/bin/python -m mooltrace check --url https://www.healthline.com/nutrition/cinnamon-and-diabetes --summary` | 16 Oct 2026: **65.06 s** (clone 3.02 s + install 9.67 s + check 52.37 s). WARN exit 2, EoC `10.2337/dc25-ec09`, `algo.SPpaths` 0.55. See [CLAIMS.md](CLAIMS.md). |

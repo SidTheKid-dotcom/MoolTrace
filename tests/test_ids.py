@@ -79,6 +79,16 @@ def test_doi_cleanup():
         clean_doi("https://www.frontiersin.org/articles/10.3389/fendo.2019.00640/epdf")
         == "10.3389/fendo.2019.00640"
     )
+    frontiers_xml = "https://www.frontiersin.org/articles/10.3389/fendo.2019.00640/xml"
+    assert clean_doi(frontiers_xml) == "10.3389/fendo.2019.00640"
+    assert clean_doi("10.3389/fendo.2019.00640/xml") == "10.3389/fendo.2019.00640"
+    found = extract_identifiers(f"See {frontiers_xml}")
+    assert found.dois == ["10.3389/fendo.2019.00640"]
+    newer = (
+        "https://www.frontiersin.org/journals/endocrinology/articles/"
+        "10.3389/fendo.2019.00640/xml"
+    )
+    assert extract_identifiers(newer).dois == ["10.3389/fendo.2019.00640"]
 
 
 def test_extract_encoded_and_noisy_dois():

@@ -68,7 +68,7 @@ def test_resolve_diabetes_care_rejects_wrong_issn(monkeypatch):
 @pytest.fixture(autouse=True)
 def _http_tmp(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("MOOLTRACE_HTTP_CACHE", str(tmp_path / "http-cache"))
-    monkeypatch.setenv("MOOLTRACE_MAILTO", "siddhant.m.vishnu@gmail.com")
+    monkeypatch.setenv("MOOLTRACE_MAILTO", "mooltrace-test@example.com")
     reset_http_state()
     yield
     reset_http_state()

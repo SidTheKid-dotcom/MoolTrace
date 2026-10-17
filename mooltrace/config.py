@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DB_PATH = Path(os.environ.get("MOOLTRACE_DB", ROOT / "data" / "mooltrace.db"))
-MAILTO = os.environ.get("MOOLTRACE_MAILTO", "mooltrace-demo@example.com")
+MAILTO = os.environ.get("MOOLTRACE_MAILTO") or "mooltrace@users.noreply.github.com"
 GRAPH_NAME = os.environ.get("MOOLTRACE_GRAPH", "mooltrace")
 API_HOST = os.environ.get("MOOLTRACE_API_HOST", "127.0.0.1")
 API_PORT = int(os.environ.get("MOOLTRACE_API_PORT", "4317"))

@@ -13,7 +13,6 @@
         "MOOLTRACE_DB": "/data/demo.db",
         "MOOLTRACE_API_HOST": "0.0.0.0",
         "MOOLTRACE_API_PORT": "4317",
-        "MOOLTRACE_MAILTO": "siddhant.m.vishnu@gmail.com",
         "MOOLTRACE_CORS_ORIGINS": "https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com"
       },
       "ports": {

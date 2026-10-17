@@ -147,12 +147,15 @@ def _cache_dir() -> Path:
     return Path(os.environ.get("MOOLTRACE_DB", str(DB_PATH))).parent / "http-cache"
 
 
+_CACHE_DROP_QUERY = frozenset({"mailto", "email"})
+
+
 def _cache_key(url: str) -> str:
     parsed = urlparse(url)
     query = [
         (key, value)
         for key, value in parse_qsl(parsed.query, keep_blank_values=True)
-        if key.lower() != "mailto"
+        if key.lower() not in _CACHE_DROP_QUERY
     ]
     normalized = urlunparse(
         (
