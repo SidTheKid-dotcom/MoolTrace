@@ -81,11 +81,13 @@ def _flag_line(payload: dict[str, Any]) -> str:
     else:
         label = reason.get("notice_label") or code or "publisher notice"
     doi = reason.get("notice_doi")
-    date = reason.get("notice_date") or ""
+    date = str(reason.get("notice_date") or "").strip()
     ago = payload.get("notices_checked_ago")
     bits = [f"Flag: {label} {doi}".strip()]
     if date:
         bits[0] += f" ({date})"
+    elif code in {"retraction", "withdrawal"}:
+        bits[0] += " (retraction date not confirmed)"
     if ago:
         bits.append(f"notices checked {ago}")
     return " · ".join(bits)

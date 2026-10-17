@@ -61,6 +61,8 @@ For most older adults who already get enough vitamin D, extra supplements have n
 
 This does not say vitamin D works or does not. An Expression of Concern is not a retraction. The Ishida 2004 notice in this recording is a retraction.
 
+**Date bug in this recording:** the shipped rewrite says “retracted on 15 Oct 2004” and `notice_date` is `2004-10-15` with `notice_doi` equal to the article DOI. That text was produced by the old Crossref in-place `updated-by` bug (the 2004-10-15 value is the article publication date). The real notice is `10.1016/j.amjmed.2025.03.001`, May 2025 (PubMed PMID 15465502 RetractionIn PMID 40222753). The JSONL/JSON/TXT transcripts above are left byte-identical.
+
 ## Files
 
 | File | What it is |

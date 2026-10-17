@@ -78,6 +78,7 @@ def test_video_script_quotes_live_numbers_with_citations():
         "depth 3",
         "BLOCK (exit 1)",
         "10.1016/j.amjmed.2004.05.019",
+        "10.1016/j.amjmed.2025.03.001",
         "10.1056/nejmc1806491",
         "Not in the graph",
         "https://www.nhs.uk/live-well/best-way-to-wash-your-hands/",
@@ -89,6 +90,7 @@ def test_video_script_quotes_live_numbers_with_citations():
         "pass",
         "Ishida et al. 2004",
         "Hand hygiene is discussed separately.",
+        "retracted in May 2025",
         "retracted on 15 Oct 2004",
         "Rewrite and recheck",
         "examples/lancet.jsonl --fail-on block",
@@ -126,7 +128,7 @@ def test_video_script_quotes_live_numbers_with_citations():
     assert "Why the graph decided" in block_section
     assert "would ship" in block_section
     assert "Graph depth 1: 0 notice paths → PASS" in block_section
-    assert "Graph depth 2: retraction 10.1016/j.amjmed.2004.05.019 → BLOCK" in block_section
+    assert "Graph depth 2: retraction 10.1016/j.amjmed.2025.03.001 (2025-05) → BLOCK" in block_section
     not_in = text.split("## Not in the graph", 1)[1].split("## Rewrite", 1)[0]
     assert "expanded 0 of 0 cited works" in not_in
     assert "not proof it is safe" in not_in.lower() or "not proof" in not_in.lower()

@@ -12,6 +12,7 @@ HERO_ID = "nutrition-harvard-vitamin-d"
 HERO_URL = "https://nutritionsource.hsph.harvard.edu/vitamin-d/"
 AVENELL = "10.1002/14651858.cd000227.pub4"
 ISHIDA = "10.1016/j.amjmed.2004.05.019"
+ISHIDA_NOTICE = "10.1016/j.amjmed.2025.03.001"
 OLIVE_ID = "nutrition-olive-oil"
 ENGINE = "nutrition-coach"
 
@@ -135,8 +136,9 @@ def test_harvard_vitamin_d_recorded_preset_has_uses_data_or_method():
     notices = spec["notices"]
     assert notices
     assert notices[0]["work_doi"] == ISHIDA
+    assert notices[0]["doi"] == ISHIDA_NOTICE
     assert notices[0]["type"] == "retraction"
-    assert notices[0]["date"] == "2004-10-15"
+    assert notices[0]["date"] == "2025-05"
     works = {row["doi"]: row for row in spec["works"]}
     assert works[AVENELL]["first_author"] == "Avenell"
     assert works[AVENELL]["year"] == 2014
@@ -150,10 +152,10 @@ def test_harvard_vitamin_d_recorded_preset_has_uses_data_or_method():
     assert by_depth["2"]["decision"] == "block"
     assert int(by_depth["2"]["exit_code"]) == 1
     assert by_depth["2"]["notice_type"] == "retraction"
-    assert by_depth["2"]["notice_doi"] == ISHIDA
+    assert by_depth["2"]["notice_doi"] == ISHIDA_NOTICE
     assert by_depth["3"]["decision"] == "block"
     assert int(by_depth["3"]["exit_code"]) == 1
-    assert by_depth["3"]["notice_doi"] == ISHIDA
+    assert by_depth["3"]["notice_doi"] == ISHIDA_NOTICE
 
 
 def test_harvard_seeded_replay_blocks_at_depth_2_and_3(tmp_path: Path, monkeypatch):
@@ -186,7 +188,8 @@ def test_harvard_seeded_replay_blocks_at_depth_2_and_3(tmp_path: Path, monkeypat
         assert any(
             reason.get("root_doi") == ISHIDA
             and reason.get("notice_type") == "retraction"
-            and reason.get("notice_doi") == ISHIDA
+            and reason.get("notice_doi") == ISHIDA_NOTICE
+            and reason.get("notice_date") == "2025-05"
             and reason.get("root_author") == "Ishida"
             and reason.get("root_year") == 2004
             for reason in payload.get("reasons") or []

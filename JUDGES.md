@@ -12,7 +12,7 @@ WeMakeDevs COO judging guide (15 Oct 2026): https://www.wemakedevs.org/blogs/how
 | Same question at depth 1, then deeper, with the path | Live signed-out Harvard toggle this session: depth 1 **PASS** (exit 0, 0 notice paths, Why `Graph depth 1: 0 notice paths → PASS`) then depth 2 **BLOCK** (exit 1, `mention` × `uses_data_or_method`, Why panel names Ishida 2004). Recorded: `examples/presets_recorded.json:459` / `examples/presets_recorded.json:472`. UI nudge `web/src/components/pre-ship.tsx:737`. |
 | Ask something not in the graph and let it say so | Click **Not in the graph** on the live demo. WARN, “Nothing in the graph connects this answer to a study. This is not proof it is safe; the source may not be modelled.” (`mooltrace/decision.py:41`, `mooltrace/decision.py:458`; preset `web/src/components/pre-ship.tsx:174`). |
 | Fixed tool catalogue; model never writes Cypher; params validated | Hosted MCP is only `check_answer`, `what_rests_on`, `recheck_affected` (`mooltrace/mcp_http.py:3`). Depth is `Field(ge=1, le=3)` (`mooltrace/mcp_http.py:78`). Local stdio also exposes `ro_cypher` (`mooltrace/mcp_server.py:249`); writes are rejected. In-app agent (`POST /nw/agent`, `mooltrace/api.py:184`) may call only `check_answer`, `explain_path`, `rewrite_answer`, `what_rests_on` (`mooltrace/agent.py:109`). URLs go through the public-demo allow-list; DOIs must already be in the graph. The model does not compose the verdict query. |
-| Resolve names against the DB | `check_study` resolves a DOI/PMID then `MATCH (w:Work {doi: $doi})` (`mooltrace/trace.py:1269`, `mooltrace/graph.py:443`). Rewrite author/year comes from `graph.work_row` (`mooltrace/rewrite.py:296`). Remote reverse-lookup DOIs must be a recorded preset notice unless live fetch is on (`mooltrace/public_demo.py:265`). This is Work/DOI lookup, not Blast Radius service-name resolution. |
+| Resolve names against the DB | `check_study` resolves a DOI/PMID then `MATCH (w:Work {doi: $doi})` (`mooltrace/trace.py:1281`, `mooltrace/graph.py:443`). Rewrite author/year comes from `graph.work_row` (`mooltrace/rewrite.py:310`). Remote reverse-lookup DOIs must be a recorded preset notice unless live fetch is on (`mooltrace/public_demo.py:265`). This is Work/DOI lookup, not Blast Radius service-name resolution. |
 | Algorithms as tools (`algo.SPpaths` etc) | Verdict is `CALL algo.SPpaths` inside `check_answer` (`mooltrace/cypher.py:52`, `mooltrace/graph.py:511`). It is not a separate MCP tool named `algo.SPpaths`. `algo.pageRank` is registered in FalkorDBLite and is **not** called (`tests/test_pagerank_unused.py:1`). Embedded FalkorDBLite (`mooltrace/graph.py:3`), not FalkorDB Cloud. |
 | Memory is more nodes | Each check `MERGE`s an `Answer` node (`mooltrace/graph.py:241`); `what_rests_on` counts stored answers (`mooltrace/mcp_http.py:103`). There is no dated “answered from memory” outcome. |
 | Return the path with the answer; check the sentence against graph rows | `nodes(path)` and hop sentences return with the verdict (`mooltrace/cypher.py:69`; Why panel `web/src/components/pre-ship.tsx:301`). Rewrite text is filled from those rows (`mooltrace/rewrite.py:3`). In-app agent grounding (`mooltrace/agent.py:665`): every DOI, author-year, and URL in the shipped text must appear in the tool results, else the deterministic rewrite is shipped. This is not Blast Radius `accepts()`. |
@@ -21,7 +21,7 @@ WeMakeDevs COO judging guide (15 Oct 2026): https://www.wemakedevs.org/blogs/how
 
 https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/
 
-Click **Harvard vitamin D (block)**. You should see **BLOCK** (exit 1), path strength **0.47**, hops `mention` 0.55 × `uses_data_or_method` 0.85, and Ishida 2004 retraction `10.1016/j.amjmed.2004.05.019` (2004-10-15). `Decided by: algo.SPpaths`. The **Why the graph decided** panel reads `Direct DOI check: 0 notices → would ship  |  Graph depth 2: retraction 10.1016/j.amjmed.2004.05.019 → BLOCK`. The Cochrane review called Ishida an included trial. This does not say vitamin D works or does not.
+Click **Harvard vitamin D (block)**. You should see **BLOCK** (exit 1), path strength **0.47**, hops `mention` 0.55 × `uses_data_or_method` 0.85, and Ishida 2004 retraction `10.1016/j.amjmed.2025.03.001` (2025-05). `Decided by: algo.SPpaths`. The **Why the graph decided** panel reads `Direct DOI check: 0 notices → would ship  |  Graph depth 2: retraction 10.1016/j.amjmed.2025.03.001 (2025-05) → BLOCK`. The Cochrane review called Ishida an included trial. This does not say vitamin D works or does not.
 
 Click **Healthline olive oil (warn)**. Toggle **depth 1**: **PASS** (0 notice paths). Toggle **depth 3**: **WARN** (exit 2), path strength **0.30**, both hops `mention` 0.55, Estruch 2013 retraction `10.1056/nejmc1806491` (2018-06-13). The review did not appear to rely on the trial. The 2013 trial was retracted and republished in 2018 after re-analysis. This does not say olive oil or the Mediterranean diet works or does not.
 
@@ -71,7 +71,7 @@ Claude Desktop can also use `"type": "http"` next to `url`. Tools are only `chec
 }
 ```
 
-Expect **block**, exit 1, retraction `10.1016/j.amjmed.2004.05.019`, path strength `0.4675`, hops `mention` × `uses_data_or_method`, `decided_by: algo.SPpaths`. Seeded replay of the recorded hops (T25 live 17 Oct 2026; T26 PATH_RULE).
+Expect **block**, exit 1, retraction `10.1016/j.amjmed.2025.03.001` (2025-05), path strength `0.4675`, hops `mention` × `uses_data_or_method`, `decided_by: algo.SPpaths`. Seeded replay of the recorded hops (T25 live 17 Oct 2026; T26 PATH_RULE; T42 notice DOI/date).
 
 Olive-oil MCP at depth 3 is **warn**, exit 2, Estruch 2013 mention × mention, path strength `0.3025`.
 
@@ -91,7 +91,7 @@ Track 01 is **Agents That Act on Connected Data**. On the live (or local) demo, 
 
 A recorded `cursor-agent -p --model cursor-grok-4.6-high-fast` pair on 17 Oct 2026 asked the same consumer question (“Does vitamin D help prevent fractures in older adults?”) and required a citation of the Harvard BLOCK page. Files: [examples/agent_runs/2026-10-17/](examples/agent_runs/2026-10-17/). Output may vary run to run.
 
-- **With** local stdio MCP on a throwaway graph seeded from the recorded presets: the agent called `check_answer`, got **BLOCK** (exit 1, Ishida 2004 retraction `10.1016/j.amjmed.2004.05.019`, path strength `0.4675`), called `rewrite_answer`, and shipped the rewritten text. The first sentence stayed; the citing sentence became the Ishida 2004 retraction disclosure.
+- **With** local stdio MCP on a throwaway graph seeded from the recorded presets: the agent called `check_answer`, got **BLOCK** (exit 1, Ishida 2004 retraction `10.1016/j.amjmed.2025.03.001`, path strength `0.4675`), called `rewrite_answer`, and shipped the rewritten text. The first sentence stayed; the citing sentence became the Ishida 2004 retraction disclosure.
 - **Without** MoolTrace: the agent found no `check_answer` tool and shipped the consumer claim citing `https://nutritionsource.hsph.harvard.edu/vitamin-d/`.
 
 This does not say vitamin D works or does not.

@@ -45,6 +45,7 @@ DATACITE = "https://api.datacite.org"
 DOI_ORG = "https://doi.org"
 IDCONV = "https://www.ncbi.nlm.nih.gov/pmc/utils/idconv/v1.0/"
 EUTILS_ESUMMARY = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
+EUTILS_EFETCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 _NOTICE_HOSTS = {
     "api.crossref.org",
     "api.datacite.org",
@@ -591,7 +592,7 @@ def crossref_works(dois: list[str], stats: CallStats) -> list[dict[str, Any]]:
         filt = ",".join(f"doi:{quote(doi, safe='/')}" for doi in chunk)
         url = (
             f"{CROSSREF}/works?rows={len(chunk)}"
-            f"&select=DOI,title,author,updated-by,update-to,type,issued"
+            f"&select=DOI,title,author,updated-by,update-to,type,issued,relation"
             f"&filter={filt}"
         )
         data = _get_json(url, stats)
@@ -708,9 +709,12 @@ def _ncbi_family(value: Any) -> str | None:
     return token or None
 
 
-def _idconv_pmid(pmid: str, stats: CallStats) -> dict[str, Any] | None:
+def _idconv_record(identifier: str, stats: CallStats) -> dict[str, Any] | None:
+    raw = str(identifier or "").strip()
+    if not raw:
+        return None
     url = (
-        f"{IDCONV}?ids={quote(pmid)}&format=json&tool=mooltrace&email={quote(MAILTO)}"
+        f"{IDCONV}?ids={quote(raw, safe='')}&format=json&tool=mooltrace&email={quote(MAILTO)}"
     )
     data = _get_json(url, stats)
     if not isinstance(data, dict):
@@ -722,11 +726,14 @@ def _idconv_pmid(pmid: str, stats: CallStats) -> dict[str, Any] | None:
             continue
         doi = clean_doi(record.get("doi") or "")
         pmcid = str(record.get("pmcid") or "").strip()
-        rec_pmid = str(record.get("pmid") or record.get("requested-id") or pmid)
-        if not (valid_doi(doi) or pmcid or rec_pmid):
+        rec_pmid = str(record.get("pmid") or "").strip()
+        if not rec_pmid.isdigit():
+            requested = str(record.get("requested-id") or raw).strip()
+            rec_pmid = requested if requested.isdigit() else ""
+        if not (valid_doi(doi) or pmcid or rec_pmid.isdigit()):
             continue
         return {
-            "pmid": rec_pmid or pmid,
+            "pmid": rec_pmid or "",
             "doi": doi if valid_doi(doi) else "",
             "pmcid": pmcid,
             "title": None,
@@ -735,6 +742,10 @@ def _idconv_pmid(pmid: str, stats: CallStats) -> dict[str, Any] | None:
             "source": "idconv",
         }
     return None
+
+
+def _idconv_pmid(pmid: str, stats: CallStats) -> dict[str, Any] | None:
+    return _idconv_record(pmid, stats)
 
 
 def _esummary_pmid(pmid: str, stats: CallStats) -> dict[str, Any] | None:
@@ -761,12 +772,20 @@ def _esummary_pmid(pmid: str, stats: CallStats) -> dict[str, Any] | None:
                 doi = cleaned
         elif kind == "pmc" and value.upper().startswith("PMC"):
             pmcid = value.upper()
+    from mooltrace.notices import ncbi_pubdate_to_iso
+
+    pubdate = str(row.get("pubdate") or "").strip()
+    iso = ncbi_pubdate_to_iso(pubdate) or ncbi_pubdate_to_iso(
+        str(row.get("sortpubdate") or "")
+    )
     return {
         "pmid": pmid,
         "doi": doi,
         "pmcid": pmcid,
         "title": str(row.get("title") or "").strip() or None,
-        "year": _ncbi_year(row.get("pubdate") or row.get("sortpubdate")),
+        "year": _ncbi_year(pubdate or row.get("sortpubdate")),
+        "pubdate": pubdate or None,
+        "iso_date": iso,
         "first_author": _ncbi_family(row.get("sortfirstauthor")),
         "source": "esummary",
     }
@@ -808,6 +827,55 @@ def pmid_record(pmid: str, stats: CallStats) -> dict[str, Any] | None:
     ):
         return None
     return out
+
+
+def pubmed_efetch_xml(pmid: str, stats: CallStats) -> str | None:
+    raw = str(pmid or "").strip()
+    if not raw.isdigit():
+        return None
+    url = (
+        f"{EUTILS_EFETCH}?db=pubmed&id={quote(raw)}"
+        f"&retmode=xml&tool=mooltrace&email={quote(MAILTO)}"
+    )
+    body = _get_json(url, stats)
+    if isinstance(body, str) and body.strip():
+        return body
+    return None
+
+
+def pubmed_retraction_notice(work_doi: str, stats: CallStats) -> dict[str, Any] | None:
+    """Resolve RetractionIn on a work DOI via NCBI idconv + efetch + esummary."""
+    from mooltrace.notices import comments_corrections_from_pubmed_xml, ncbi_pubdate_to_iso
+
+    doi = clean_doi(work_doi)
+    if not valid_doi(doi):
+        return None
+    converted = _idconv_record(doi, stats)
+    pmid = str((converted or {}).get("pmid") or "").strip()
+    if not pmid.isdigit():
+        return None
+    xml = pubmed_efetch_xml(pmid, stats)
+    hits = comments_corrections_from_pubmed_xml(xml or "")
+    if not hits:
+        return None
+    hit = hits[0]
+    notice_pmid = str(hit.get("pmid") or "").strip()
+    notice_doi = clean_doi(hit.get("doi") or "")
+    iso = ncbi_pubdate_to_iso(hit.get("ref_source") or "")
+    if notice_pmid.isdigit():
+        summary = _esummary_pmid(notice_pmid, stats)
+        if summary:
+            if not valid_doi(notice_doi):
+                notice_doi = clean_doi(summary.get("doi") or "")
+            iso = str(summary.get("iso_date") or "") or iso
+    if not (valid_doi(notice_doi) or iso):
+        return None
+    return {
+        "notice_doi": notice_doi if valid_doi(notice_doi) else "",
+        "notice_date": iso,
+        "notice_pmid": notice_pmid if notice_pmid.isdigit() else "",
+        "source": "pubmed",
+    }
 
 
 def pmc_to_doi(pmcids: list[str], stats: CallStats) -> dict[str, str]:

@@ -203,7 +203,15 @@ def _notice_label(payload: dict[str, Any]) -> tuple[str, str, str]:
 
 
 def _pretty_date(value: str) -> str:
-    text = (value or "").strip()[:10]
+    text = (value or "").strip()
+    month_only = re.fullmatch(r"((?:19|20)\d{2})-(\d{2})$", text)
+    if month_only:
+        year, month = month_only.groups()
+        try:
+            return f"{_MONTHS[int(month) - 1]} {year}"
+        except (IndexError, ValueError):
+            return text
+    text = text[:10]
     match = re.fullmatch(r"((?:19|20)\d{2})-(\d{2})-(\d{2})", text)
     if not match:
         return text
@@ -213,6 +221,12 @@ def _pretty_date(value: str) -> str:
     except (IndexError, ValueError):
         return text
     return f"{int(day)} {month_name} {year}"
+
+
+def _date_preposition(value: str) -> str:
+    if re.fullmatch(r"((?:19|20)\d{2})-(\d{2})$", (value or "").strip()):
+        return "in"
+    return "on"
 
 
 def _cite_name(author: str, year: str) -> str:
@@ -306,16 +320,30 @@ def _retraction_sentence(payload: dict[str, Any], span: str = "", graph=None) ->
     _label, _notice, date = _notice_label(payload)
     author, year, root = _study_cite(payload, span, graph)
     who = _cite_name(author, year)
-    when = _pretty_date(date) or "an unknown date"
+    when = _pretty_date(date)
     if _is_predimed(payload, root):
+        if not when:
+            return (
+                f"An earlier version of this answer cited {who} (PREDIMED); "
+                f"that trial report was retracted and republished "
+                f"(retraction date not confirmed), so this claim was removed."
+            )
+        prep = _date_preposition(date)
         return (
             f"An earlier version of this answer cited {who} (PREDIMED); "
-            f"that trial report was retracted and republished on {when}, "
+            f"that trial report was retracted and republished {prep} {when}, "
             f"so this claim was removed."
         )
+    if not when:
+        return (
+            f"An earlier version of this answer cited {who}; "
+            f"that paper was retracted (retraction date not confirmed), "
+            f"so this claim was removed."
+        )
+    prep = _date_preposition(date)
     return (
         f"An earlier version of this answer cited {who}; "
-        f"that paper was retracted on {when}, so this claim was removed."
+        f"that paper was retracted {prep} {when}, so this claim was removed."
     )
 
 

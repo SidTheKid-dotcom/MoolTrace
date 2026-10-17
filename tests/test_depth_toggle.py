@@ -22,13 +22,13 @@ EXPECTED = {
             "decision": "block",
             "exit_code": 1,
             "notice_type": "retraction",
-            "notice_doi": "10.1016/j.amjmed.2004.05.019",
+            "notice_doi": "10.1016/j.amjmed.2025.03.001",
         },
         3: {
             "decision": "block",
             "exit_code": 1,
             "notice_type": "retraction",
-            "notice_doi": "10.1016/j.amjmed.2004.05.019",
+            "notice_doi": "10.1016/j.amjmed.2025.03.001",
         },
     },
     "nutrition-olive-oil": {

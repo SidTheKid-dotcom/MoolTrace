@@ -29,6 +29,7 @@ from mooltrace.clients import (
     openalex_work_pmid,
     pmid_record,
     pmc_to_doi,
+    pubmed_retraction_notice,
     reference_dois,
 )
 from mooltrace import cypher as C
@@ -50,6 +51,7 @@ from mooltrace.ids import (
     site_of,
     valid_doi,
 )
+from mooltrace.notices import issued_date, notice_date_from_update, resolve_publisher_notice
 from mooltrace import PITCH, TAGLINE
 from mooltrace.progress import emit as progress
 
@@ -144,16 +146,7 @@ def _dedupe(items: list[str]) -> list[str]:
 
 
 def _notice_date(update: dict[str, Any]) -> str:
-    updated = update.get("updated") or {}
-    if updated.get("date-time"):
-        return str(updated["date-time"])[:10]
-    parts = (updated.get("date-parts") or [[]])[0]
-    if not parts:
-        return ""
-    year = int(parts[0])
-    month = int(parts[1]) if len(parts) > 1 else 1
-    day = int(parts[2]) if len(parts) > 2 else 1
-    return f"{year:04d}-{month:02d}-{day:02d}"
+    return notice_date_from_update(update)
 
 
 def _family_name(message: dict[str, Any] | None) -> str | None:
@@ -214,22 +207,47 @@ def _notice_document(message: dict[str, Any] | None) -> bool:
     )
 
 
-def _apply_notices(graph: Graph, work_doi: str, message: dict[str, Any] | None) -> None:
+def _apply_notices(
+    graph: Graph,
+    work_doi: str,
+    message: dict[str, Any] | None,
+    stats: CallStats | None = None,
+) -> None:
     if not message:
         return
+    tally = stats or CallStats()
+    work_date = issued_date(message)
+
+    def _pubmed(doi: str) -> dict[str, Any] | None:
+        return pubmed_retraction_notice(doi, tally)
+
+    def _crossref(doi: str) -> dict[str, Any] | None:
+        return crossref_work(doi, tally)
+
     for update in message.get("updated-by") or []:
         if not is_publisher_flag(update.get("type")):
             continue
         notice_doi = clean_doi(update.get("DOI") or "")
         if not valid_doi(notice_doi):
             continue
+        resolved_doi, resolved_date = resolve_publisher_notice(
+            work_doi=work_doi,
+            work_date=work_date,
+            notice_doi=notice_doi,
+            notice_date=_notice_date(update),
+            message=message,
+            pubmed_lookup=_pubmed,
+            crossref_lookup=_crossref,
+        )
+        if not valid_doi(resolved_doi):
+            continue
         graph.merge_notice(
-            notice_doi,
+            resolved_doi,
             work_doi,
             normalize_update_type(update.get("type")),
             update.get("label") or update.get("type") or "",
             update.get("source") or "publisher",
-            _notice_date(update),
+            resolved_date,
         )
     if not _notice_document(message):
         return
@@ -239,13 +257,24 @@ def _apply_notices(graph: Graph, work_doi: str, message: dict[str, Any] | None) 
         target = clean_doi(update.get("DOI") or "")
         if not valid_doi(target):
             continue
+        resolved_doi, resolved_date = resolve_publisher_notice(
+            work_doi=target,
+            work_date=work_date,
+            notice_doi=work_doi,
+            notice_date=_notice_date(update),
+            message=message,
+            pubmed_lookup=_pubmed,
+            crossref_lookup=_crossref,
+        )
+        if not valid_doi(resolved_doi):
+            continue
         graph.merge_notice(
-            work_doi,
+            resolved_doi,
             target,
             normalize_update_type(update.get("type")),
             update.get("label") or update.get("type") or "",
             update.get("source") or "publisher",
-            _notice_date(update),
+            resolved_date,
         )
 
 
@@ -331,7 +360,7 @@ def notice_check(graph: Graph, dois: list[str], stats: CallStats) -> None:
             notice_checked=True,
             notice_checked_at=checked_at,
         )
-        _apply_notices(graph, doi, item)
+        _apply_notices(graph, doi, item, stats)
 
 
 def expand_work(graph: Graph, doi: str, stats: CallStats) -> None:
@@ -409,7 +438,7 @@ def expand_work(graph: Graph, doi: str, stats: CallStats) -> None:
             notice_checked=True,
             notice_checked_at=_now(),
         )
-    _apply_notices(graph, doi, crossref)
+    _apply_notices(graph, doi, crossref, stats)
 
     ref_dois: list[str] = []
     cr_refs = reference_dois(crossref)
@@ -1318,7 +1347,7 @@ def what_rests_on(doi: str, graph: Graph | None = None, depth: int | None = None
     )
     if not known.rows and not _notice_fresh(row):
         message = crossref_work(target, stats)
-        _apply_notices(graph, target, message)
+        _apply_notices(graph, target, message, stats)
         title = None
         if message:
             titles = message.get("title") or []

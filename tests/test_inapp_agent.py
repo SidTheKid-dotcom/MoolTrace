@@ -190,7 +190,7 @@ def test_tool_loop_calls_existing_tools(tmp_path, monkeypatch):
         return _message(
             content=(
                 "Ship the rewrite. An earlier version of this answer cited "
-                "Ishida et al. 2004; that paper was retracted on 15 Oct 2004, "
+                "Ishida et al. 2004; that paper was retracted in May 2025, "
                 "so this claim was removed."
             )
         )

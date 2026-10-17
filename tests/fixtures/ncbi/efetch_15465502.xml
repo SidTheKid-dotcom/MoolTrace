@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<PubmedArticleSet>
+  <PubmedArticle>
+    <MedlineCitation>
+      <PMID Version="1">15465502</PMID>
+      <Article>
+        <ArticleTitle>Comparative efficacy of hormone replacement therapy, etidronate, calcitonin, alfacalcidol, and vitamin K in postmenopausal women with osteoporosis: The Yamaguchi Osteoporosis Prevention Study.</ArticleTitle>
+      </Article>
+      <CommentsCorrectionsList>
+        <CommentsCorrections RefType="RetractionIn">
+          <RefSource>Am J Med. 2025 May;138(5):918-919. doi: 10.1016/j.amjmed.2025.03.001.</RefSource>
+          <PMID Version="1">40222753</PMID>
+        </CommentsCorrections>
+      </CommentsCorrectionsList>
+    </MedlineCitation>
+  </PubmedArticle>
+</PubmedArticleSet>

@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RUNS = ROOT / "examples" / "agent_runs"
 HARVARD = "https://nutritionsource.hsph.harvard.edu/vitamin-d/"
 ISHIDA = "10.1016/j.amjmed.2004.05.019"
+ISHIDA_NOTICE = "10.1016/j.amjmed.2025.03.001"
 MODEL = "cursor-grok-4.6-high-fast"
 
 
@@ -67,6 +68,8 @@ def test_recorded_agent_mcp_check_answer_matches_seeded_replay_today(tmp_path: P
     recorded_stable = _stable_check(first.get("result") or {})
     assert recorded_stable["decision"] == "block"
     assert recorded_stable["exit_code"] == 1
+    # The 17 Oct recording used Crossref's in-place updated date (article
+    # pub date). Do not rewrite the transcript; today's seed has the real notice.
     assert recorded_stable["notice_doi"] == ISHIDA
     assert recorded_stable["notice_type"] == "retraction"
     assert recorded_stable["root_author"] == "Ishida"
@@ -80,10 +83,20 @@ def test_recorded_agent_mcp_check_answer_matches_seeded_replay_today(tmp_path: P
     finally:
         graph.close()
     assert live.get("api_calls") == 0
-    assert _stable_check(live) == recorded_stable
+    live_stable = _stable_check(live)
+    assert live_stable["decision"] == recorded_stable["decision"]
+    assert live_stable["exit_code"] == recorded_stable["exit_code"]
+    assert live_stable["notice_type"] == recorded_stable["notice_type"]
+    assert live_stable["root_doi"] == recorded_stable["root_doi"] == ISHIDA
+    assert live_stable["root_author"] == recorded_stable["root_author"]
+    assert live_stable["algorithm"] == recorded_stable["algorithm"]
+    assert live_stable["strength"] == recorded_stable["strength"]
+    assert live_stable["reliances"] == recorded_stable["reliances"]
+    assert live_stable["notice_doi"] == ISHIDA_NOTICE
     rewrite = rewrites[0].get("result") or {}
     assert rewrite.get("rewritten") is True
     assert "Ishida et al. 2004" in str(rewrite.get("text") or "")
+    assert "15 Oct 2004" in str(rewrite.get("text") or "")
     assert (rewrite.get("check") or {}).get("decision") == "block"
     shipped = (run_dir / "run_a_with_mooltrace.txt").read_text()
     assert "SHIPPED:" in shipped

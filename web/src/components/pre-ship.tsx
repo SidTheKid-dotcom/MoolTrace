@@ -937,7 +937,7 @@ export function PreShip() {
         <p className="text-sm leading-6 text-muted-foreground" data-testid="block-hero">
           Harvard T.H. Chan Nutrition Source vitamin D. Depth 1: PASS (0 notice paths). Depth 2/3:
           BLOCK — page mention 0.55 → Avenell 2014 Cochrane uses_data_or_method 0.85 → Ishida 2004
-          retraction (same DOI as the article, 2004-10-15). The review called Ishida an included trial.
+          retraction `10.1016/j.amjmed.2025.03.001` (2025-05). The review called Ishida an included trial.
           This does not say vitamin D works or does not.
         </p>
       ) : null}

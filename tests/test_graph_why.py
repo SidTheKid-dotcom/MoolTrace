@@ -16,6 +16,7 @@ UI = ROOT / "web" / "src" / "components" / "pre-ship.tsx"
 HARVARD = "nutrition-harvard-vitamin-d"
 OLIVE = "nutrition-olive-oil"
 ISHIDA = "10.1016/j.amjmed.2004.05.019"
+ISHIDA_NOTICE = "10.1016/j.amjmed.2025.03.001"
 SATO = "10.1161/01.str.28.4.736"
 ENGINE = "nutrition-coach"
 
@@ -68,9 +69,9 @@ def test_why_graph_panel_matches_harvard_fixture_rows(tmp_path: Path, monkeypatc
     assert "would ship" in panel["without_graph"]["line"]
     assert panel["with_graph"]["depth"] == 2
     assert panel["with_graph"]["decision"] == "block"
-    assert panel["with_graph"]["notice_doi"] == spec["by_depth"]["2"]["notice_doi"] == ISHIDA
+    assert panel["with_graph"]["notice_doi"] == spec["by_depth"]["2"]["notice_doi"] == ISHIDA_NOTICE
     assert panel["with_graph"]["line"] == (
-        f"Graph depth 2: retraction {ISHIDA} → BLOCK"
+        f"Graph depth 2: retraction {ISHIDA_NOTICE} (2025-05) → BLOCK"
     )
     assert panel["contrast"] == f"{panel['without_graph']['line']}  |  {panel['with_graph']['line']}"
     assert payload["api_calls"] == 0

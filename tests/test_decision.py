@@ -674,10 +674,10 @@ def test_included_retraction_still_blocks():
             "year": 2004,
         },
         notice={
-            "doi": "10.1016/j.amjmed.2004.05.019",
+            "doi": "10.1016/j.amjmed.2025.03.001",
             "type": "retraction",
             "label": "Retraction",
-            "date": "2004-10-15",
+            "date": "2025-05",
         },
     )
     verdict = decide([path], incomplete=False, depth=2)

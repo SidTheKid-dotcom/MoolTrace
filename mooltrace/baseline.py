@@ -18,6 +18,7 @@ from typing import Any, Callable
 
 from mooltrace import config
 from mooltrace.clients import InfraError, MoolTraceError, close_client, crossref_work, CallStats
+from mooltrace.notices import issued_date, notice_date_from_update, resolve_publisher_notice
 from mooltrace.decision import EXIT_BLOCK, EXIT_INFRA, EXIT_PASS, EXIT_WARN
 from mooltrace.ids import (
     clean_doi,
@@ -119,16 +120,7 @@ def live_lookup(stats: CallStats | None = None) -> Lookup:
 
 
 def _notice_date(update: dict[str, Any]) -> str:
-    updated = update.get("updated") or {}
-    if updated.get("date-time"):
-        return str(updated["date-time"])[:10]
-    parts = (updated.get("date-parts") or [[]])[0]
-    if not parts:
-        return ""
-    year = int(parts[0])
-    month = int(parts[1]) if len(parts) > 1 else 1
-    day = int(parts[2]) if len(parts) > 2 else 1
-    return f"{year:04d}-{month:02d}-{day:02d}"
+    return notice_date_from_update(update)
 
 
 def _kind(notice_type: str | None) -> str:
@@ -146,22 +138,32 @@ def notices_on_work(message: dict[str, Any] | None, work_doi: str) -> list[dict[
     if not message:
         return []
     rows: list[dict[str, Any]] = []
+    work_date = issued_date(message)
     for update in message.get("updated-by") or []:
         if not is_publisher_flag(update.get("type")):
             continue
         notice_doi = clean_doi(update.get("DOI") or "")
         if not valid_doi(notice_doi):
             continue
+        resolved_doi, resolved_date = resolve_publisher_notice(
+            work_doi=work_doi,
+            work_date=work_date,
+            notice_doi=notice_doi,
+            notice_date=_notice_date(update),
+            message=message,
+        )
+        if not valid_doi(resolved_doi):
+            continue
         code = _kind(update.get("type"))
         rows.append(
             {
                 "code": code,
                 "root_doi": work_doi,
-                "notice_doi": notice_doi,
+                "notice_doi": resolved_doi,
                 "notice_type": normalize_update_type(update.get("type")),
                 "notice_label": update.get("label") or update.get("type") or "",
                 "notice_source": update.get("source") or "publisher",
-                "notice_date": _notice_date(update),
+                "notice_date": resolved_date,
                 "hops": 1,
                 "path_score": 1.0,
             }

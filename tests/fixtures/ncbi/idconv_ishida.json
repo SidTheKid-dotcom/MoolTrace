@@ -1,0 +1,14 @@
+{
+  "fetched_at": "2026-10-17T00:00:00Z",
+  "note": "NCBI idconv DOI to PMID for Ishida 2004. Fixture has no personal email.",
+  "url": "https://www.ncbi.nlm.nih.gov/pmc/utils/idconv/v1.0/?ids=10.1016/j.amjmed.2004.05.019&format=json",
+  "body": {
+    "records": [
+      {
+        "doi": "10.1016/j.amjmed.2004.05.019",
+        "pmid": "15465502",
+        "requested-id": "10.1016/j.amjmed.2004.05.019"
+      }
+    ]
+  }
+}

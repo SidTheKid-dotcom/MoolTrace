@@ -446,12 +446,12 @@
       ],
       "notices": [
         {
-          "doi": "10.1016/j.amjmed.2004.05.019",
+          "doi": "10.1016/j.amjmed.2025.03.001",
           "work_doi": "10.1016/j.amjmed.2004.05.019",
           "type": "retraction",
           "label": "Retraction",
-          "source": "publisher",
-          "date": "2004-10-15"
+          "source": "pubmed",
+          "date": "2025-05"
         }
       ],
       "by_depth": {
@@ -473,7 +473,7 @@
           "exit_code": 1,
           "notice_paths": 1,
           "notice_type": "retraction",
-          "notice_doi": "10.1016/j.amjmed.2004.05.019",
+          "notice_doi": "10.1016/j.amjmed.2025.03.001",
           "strength": 0.4675,
           "recorded_at": "2026-10-17T07:35:17+00:00",
           "fetch_date": "2026-10-17",
@@ -494,7 +494,7 @@
           "exit_code": 1,
           "notice_paths": 1,
           "notice_type": "retraction",
-          "notice_doi": "10.1016/j.amjmed.2004.05.019",
+          "notice_doi": "10.1016/j.amjmed.2025.03.001",
           "strength": 0.4675,
           "recorded_at": "2026-10-17T07:36:14+00:00",
           "fetch_date": "2026-10-17",

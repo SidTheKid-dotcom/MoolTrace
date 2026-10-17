@@ -191,3 +191,16 @@ def test_extract_skips_rewrite_disclosures():
     )
     assert extract_identifiers(mehra).dois == []
     assert is_disclosure_only(mehra, [])
+    ishida = (
+        "An earlier version of this answer cited Ishida et al. 2004; "
+        "that paper was retracted in May 2025, so this claim was removed."
+    )
+    assert extract_identifiers(ishida).dois == []
+    assert is_disclosure_only(ishida, [])
+    unconfirmed = (
+        "An earlier version of this answer cited Doe et al. 2001; "
+        "that paper was retracted (retraction date not confirmed), "
+        "so this claim was removed."
+    )
+    assert extract_identifiers(unconfirmed).dois == []
+    assert is_disclosure_only(unconfirmed, [])

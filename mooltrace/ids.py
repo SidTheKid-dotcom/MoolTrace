@@ -33,8 +33,9 @@ _RETRACT_DISCLOSE = re.compile(
     r"the study this relied on \((?:[^()]|\([^()]*\))*\) was retracted on "
     r".+?\. This claim has been removed\.?"
     r"|An earlier version of this answer cited .{0,240}?"
-    r"(?:was retracted(?: and republished)? on |retracted and republished on )"
-    r".+? so this claim was removed\.?",
+    r"(?:was retracted(?: and republished)?(?: on | in |\s+\(retraction date not confirmed\))"
+    r"|retracted and republished(?: on | in |\s+\(retraction date not confirmed\)))"
+    r".*?so this claim was removed\.?",
     re.I,
 )
 _PUBLISHER_SUFFIXES = (

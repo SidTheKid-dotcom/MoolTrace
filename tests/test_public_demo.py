@@ -180,7 +180,7 @@ HARVARD_REWRITE_DRAFT = (
 )
 ISHIDA_REWRITE = (
     "An earlier version of this answer cited Ishida et al. 2004; "
-    "that paper was retracted on 15 Oct 2004, so this claim was removed."
+    "that paper was retracted in May 2025, so this claim was removed."
 )
 OLIVE_REWRITE_DRAFT = (
     "Vitamin D status is discussed separately. "

@@ -63,6 +63,7 @@ def with_graph_line(
     decision: str,
     notice_type: str | None,
     notice_doi: str | None,
+    notice_date: str | None = None,
     error_code: str | None = None,
 ) -> dict[str, Any]:
     verdict = (decision or "pass").upper()
@@ -70,6 +71,9 @@ def with_graph_line(
         body = "nothing in the graph"
     elif notice_doi:
         body = f"{_notice_word(notice_type)} {notice_doi}"
+        stamp = str(notice_date or "").strip()
+        if stamp:
+            body += f" ({stamp})"
     else:
         body = "0 notice paths"
     return {
@@ -77,6 +81,7 @@ def with_graph_line(
         "decision": decision,
         "notice_type": notice_type,
         "notice_doi": notice_doi,
+        "notice_date": notice_date,
         "line": f"Graph depth {depth}: {body} → {verdict}",
     }
 
@@ -165,11 +170,13 @@ def build_why_graph(
         without = without_graph_from_direct(check_direct_doi(text, urls))
     notice_type = (reason or {}).get("notice_type")
     notice_doi = (reason or {}).get("notice_doi")
+    notice_date = (reason or {}).get("notice_date")
     with_graph = with_graph_line(
         depth=depth,
         decision=decision,
         notice_type=notice_type,
         notice_doi=notice_doi,
+        notice_date=notice_date,
         error_code=error_code,
     )
     return {
