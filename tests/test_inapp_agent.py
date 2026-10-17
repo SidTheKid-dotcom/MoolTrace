@@ -228,7 +228,7 @@ def test_tool_loop_calls_existing_tools(tmp_path, monkeypatch):
         graph.close()
 
 
-def test_arg_validation_rejects_url_not_on_allow_list(tmp_path, monkeypatch):
+def test_model_cannot_swap_the_draft_or_sources(tmp_path, monkeypatch):
     graph = _seed(tmp_path, monkeypatch)
     calls = {"n": 0}
 
@@ -258,9 +258,11 @@ def test_arg_validation_rejects_url_not_on_allow_list(tmp_path, monkeypatch):
         )
         step = out["steps"][0]
         assert step["tool"] == "check_answer"
-        assert step["ok"] is False
-        assert "allow" in (step["summary"].get("error") or "").lower()
-        assert EVIL_URL in json.dumps(step["args"])
+        # The model's URL and text are ignored: the tool runs on the user's draft and sources.
+        assert step["args"]["urls"] == [HARVARD_VITAMIN_D_URL]
+        assert step["args"]["text"] == "hi"
+        assert step["args"]["ignored_model_args"] == ["urls"]
+        assert EVIL_URL not in json.dumps(step["args"]["urls"])
     finally:
         graph.close()
 

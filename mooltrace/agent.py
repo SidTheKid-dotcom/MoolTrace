@@ -556,7 +556,11 @@ def _execute_tool(name: str, args: dict[str, Any], graph, defaults: dict[str, An
             "engine": defaults.get("engine") or "draft",
             "depth": defaults.get("depth") or 2,
         }
-        merged.update({k: v for k, v in args.items() if v is not None})
+        # The model chooses the tool and the depth only. Text, URLs and engine always come from the
+        # user's draft, so a model edit can never reach the check or the shipped rewrite.
+        ignored = sorted(k for k, v in args.items() if k in {"text", "urls", "engine"} and v not in (None, merged[k]))
+        if args.get("depth") is not None:
+            merged["depth"] = args["depth"]
         merged["depth"] = clamp_depth(merged.get("depth"))
         merged["engine"] = str(merged.get("engine") or "draft")[:80]
         if not isinstance(merged.get("urls"), list):
@@ -590,7 +594,8 @@ def _execute_tool(name: str, args: dict[str, Any], graph, defaults: dict[str, An
                 graph=graph,
             )
         ms = round((time.monotonic() - started) * 1000, 2)
-        return {"ok": True, "error": None, "result": payload, "args": merged, "ms": ms}
+        shown = {**merged, **({"ignored_model_args": ignored} if ignored else {})}
+        return {"ok": True, "error": None, "result": payload, "args": shown, "ms": ms}
     doi_args = dict(args)
     err = _validate_doi_arg(doi_args, graph)
     if err:
