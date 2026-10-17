@@ -300,11 +300,7 @@ function ResultCard({
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={decisionVariant(result.decision)}>{result.decision}</Badge>
           <span className="text-xs text-muted-foreground">
-            {result.independent_source_count ?? 0} independent source
-            {(result.independent_source_count ?? 0) === 1 ? "" : "s"}
-            {result.algorithm?.explanation ? ` · ${result.algorithm.explanation}` : ""}
-            {result.coverage ? ` · ${result.coverage.replace("_", " ")}` : ""}
-            {result.elapsed_ms != null ? ` · ${result.elapsed_ms} ms` : ""}
+            {result.algorithm?.explanation || ""}
           </span>
         </div>
         <CardTitle className="text-lg leading-snug sm:text-xl">{plainVerdict(result)}</CardTitle>
@@ -312,13 +308,19 @@ function ResultCard({
         {result.coverage && result.coverage.startsWith("expanded ") ? (
           <CardDescription>Coverage: {result.coverage}</CardDescription>
         ) : null}
-        {result.pitch ? <CardDescription>{result.pitch}</CardDescription> : null}
-        {result.notices_checked_ago ? (
-          <CardDescription>Notices checked {result.notices_checked_ago}.</CardDescription>
-        ) : null}
-        {result.impact?.summary ? (
-          <CardDescription>{result.impact.summary}</CardDescription>
-        ) : null}
+        <details className="text-sm text-muted-foreground" data-testid="verdict-details">
+          <summary className="cursor-pointer text-xs">Details</summary>
+          <div className="mt-1 flex flex-col gap-1">
+            <p>
+              {result.independent_source_count ?? 0} independent source
+              {(result.independent_source_count ?? 0) === 1 ? "" : "s"}
+              {result.elapsed_ms != null ? ` · ${result.elapsed_ms} ms` : ""}
+            </p>
+            {result.pitch ? <p>{result.pitch}</p> : null}
+            {result.notices_checked_ago ? <p>Notices checked {result.notices_checked_ago}.</p> : null}
+            {result.impact?.summary ? <p>{result.impact.summary}</p> : null}
+          </div>
+        </details>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         {result.why_graph ? (
@@ -328,6 +330,14 @@ function ResultCard({
           >
             {/* Contrast line is built from the run / recorded without_graph, never hard-coded. */}
             <p className="font-medium">{result.why_graph.title || "Why the graph decided"}</p>
+            <p className="mt-1 text-sm" data-testid="without-the-graph">
+              {result.why_graph.contrast ||
+                [result.why_graph.without_graph?.line, result.why_graph.with_graph?.line]
+                  .filter(Boolean)
+                  .join("  |  ")}
+            </p>
+            <details className="mt-1">
+            <summary className="cursor-pointer text-muted-foreground">Cypher and hop evidence</summary>
             {result.why_graph.cypher ? (
               <pre className="mt-1 max-h-20 overflow-auto whitespace-pre-wrap font-mono text-[11px] leading-4">
                 {result.why_graph.cypher}
@@ -356,12 +366,7 @@ function ResultCard({
                   : ""}
               </p>
             ) : null}
-            <p className="mt-1" data-testid="without-the-graph">
-              {result.why_graph.contrast ||
-                [result.why_graph.without_graph?.line, result.why_graph.with_graph?.line]
-                  .filter(Boolean)
-                  .join("  |  ")}
-            </p>
+            </details>
           </section>
         ) : null}
         {deciding ? (
