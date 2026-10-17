@@ -1,5 +1,5 @@
-import { PreShip } from "@/components/pre-ship"
+import { Landing } from "@/components/landing"
 
 export default function Home() {
-  return <PreShip />
+  return <Landing />
 }

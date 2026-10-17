@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MoolTrace — Is your AI's answer built on a flagged study?",
+  title: "MoolTrace — is your AI's answer resting on retracted research?",
   description:
-    "Paste an answer and the links it cites. We follow every citation — page → review → trial — and show you the exact path to any retraction or Expression of Concern.",
+    "MoolTrace follows every citation in a health answer — page → review → trial — and stops the answer if research underneath was retracted.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -24,7 +24,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>
   );
 }
