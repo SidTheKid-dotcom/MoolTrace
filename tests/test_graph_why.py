@@ -177,3 +177,5 @@ def test_ui_renders_why_the_graph_decided_from_payload():
     assert "why_graph" in src
     assert "without_graph" in src
     assert "max-h-20" in src
+    assert 'data-testid="verdict-first"' in src
+    assert src.index('data-testid="verdict-first"') < src.index("Draft answer")

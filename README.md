@@ -8,7 +8,7 @@ WeMakeDevs × FalkorDB Graph Hacks, Track 01: **Agents That Act on Connected Dat
 
 ![Harvard Nutrition Source vitamin D BLOCK path](assets/demo-harvard-vitamin-d-block.png)
 
-Signed-out headless Chrome 1280×2200 capture, 17 Oct 2026, of the local seeded demo `http://127.0.0.1:4318/?preset=harvard-vitamin-d` (Lightsail pin pending `aws login`). BLOCK (exit 1). Page `mention` 0.55 → Avenell 2014 Cochrane `uses_data_or_method` 0.85 → Ishida 2004 retraction `10.1016/j.amjmed.2004.05.019` (2004-10-15). `Decided by: algo.SPpaths, path strength 0.47`. The review called Ishida an included trial. This does not say vitamin D works or does not.
+Signed-out headless Chrome 1280×2200 capture, 17 Oct 2026, of the local seeded demo `http://127.0.0.1:4318/?preset=harvard-vitamin-d` (Lightsail pin pending `aws login`). BLOCK (exit 1). Page `mention` 0.55 → Avenell 2014 Cochrane `uses_data_or_method` 0.85 → Ishida 2004 retraction `10.1016/j.amjmed.2004.05.019` (2004-10-15). `Decided by: algo.SPpaths, path strength 0.47`. The **Why the graph decided** panel shows the filled `algo.SPpaths` Cypher, the fixture hops, and `Direct DOI check: 0 notices → would ship` vs `Graph depth 2: retraction 10.1016/j.amjmed.2004.05.019 → BLOCK`. The review called Ishida an included trial. This does not say vitamin D works or does not.
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -e .
@@ -230,7 +230,7 @@ Open [http://127.0.0.1:4318](http://127.0.0.1:4318). API health is [http://127.0
 
 ![Healthline cinnamon WARN path](assets/healthline-warn.png)
 
-Signed-out headless Chrome 1280×2200 capture, 17 Oct 2026, of `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/?preset=healthline`. WARN (exit 2). Page `mention` 0.55 → Silva 2022 `relies` 1.0 → Khan 2003 Expression of Concern `10.2337/dc25-ec09` (2025-08-20). `Decided by: algo.SPpaths, path strength 0.55`. An Expression of Concern is not a retraction. This does not say cinnamon works or does not.
+Signed-out headless Chrome 1280×2200 capture, 17 Oct 2026, of the local seeded demo `http://127.0.0.1:4318/?preset=healthline` (Lightsail pin pending `aws login`). WARN (exit 2). Page `mention` 0.55 → Silva 2022 `relies` 1.0 → Khan 2003 Expression of Concern `10.2337/dc25-ec09` (2025-08-20). `Decided by: algo.SPpaths, path strength 0.55`. An Expression of Concern is not a retraction. This does not say cinnamon works or does not.
 
 Example `--summary` from a cold Healthline check on 16 Oct 2026:
 

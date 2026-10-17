@@ -323,7 +323,9 @@ function ResultCard({
         {counted.length === 0 ? (
           <p className="text-sm leading-6 text-muted-foreground">{result.limits}</p>
         ) : null}
-        {counted.map((reason, index) => (
+        {result.why_graph
+          ? null
+          : counted.map((reason, index) => (
           <article key={`${reason.notice_doi}-${reason.root_doi}-${index}`} className="flex flex-col gap-3">
             {index > 0 ? <Separator /> : null}
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
@@ -621,10 +623,12 @@ export function PreShip() {
         <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
           Is your AI&apos;s answer built on a flagged study?
         </h1>
-        <p className="text-base leading-7 text-muted-foreground">
-          Paste an answer and the links it cites. We follow every citation — page → review → trial —
-          and show you the exact path to any retraction or Expression of Concern.
-        </p>
+        {result ? null : (
+          <p className="text-base leading-7 text-muted-foreground">
+            Paste an answer and the links it cites. We follow every citation — page → review → trial —
+            and show you the exact path to any retraction or Expression of Concern.
+          </p>
+        )}
       </header>
 
       <div className="flex flex-wrap gap-2">
@@ -640,6 +644,13 @@ export function PreShip() {
           </Button>
         ))}
       </div>
+
+      {result ? (
+        <div data-testid="verdict-first">
+          <ResultCard result={result} onRewrite={() => void runRewrite()} rewriting={rewriting} />
+        </div>
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle>Draft answer</CardTitle>
@@ -657,7 +668,7 @@ export function PreShip() {
               setText(event.target.value)
             }}
             placeholder="Paste a draft answer, a DOI, or both."
-            className="min-h-36"
+            className={result ? "min-h-16" : "min-h-36"}
           />
           <Textarea
             value={urls}
@@ -768,7 +779,7 @@ export function PreShip() {
         </p>
       ) : null}
 
-      {presetId === "harvard-vitamin-d" ? (
+      {presetId === "harvard-vitamin-d" && !result ? (
         <p className="text-sm leading-6 text-muted-foreground" data-testid="block-hero">
           Harvard T.H. Chan Nutrition Source vitamin D. Depth 1: PASS (0 notice paths). Depth 2/3:
           BLOCK — page mention 0.55 → Avenell 2014 Cochrane uses_data_or_method 0.85 → Ishida 2004
@@ -784,10 +795,6 @@ export function PreShip() {
           are mention; the review did not appear to rely on the trial. The 2013 trial was retracted
           and republished in 2018 after re-analysis.
         </p>
-      ) : null}
-
-      {result ? (
-        <ResultCard result={result} onRewrite={() => void runRewrite()} rewriting={rewriting} />
       ) : null}
 
       {rewrite?.text ? (
