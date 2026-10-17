@@ -223,6 +223,7 @@ unshare --net --map-root-user .venv/bin/python -m pytest -q
 | SSRF refuses loopback / private / credentials | `pytest tests/test_ssrf.py` | passed this session |
 | Rewrite changes only the flagged sentence; never `RETRACTED:`; never the notice DOI | `pytest tests/test_rewrite.py::test_rewrite_hcq_mehra_2020_only_flagged_sentence` | passed this session |
 | Hosted live URL is allow-listed | POST a non-preset `healthline.com` URL with `MOOLTRACE_PUBLIC_LIVE=1`; `example.com` is 400 | allow-list + SSRF + per-IP 429 + concurrency 1 + 120 s timeout. Presets never 429. UI: Running live, about 60 s. `pytest tests/test_public_live.py` |
+| `assets/demo-harvard-depth-toggle.gif` and `assets/demo-harvard-vitamin-d-block.png` are signed-out 1280×800 live captures | headless Playwright Chromium of `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/?preset=harvard-vitamin-d`, 17 Oct 2026 11:44 UTC; cookies 0; no sign-in; GIF is depth 1 PASS then depth 2 BLOCK with **Why the graph decided** in the 800 px viewport (`:mooltrace.api.15` / `:mooltrace.web.16`) | not localhost; not synthetic |
 | `assets/healthline-warn.png` is a signed-out WARN capture | local seeded `http://127.0.0.1:4318/?preset=healthline`, 17 Oct 2026; live host `:mooltrace.api.15` / `:mooltrace.web.16` same WARN | path strength 0.55, EoC `10.2337/dc25-ec09`; not 0.72 |
 
 ## Seeded gate (three runs, 17 Oct 2026 10:36–10:44 UTC)

@@ -8,7 +8,7 @@ Paste a health-AI answer or the URL it cites; MoolTrace walks page → review �
 
 ![Harvard vitamin D depth 1 PASS then depth 2 BLOCK](assets/demo-harvard-depth-toggle.gif)
 
-Signed-out 1280×800 capture of the seeded demo at `http://127.0.0.1:4318/` on 17 Oct 2026. Live host this session (`:mooltrace.api.15` / `:mooltrace.web.16`, signed-out 17 Oct 2026 10:37 UTC) is the same Harvard depth-2 **BLOCK**. Default load is Harvard vitamin D at depth 2 **BLOCK**; toggle **depth 1** for **PASS** (0 notice paths). This does not say vitamin D works or does not.
+Signed-out 1280×800 Playwright Chromium capture of the live demo at `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/?preset=harvard-vitamin-d` on 17 Oct 2026 11:44 UTC (`:mooltrace.api.15` / `:mooltrace.web.16`). GIF is depth 1 **PASS** (0 notice paths) then depth 2 **BLOCK** with the **Why the graph decided** panel visible. The still `assets/demo-harvard-vitamin-d-block.png` is the same signed-out depth-2 **BLOCK** frame. This does not say vitamin D works or does not.
 
 Local MCP (one command): `.venv/bin/python -m mooltrace mcp`
 

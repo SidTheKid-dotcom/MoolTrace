@@ -57,7 +57,25 @@ WHAT_IT_DOES = (
 )
 MCP_ONE = ".venv/bin/python -m mooltrace mcp"
 HERO_STEM = "assets/demo-harvard-depth-toggle"
+HERO_GIF = ROOT / "assets" / "demo-harvard-depth-toggle.gif"
+HERO_PNG = ROOT / "assets" / "demo-harvard-vitamin-d-block.png"
+HERO_LIVE = (
+    "https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/"
+    "?preset=harvard-vitamin-d"
+)
 BASELINE_JSON = ROOT / "results" / "baseline_2026-10-16.json"
+
+
+def _gif_size(path: Path) -> tuple[int, int]:
+    data = path.read_bytes()
+    assert data[:6] in {b"GIF87a", b"GIF89a"}, path
+    return int.from_bytes(data[6:8], "little"), int.from_bytes(data[8:10], "little")
+
+
+def _png_size(path: Path) -> tuple[int, int]:
+    data = path.read_bytes()
+    assert data[:8] == b"\x89PNG\r\n\x1a\n", path
+    return int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big")
 
 
 def _first(text: str, needle: str) -> int:
@@ -135,6 +153,24 @@ def test_readme_top_is_ten_second_fold():
     caption = fold.split(HERO_STEM, 1)[1]
     assert "signed-out" in caption.lower() or "signed out" in caption.lower()
     assert "synthetic" not in fold.lower()
+
+
+def test_hero_assets_are_live_signed_out_captures_not_localhost():
+    text = (ROOT / "README.md").read_text()
+    fold = text.split("\n## ", 1)[0]
+    caption = fold.split(HERO_STEM, 1)[1]
+    assert HERO_LIVE in caption
+    assert "127.0.0.1:4318" not in caption
+    assert "why the graph decided" in caption.lower()
+    assert HERO_GIF.is_file()
+    assert HERO_PNG.is_file()
+    assert _gif_size(HERO_GIF) == (1280, 800)
+    assert _png_size(HERO_PNG) == (1280, 800)
+    claims = (ROOT / "CLAIMS.md").read_text()
+    assert "assets/demo-harvard-depth-toggle.gif" in claims
+    assert "assets/demo-harvard-vitamin-d-block.png" in claims
+    assert HERO_LIVE in claims
+    assert "127.0.0.1:4318" not in claims.split("assets/demo-harvard-depth-toggle.gif", 1)[1].split("\n", 1)[0]
 
 
 def test_docs_name_the_connected_data_track():
