@@ -169,6 +169,7 @@ const LIVE_HOSTS = [
   "webmd.com",
   "pubmed.ncbi.nlm.nih.gov",
   "doi.org",
+  "nutritionsource.hsph.harvard.edu",
 ]
 const LIVE_MS = 120_000
 
@@ -756,7 +757,7 @@ export function PreShip() {
               This is not proof it is safe; the source may not be modelled. Coverage is expanded X of
               Y cited works on every verdict. You can also paste your own URL from healthline.com,
               everydayhealth.com, verywellhealth.com, medicalnewstoday.com, webmd.com,
-              pubmed.ncbi.nlm.nih.gov, or doi.org. That check runs live, about 60 s.
+              pubmed.ncbi.nlm.nih.gov, doi.org, or nutritionsource.hsph.harvard.edu. That check runs live, about 60 s.
             </CardDescription>
           </CardHeader>
         </Card>

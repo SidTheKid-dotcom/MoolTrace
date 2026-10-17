@@ -36,6 +36,7 @@ LIVE_HOSTS = frozenset(
         "webmd.com",
         "pubmed.ncbi.nlm.nih.gov",
         "doi.org",
+        "nutritionsource.hsph.harvard.edu",
     }
 )
 LIVE_ALLOW_LIST = ", ".join(sorted(LIVE_HOSTS))

@@ -24,6 +24,8 @@ from mooltrace.seed import load_demo_fixtures
 
 UI = ROOT / "web" / "src" / "components" / "pre-ship.tsx"
 NON_PRESET_HEALTHLINE = "https://www.healthline.com/nutrition/olive-oil"
+HARVARD_URL = "https://nutritionsource.hsph.harvard.edu/vitamin-d/"
+NON_PRESET_HARVARD_TEXT = "A nutrition coach pasted this Harvard Nutrition Source URL."
 PASS_PAYLOAD = {
     "decision": "pass",
     "exit_code": 0,
@@ -52,6 +54,9 @@ def test_live_allow_list_hosts_only():
     assert live_host_allowed("https://www.webmd.com/x")
     assert live_host_allowed("https://pubmed.ncbi.nlm.nih.gov/30461730/")
     assert live_host_allowed("https://doi.org/10.1056/nejmoa1200303")
+    assert live_host_allowed("https://nutritionsource.hsph.harvard.edu/vitamin-d/")
+    assert live_host_allowed("https://nutritionsource.hsph.harvard.edu/vitamin-d")
+    assert not live_host_allowed("https://hsph.harvard.edu/vitamin-d/")
     assert not live_host_allowed("https://example.com/x")
     assert not live_host_allowed("https://www.nhs.uk/live-well/best-way-to-wash-your-hands/")
     assert not live_host_allowed("https://healthline.com.evil.example/x")
@@ -88,6 +93,35 @@ def test_live_guard_accepts_non_preset_healthline(monkeypatch):
     _reset(monkeypatch, live=True)
     guard_public_check("nutrition-coach", "", [NON_PRESET_HEALTHLINE])
     assert not is_preset("nutrition-coach", "", [NON_PRESET_HEALTHLINE])
+
+
+def test_live_guard_accepts_pasted_harvard_url_that_is_not_the_preset(monkeypatch):
+    _reset(monkeypatch, live=True)
+    assert is_preset("nutrition-coach", "", [HARVARD_URL])
+    assert not is_preset("nutrition-coach", NON_PRESET_HARVARD_TEXT, [HARVARD_URL])
+    guard_public_check("nutrition-coach", NON_PRESET_HARVARD_TEXT, [HARVARD_URL])
+    guard_public_check(
+        "nutrition-coach",
+        "",
+        ["https://nutritionsource.hsph.harvard.edu/vitamin-d"],
+    )
+
+
+def test_live_api_accepts_pasted_harvard_url_that_is_not_the_preset(monkeypatch):
+    _reset(monkeypatch, live=True)
+    monkeypatch.setattr("mooltrace.api.check_answer", lambda *a, **k: dict(PASS_PAYLOAD))
+    client = TestClient(app)
+    response = client.post(
+        "/check-answer",
+        json={
+            "text": NON_PRESET_HARVARD_TEXT,
+            "urls": [HARVARD_URL],
+            "engine": "nutrition-coach",
+            "depth": 2,
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["decision"] == "pass"
 
 
 def test_live_guard_ssrf_still_rejects_loopback(monkeypatch):
@@ -227,6 +261,7 @@ def test_ui_has_running_live_state():
     assert 'data-testid="live-running"' in src
     lowered = src.lower()
     assert "running live, about 60" in lowered
+    hosts_block = src.split("const LIVE_HOSTS = [", 1)[1].split("]", 1)[0]
     for host in (
         "healthline.com",
         "everydayhealth.com",
@@ -235,8 +270,10 @@ def test_ui_has_running_live_state():
         "webmd.com",
         "pubmed.ncbi.nlm.nih.gov",
         "doi.org",
+        "nutritionsource.hsph.harvard.edu",
     ):
         assert host in src, host
+        assert host in hosts_block, host
 
 
 def test_judges_documents_live_url_or_says_off():

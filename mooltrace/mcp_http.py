@@ -62,7 +62,8 @@ def _guarded(fn, **kwargs):
         "(fail the build), plus the FalkorDB algo.SPpaths route and Cypher. "
         "The public endpoint runs the four recorded presets, or one allow-listed "
         "URL (healthline.com, everydayhealth.com, verywellhealth.com, "
-        "medicalnewstoday.com, webmd.com, pubmed.ncbi.nlm.nih.gov, doi.org) "
+        "medicalnewstoday.com, webmd.com, pubmed.ncbi.nlm.nih.gov, doi.org, "
+        "nutritionsource.hsph.harvard.edu) "
         "when live fetch is on. Depth 1-3."
     )
 )
