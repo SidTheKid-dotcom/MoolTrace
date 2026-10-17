@@ -30,7 +30,7 @@ SILVA = "10.3390/nu14132773"
 ESTRUCH = "10.1056/nejmoa1200303"
 NOTICE = "10.1056/nejmc1806491"
 ENGINE = "trail-test"
-NOW = "2026-10-16T08:00:00+00:00"
+NOW = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 PAGE_HASH = hashlib.sha256(PAGE_HTML.encode("utf-8")).hexdigest()
 WORK_HASH = hashlib.sha256(WORK_XML.encode("utf-8")).hexdigest()

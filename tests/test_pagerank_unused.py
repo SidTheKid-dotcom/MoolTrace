@@ -6,6 +6,7 @@ stock CALL is global, not one answer's web. Skip it: do not claim or
 wire unused PageRank.
 """
 
+from datetime import datetime, timezone
 from pathlib import Path
 
 from mooltrace import cypher as C
@@ -19,7 +20,7 @@ ENGINE = "pagerank-unused"
 REVIEW = "10.1186/1476-511x-13-154"
 TRIAL = "10.1056/nejmoa1200303"
 NOTICE = "10.1056/nejmc1806491"
-NOW = "2026-10-16T15:52:44+00:00"
+NOW = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
 def _seed_hero_chain(graph: Graph) -> None:
