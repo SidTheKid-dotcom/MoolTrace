@@ -627,7 +627,7 @@ def test_notice_check_404_keeps_datacite_resolved(tmp_path: Path, monkeypatch):
 def test_unreachable_publisher_url_with_doi_is_not_incomplete(tmp_path: Path, monkeypatch):
     graph = Graph(tmp_path / "mooltrace.db")
     doi = "10.1056/nejmoa012512"
-    now = "2026-10-16T12:00:00+00:00"
+    now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
     url = "https://www.nejm.org/doi/pdf/10.1056/NEJMoa012512"
 
     def boom(*_a, **_k):
