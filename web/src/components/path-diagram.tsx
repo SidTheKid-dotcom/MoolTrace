@@ -14,10 +14,19 @@ const NODE_W = 148
 const NODE_H = 78
 const GAP = 52
 const PAD_X = 8
-const PAD_Y = 24
+const PAD_Y = 30
 
 function wrap(text: string, width = 19, maxLines = 2): string[] {
-  const words = text.replace(/\s+/g, " ").trim().split(" ")
+  const words = text
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .flatMap((word) => {
+      if (word.length <= width) return [word]
+      const parts: string[] = []
+      for (let i = 0; i < word.length; i += width) parts.push(word.slice(i, i + width))
+      return parts
+    })
   const lines: string[] = []
   let current = ""
   for (const word of words) {
@@ -91,7 +100,7 @@ export function PathDiagram({ reason }: { reason: PathReason }) {
                 />
                 <text
                   x={mid}
-                  y={y - 8}
+                  y={PAD_Y - 10}
                   textAnchor="middle"
                   className="fill-muted-foreground"
                   style={{ fontSize: 10 }}

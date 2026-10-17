@@ -107,6 +107,7 @@ type Rewrite = {
   recheck?: Check
 }
 type AgentStep = {
+  guard?: boolean
   tool?: string
   args?: Record<string, unknown>
   ms?: number
@@ -119,6 +120,16 @@ type AgentStep = {
     summary?: string | null
   }
 }
+type CitedUrl = { url?: string; ok?: boolean; status?: string; http_status?: number }
+type AffectedAnswer = {
+  answer_id?: string
+  engine?: string
+  urls?: string[]
+  decision?: string
+  exit_code?: number
+  path?: string
+  rewrite?: string
+}
 type AgentResult = {
   mode?: string
   model?: string
@@ -130,6 +141,15 @@ type AgentResult = {
   grounding?: { replaced?: boolean; reason?: string }
   budget?: { spent_usd?: number; limit_usd?: number }
   elapsed_ms?: number
+  question_only?: boolean
+  agent_note?: string
+  disclosure?: string
+  cited_urls?: CitedUrl[]
+  action?: string
+  doi?: string
+  read_only?: boolean
+  note?: string
+  affected_answers?: AffectedAnswer[]
 }
 
 const PRESETS = [
@@ -185,6 +205,9 @@ const HARVARD_REWRITE_DRAFT =
 const OLIVE_OIL_REWRITE_DRAFT =
   "Vitamin D status is discussed separately. A nutrition coach cites https://www.healthline.com/nutrition/11-proven-benefits-of-olive-oil."
 const HARVARD_QUESTION = "Does vitamin D help prevent fractures in older adults?"
+const HARVARD_AGENT_DRAFT =
+  "Vitamin D helps prevent fractures in older adults. Harvard reviews the evidence at https://nutritionsource.hsph.harvard.edu/vitamin-d/."
+const ISHIDA_2004_DOI = "10.1016/j.amjmed.2004.05.019"
 const AGENT_MS = 50_000
 
 const DEPTHS = [1, 2, 3] as const
@@ -325,7 +348,7 @@ function ResultCard({
             ))}
             {result.why_graph.live_sppaths?.strength != null ? (
               <p className="mt-1 text-muted-foreground">
-                Live SPpaths also returned {result.why_graph.live_sppaths.strength}
+                Live SPpaths also returned {Number(result.why_graph.live_sppaths.strength).toFixed(2)}
                 {result.why_graph.live_sppaths.hops?.length
                   ? ` (${result.why_graph.live_sppaths.hops.join(" × ")} → ${result.why_graph.live_sppaths.root_doi})`
                   : ""}
@@ -449,10 +472,12 @@ function ResultCard({
           </div>
         ) : null}
         {result.impact?.cypher ? (
-          <div className="flex flex-col gap-2">
-            <p className="text-xs text-muted-foreground">Reverse impact Cypher (what rests on this notice).</p>
-            <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs leading-5">{result.impact.cypher}</pre>
-          </div>
+          <details data-testid="impact-cypher">
+            <summary className="cursor-pointer text-xs text-muted-foreground">
+              Show Cypher: reverse impact (what rests on this notice)
+            </summary>
+            <pre className="mt-2 overflow-x-auto rounded-lg bg-muted p-3 text-xs leading-5">{result.impact.cypher}</pre>
+          </details>
         ) : null}
       </CardContent>
     </Card>
@@ -474,6 +499,8 @@ export function PreShip() {
   const [agentLoading, setAgentLoading] = useState(false)
   const [agentError, setAgentError] = useState("")
   const [agent, setAgent] = useState<AgentResult | null>(null)
+  const [question, setQuestion] = useState("")
+  const [retractionDoi, setRetractionDoi] = useState(ISHIDA_2004_DOI)
   const listed = parseUrls(urls)
   const liveRunning = loading && isLivePaste(engine, text, listed)
 
@@ -578,13 +605,48 @@ export function PreShip() {
     }
   }
 
+  async function postAgent(body: Record<string, unknown>) {
+    setAgentLoading(true)
+    setAgentError("")
+    try {
+      const response = await fetch("/nw/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(AGENT_MS),
+      })
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error("Agent rate limit. Try again in a few minutes, or use Check before shipping.")
+        }
+        throw new Error(`The agent returned HTTP ${response.status}.`)
+      }
+      setAgent((await response.json()) as AgentResult)
+    } catch (exc) {
+      setAgent(null)
+      setAgentError(exc instanceof Error ? exc.message : "The agent did not finish.")
+    } finally {
+      setAgentLoading(false)
+    }
+  }
+
+  async function askQuestion() {
+    const asked = question.trim()
+    if (!asked) return
+    await postAgent({ question: asked, draft: "", urls: [], engine: "question", depth })
+  }
+
+  async function retractionLanded() {
+    await postAgent({ action: "retraction_landed", doi: retractionDoi.trim(), depth })
+  }
+
   async function runAgent() {
     setAgentLoading(true)
     setAgentError("")
     const listedUrls = urls.split(/\s+/).map((item) => item.trim()).filter(Boolean)
     const recordedDraft =
       presetId === "harvard-vitamin-d" && !text.trim()
-        ? HARVARD_REWRITE_DRAFT
+        ? HARVARD_AGENT_DRAFT
         : presetId === "olive-oil" && !text.trim()
           ? OLIVE_OIL_REWRITE_DRAFT
           : text
@@ -758,7 +820,7 @@ export function PreShip() {
             Tool-calling loop on the evidence graph: check_answer, explain_path, rewrite_answer,
             what_rests_on. The model never writes Cypher. If Azure is missing, over budget, or
             errors, this is a <span className="font-medium">rule-based fallback, no model</span>.
-            Side by side: the same question without MoolTrace.
+            Side by side: what would ship without MoolTrace.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
@@ -769,6 +831,39 @@ export function PreShip() {
           >
             {agentLoading ? "Agent running…" : "Run the agent"}
           </Button>
+          <div className="flex flex-col gap-2 sm:flex-row" data-testid="agent-question">
+            <input
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+              placeholder="Or ask a health question, e.g. Is fish oil good for the heart?"
+              maxLength={300}
+              className="h-9 flex-1 rounded-lg border border-input bg-card px-3 text-sm text-foreground"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={agentLoading || !question.trim()}
+              onClick={() => void askQuestion()}
+            >
+              Ask the agent
+            </Button>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row" data-testid="agent-retraction">
+            <input
+              value={retractionDoi}
+              onChange={(event) => setRetractionDoi(event.target.value)}
+              aria-label="Retracted work DOI"
+              className="h-9 flex-1 rounded-lg border border-input bg-card px-3 font-mono text-xs text-foreground"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={agentLoading || !retractionDoi.trim()}
+              onClick={() => void retractionLanded()}
+            >
+              A retraction just landed
+            </Button>
+          </div>
           {agent?.label ? (
             <p className="text-xs text-muted-foreground" data-testid="agent-mode">
               {agent.label}
@@ -792,13 +887,19 @@ export function PreShip() {
                 >
                   <p className="font-medium">
                     {index + 1}. {step.tool}
+                    {step.guard ? " · added by MoolTrace (model skipped it)" : ""}
                     {step.summary?.verdict ? ` · ${step.summary.verdict}` : ""}
                     {step.summary?.exit_code != null ? ` (exit ${step.summary.exit_code})` : ""}
                     {step.ms != null ? ` · ${step.ms} ms` : ""}
                   </p>
-                  <p className="mt-1 break-all font-mono text-[11px] leading-5 text-muted-foreground">
-                    {JSON.stringify(step.args || {})}
-                  </p>
+                  <details className="mt-1">
+                    <summary className="cursor-pointer truncate font-mono text-[11px] leading-5 text-muted-foreground">
+                      {Object.keys(step.args || {}).join(", ") || "no args"}
+                    </summary>
+                    <p className="mt-1 break-all font-mono text-[11px] leading-5 text-muted-foreground">
+                      {JSON.stringify(step.args || {})}
+                    </p>
+                  </details>
                   {step.summary?.path ? (
                     <p className="mt-1 text-xs text-muted-foreground">{step.summary.path}</p>
                   ) : null}
@@ -809,7 +910,43 @@ export function PreShip() {
               ))}
             </ol>
           ) : null}
-          {agent?.shipped || agent?.without_mooltrace ? (
+          {agent?.disclosure ? (
+            <p className="text-xs text-muted-foreground" data-testid="agent-disclosure">
+              {agent.disclosure}
+            </p>
+          ) : null}
+          {agent?.cited_urls && agent.cited_urls.length > 0 ? (
+            <ul className="flex flex-col gap-1 text-xs" data-testid="agent-cited-urls">
+              {agent.cited_urls.map((item, index) => (
+                <li key={`${item.url}-${index}`} className="break-all text-muted-foreground">
+                  {item.ok ? "checked" : item.status}: {item.url}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {agent?.action === "retraction_landed" ? (
+            <div className="flex flex-col gap-2" data-testid="agent-affected">
+              <p className="text-sm">
+                {agent.affected_answers?.length || 0} stored answer
+                {agent.affected_answers?.length === 1 ? "" : "s"} rest on {agent.doi}.
+              </p>
+              {(agent.affected_answers || []).map((item, index) => (
+                <div key={`${item.answer_id}-${index}`} className="rounded-md bg-muted px-3 py-2 text-sm">
+                  <p className="font-medium">
+                    {item.engine} · {item.decision}
+                    {item.exit_code != null ? ` (exit ${item.exit_code})` : ""}
+                  </p>
+                  {item.urls && item.urls.length > 0 ? (
+                    <p className="break-all text-xs text-muted-foreground">{item.urls.join(" ")}</p>
+                  ) : null}
+                  {item.path ? <p className="text-xs text-muted-foreground">{item.path}</p> : null}
+                  {item.rewrite ? <p className="mt-1 leading-6">Fix: {item.rewrite}</p> : null}
+                </div>
+              ))}
+              {agent.note ? <p className="text-xs text-muted-foreground">{agent.note}</p> : null}
+            </div>
+          ) : null}
+          {agent?.action !== "retraction_landed" && (agent?.shipped || agent?.without_mooltrace) ? (
             <div className="grid gap-3 sm:grid-cols-2" data-testid="agent-contrast">
               <div>
                 <p className="text-xs font-medium text-muted-foreground">Shipped with MoolTrace</p>
@@ -817,10 +954,17 @@ export function PreShip() {
                 {agent.grounding?.replaced ? (
                   <p className="mt-1 text-xs text-muted-foreground">{agent.grounding.reason}</p>
                 ) : null}
+                {agent.agent_note ? (
+                  <p className="mt-2 text-xs text-muted-foreground" data-testid="agent-note">
+                    Model&apos;s note (not shipped): {agent.agent_note.replace(/\*\*/g, "")}
+                  </p>
+                ) : null}
               </div>
               <div>
-                <p className="text-xs font-medium text-muted-foreground">without MoolTrace</p>
-                <p className="mt-1 text-sm leading-6">{agent.without_mooltrace?.text}</p>
+                <p className="text-xs font-medium text-muted-foreground">Without MoolTrace</p>
+                <p className="mt-1 whitespace-pre-line text-sm leading-6">
+                  {(agent.without_mooltrace?.text || "").replace(/\*\*/g, "")}
+                </p>
                 {agent.without_mooltrace?.note ? (
                   <p className="mt-1 text-xs text-muted-foreground">{agent.without_mooltrace.note}</p>
                 ) : null}
