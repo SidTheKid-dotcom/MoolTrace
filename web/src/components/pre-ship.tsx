@@ -210,7 +210,7 @@ const HARVARD_QUESTION = "Does vitamin D help prevent fractures in older adults?
 const HARVARD_AGENT_DRAFT =
   "Vitamin D helps prevent fractures in older adults. Harvard reviews the evidence at https://nutritionsource.hsph.harvard.edu/vitamin-d/."
 const ISHIDA_2004_DOI = "10.1016/j.amjmed.2004.05.019"
-const AGENT_MS = 50_000
+const AGENT_MS = 120_000
 
 const DEPTHS = [1, 2, 3] as const
 const LIVE_HOSTS = [
@@ -831,7 +831,7 @@ export function PreShip() {
             disabled={agentLoading || (!text.trim() && !urls.trim())}
             onClick={() => void runAgent()}
           >
-            {agentLoading ? "Agent running…" : "Run the agent"}
+            {agentLoading ? "Agent running… (fetches cited pages live, up to 2 min)" : "Run the agent"}
           </Button>
           <div className="flex flex-col gap-2 sm:flex-row" data-testid="agent-question">
             <input
