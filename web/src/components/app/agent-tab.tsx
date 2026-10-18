@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import { runAgent, type AgentResult } from "@/lib/api"
 import { HARVARD_DRAFT, HARVARD_QUESTION } from "@/lib/presets"
 import { cn } from "@/lib/utils"
@@ -14,7 +14,54 @@ const DOT: Record<string, string> = {
 const WORD: Record<string, string> = { block: "Don't ship", warn: "Review", pass: "Clear" }
 
 function clean(text: string | undefined): string {
-  return (text || "").replace(/\*\*/g, "")
+  return (text || "")
+    .replace(/\[([^\]]+)\]\((?:https?:\/\/|\/)[^)\s]+\)/g, "$1")
+    .replace(/[\[【〖]\s*(?:cite|site|source|url)[:：][^\]】〗]*[\]】〗]/gi, "")
+    .replace(/[【〖][^】〗]*[】〗]/g, "")
+    .replace(/\*\*/g, "")
+    .trim()
+}
+
+/** Render the model's plain text with light structure; never leak raw markdown or citation markers. */
+function Prose({ text }: { text: string | undefined }) {
+  const lines = clean(text).split(/\n+/)
+  const blocks: ReactNode[] = []
+  let bullets: string[] = []
+  const flush = () => {
+    if (bullets.length) {
+      blocks.push(
+        <ul key={`ul-${blocks.length}`} className="my-1 list-disc space-y-0.5 pl-5">
+          {bullets.map((item, i) => (
+            <li key={i}>{item}</li>
+          ))}
+        </ul>,
+      )
+      bullets = []
+    }
+  }
+  for (const raw of lines) {
+    const line = raw.trim()
+    if (!line) continue
+    const heading = line.match(/^#{1,6}\s+(.*)$/)
+    if (heading) {
+      flush()
+      blocks.push(
+        <p key={`h-${blocks.length}`} className="mt-2 font-medium first:mt-0">
+          {heading[1]}
+        </p>,
+      )
+      continue
+    }
+    const bullet = line.match(/^[-*•]\s+(.*)$/)
+    if (bullet) {
+      bullets.push(bullet[1])
+      continue
+    }
+    flush()
+    blocks.push(<p key={`p-${blocks.length}`}>{line}</p>)
+  }
+  flush()
+  return <div className="space-y-1">{blocks}</div>
 }
 
 export function AgentTab() {
@@ -145,13 +192,13 @@ export function AgentTab() {
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-rx/25 bg-rx-soft p-3 text-sm leading-6">
               <p className="mb-1 text-xs text-ink-2">Without MoolTrace</p>
-              <p className="whitespace-pre-line">{clean(result.without_mooltrace?.text)}</p>
+              <Prose text={result.without_mooltrace?.text} />
             </div>
             <div className="rounded-xl border border-clear/30 bg-clear-soft p-3 text-sm leading-6">
               <p className="mb-1 text-xs text-ink-2">
                 Shipped with MoolTrace{verdict ? ` · ${WORD[verdict] || verdict}` : ""}
               </p>
-              <p className="whitespace-pre-line">{clean(result.shipped)}</p>
+              <Prose text={result.shipped} />
             </div>
           </div>
           <p className="text-[11.5px] text-ink-2">
