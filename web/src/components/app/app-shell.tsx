@@ -19,14 +19,20 @@ type TabId = (typeof TABS)[number]["id"]
 export function AppShell() {
   const [tab, setTab] = useState<TabId>("check")
   const [initial, setInitial] = useState<{ input: Input } | undefined>(undefined)
+  const [agentRun, setAgentRun] = useState(false)
 
+  // Nothing runs on a bare /app: the user picks a preset. ?preset= (or ?url=) runs it once.
   function applyQuery() {
     const params = new URLSearchParams(window.location.search)
     const wanted = params.get("tab") as TabId | null
     if (wanted && TABS.some((item) => item.id === wanted)) setTab(wanted)
     const depth = Number(params.get("depth")) || undefined
     const url = params.get("url")
-    const preset = EXAMPLES.find((item) => item.id === (params.get("preset") || "harvard-vitamin-d"))
+    const preset = EXAMPLES.find((item) => item.id === params.get("preset"))
+    if (wanted === "agent" && params.get("preset") === "harvard-vitamin-d") {
+      setAgentRun(true)
+      return
+    }
     if (url) {
       setInitial({ input: { text: "", urls: [url], engine: "nutrition-coach", depth: depth || 2 } })
     } else if (preset && (!wanted || wanted === "check")) {
@@ -82,14 +88,14 @@ export function AppShell() {
             <CheckTab initial={initial} />
           </div>
           <div hidden={tab !== "agent"}>
-            <AgentTab />
+            <AgentTab autorun={agentRun} />
           </div>
           <div hidden={tab !== "alert"}>
             <AlertTab />
           </div>
         </main>
 
-        <footer className="mt-10 flex flex-wrap gap-x-5 gap-y-1 border-t border-hair pt-4 text-[12px] text-ink-2">
+        <footer className="mt-10 flex flex-wrap gap-x-5 gap-y-1 border-t border-hair pt-4 text-[12px] text-ink">
           <span>Not medical advice. An Expression of Concern is not a retraction. Clear is not a medical-accuracy check.</span>
           <a className="underline underline-offset-2" href={REPO_URL}>Code</a>
           <span title={MCP_URL} className="font-mono">MCP · /mcp</span>

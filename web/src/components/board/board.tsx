@@ -116,12 +116,14 @@ export function Thread({
   label,
   vertical = false,
   delay = 0,
+  animate = true,
   className,
 }: {
   tone?: "neutral" | "red" | "amber"
   label?: string
   vertical?: boolean
   delay?: number
+  animate?: boolean
   className?: string
 }) {
   const stroke = tone === "red" ? "#d4351c" : tone === "amber" ? "#b7791f" : "#a99c84"
@@ -152,8 +154,8 @@ export function Thread({
           strokeWidth={tone === "neutral" ? 1.6 : 2.4}
           strokeLinecap="round"
           pathLength={1}
-          className="draw"
-          style={{ animationDelay: `${delay}ms` }}
+          className={animate ? "draw" : undefined}
+          style={animate ? { animationDelay: `${delay}ms` } : undefined}
         />
       </svg>
     </div>

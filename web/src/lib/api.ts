@@ -2,6 +2,7 @@ import type { PathReason } from "@/lib/path-diagram"
 
 export type Reason = PathReason & {
   code?: string
+  root_doi?: string | null
   notice_date?: string | null
   hops_evidence?: {
     weight?: number | null
@@ -36,7 +37,14 @@ export type AgentStep = {
   args?: Record<string, unknown>
   ms?: number
   ok?: boolean
-  summary?: { verdict?: string | null; exit_code?: number | null; path?: string | null; error?: string | null }
+  summary?: {
+    verdict?: string | null
+    exit_code?: number | null
+    path?: string | null
+    error?: string | null
+    rows?: number | null
+    chain?: { doi?: string | null; url?: string | null; title?: string | null; year?: number | null; first_author?: string | null; reliance?: string | null; notice_type?: string | null; notice_date?: string | null }[]
+  }
 }
 
 export type AgentResult = {

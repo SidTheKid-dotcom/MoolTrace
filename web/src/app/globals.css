@@ -189,4 +189,6 @@
   .stamp-in { transform: rotate(-9deg) !important; }
   .draw { animation: none !important; stroke-dashoffset: 0 !important; }
   .float-slow { animation: none !important; }
+  .animate-pulse, [style*="mt-pulse"] { animation: none !important; }
+  .index-card, button { transition: none !important; }
 }
