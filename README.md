@@ -4,9 +4,12 @@
 
 **Video (3:05):** https://youtu.be/XZV5lt-FuE8 · **Live:** https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/ (no sign-in) · **Blog:** [How I built MoolTrace](https://builder.aws.com/content/3KsRYW9Qw6rFlBUyI706IZWvAQq/how-i-built-mooltrace-finding-the-retracted-trial-hiding-two-hops-under-a-health-ai-answer) · WeMakeDevs × FalkorDB Graph Hacks 2026, **Track 01: Agents That Act on Connected Data**
 
-[![Watch the MoolTrace demo on YouTube (3:05)](https://img.youtube.com/vi/XZV5lt-FuE8/maxresdefault.jpg)](https://youtu.be/XZV5lt-FuE8)
+## The problem
+- Of the **35** vitamin and mineral pages on Harvard's Nutrition Source, **2 rest on withdrawn or retracted research**: zinc directly, vitamin D two hops down. A check of the DOIs in the answer passes **all 35**. Both hits were checked by hand: [results/field_scan_2026-10-17.md](results/field_scan_2026-10-17.md).
+- Vitamin D: the page cites Avenell 2014 (Cochrane). Its full text says "Ishida 2004, an included trial, has been retracted." The May 2025 retraction notice (PMID 40222753) says "the evidence presented below strongly argues for scientific misconduct."
+- This is not one bad page. Xu et al., *BMJ* 2025 listed systematic reviews whose results were distorted by retracted trials. On 40 of them, a DOI-only check flags **none**.
 
-[0:00](https://youtu.be/XZV5lt-FuE8?t=0) 35 Harvard pages, 2 flagged · [0:13](https://youtu.be/XZV5lt-FuE8?t=13) The chain to a retracted trial · [0:48](https://youtu.be/XZV5lt-FuE8?t=48) Live: 1 hop says Clear, 2 hops says Don't ship · [1:20](https://youtu.be/XZV5lt-FuE8?t=80) The agent acts · [1:40](https://youtu.be/XZV5lt-FuE8?t=100) A retraction lands after you ship · [1:51](https://youtu.be/XZV5lt-FuE8?t=111) Not in the graph · [1:58](https://youtu.be/XZV5lt-FuE8?t=118) Claude Code over MCP · [2:08](https://youtu.be/XZV5lt-FuE8?t=128) The graph model and `algo.SPpaths` · [2:30](https://youtu.be/XZV5lt-FuE8?t=150) Proof against a DOI-only check
+[![Watch the MoolTrace demo on YouTube (3:05)](https://img.youtube.com/vi/XZV5lt-FuE8/maxresdefault.jpg)](https://youtu.be/XZV5lt-FuE8)
 
 ![Don't ship: the Harvard vitamin D page mentions a Cochrane review that uses data from Ishida 2004, retracted May 2025, with the algo.SPpaths query that decided it](assets/check-dont-ship.png)
 
@@ -22,11 +25,6 @@
 <img src="assets/agent-trace.png" width="420" alt="Agent run: the path, a trace table of check_answer, explain_path and rewrite_answer, and the draft without and with MoolTrace">
 <img src="assets/retraction-alert.png" width="420" alt="Retraction alert: 1 cited page rests on Ishida 2004; 5 stored answers cite it, each with the same graph-checked fix">
 </p>
-
-## The problem
-- Of the **35** vitamin and mineral pages on Harvard's Nutrition Source, **2 rest on withdrawn or retracted research**: zinc directly, vitamin D two hops down. A check of the DOIs in the answer passes **all 35**. Both hits were checked by hand: [results/field_scan_2026-10-17.md](results/field_scan_2026-10-17.md).
-- Vitamin D: the page cites Avenell 2014 (Cochrane). Its full text says "Ishida 2004, an included trial, has been retracted." The May 2025 retraction notice (PMID 40222753) says "the evidence presented below strongly argues for scientific misconduct."
-- This is not one bad page. Xu et al., *BMJ* 2025 listed systematic reviews whose results were distorted by retracted trials. On 40 of them, a DOI-only check flags **none**.
 
 ## Who uses it, and what changes
 | Person | Decision | What MoolTrace gives them |

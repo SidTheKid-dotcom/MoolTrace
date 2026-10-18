@@ -153,7 +153,8 @@ def test_readme_top_follows_p3_13():
 
 def test_readme_top_is_ten_second_fold():
     text = (ROOT / "README.md").read_text()
-    fold = text.split("\n## ", 1)[0]
+    fold = text.split("\n## Try it in 30 seconds", 1)[0]
+    assert fold.index("## The problem") < fold.index(HERO_STEM)
     for needle in (TAGLINE, WHAT_IT_DOES, VIDEO, DEMO, HERO_STEM, TRACK):
         assert needle in fold, needle
     assert fold.index(TAGLINE) < fold.index(VIDEO) < fold.index(HERO_STEM)
@@ -167,7 +168,7 @@ def test_readme_top_is_ten_second_fold():
 
 def test_hero_assets_are_live_signed_out_captures_not_localhost():
     text = (ROOT / "README.md").read_text()
-    fold = text.split("\n## ", 1)[0]
+    fold = text.split("\n## Try it in 30 seconds", 1)[0]
     hero_line = next(line for line in fold.splitlines() if HERO_STEM in line)
     assert "algo.SPpaths" in hero_line
     assert "127.0.0.1" not in fold
