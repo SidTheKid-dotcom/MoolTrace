@@ -29,25 +29,83 @@ function Nav({ dark = true }: { dark?: boolean }) {
 }
 
 /* ---------- B2 · hero ---------- */
+type Pt = { x: number; y: number }
+
+/** Sagging rope from pin to pin, drawn in board pixels. */
+function rope(a: Pt, b: Pt, sag = 0.16): { d: string; mid: Pt } {
+  const len = Math.hypot(b.x - a.x, b.y - a.y)
+  const c = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 + len * sag }
+  const mid = { x: 0.25 * a.x + 0.5 * c.x + 0.25 * b.x, y: 0.25 * a.y + 0.5 * c.y + 0.25 * b.y }
+  return { d: `M${a.x} ${a.y} Q ${c.x} ${c.y} ${b.x} ${b.y}`, mid }
+}
+
 function HeroBoard() {
+  const board = useRef<HTMLDivElement>(null)
+  const cards = useRef<(HTMLDivElement | null)[]>([])
+  const [geo, setGeo] = useState<{ w: number; h: number; pins: Pt[] } | null>(null)
+
+  useEffect(() => {
+    const el = board.current
+    if (!el) return
+    const measure = () => {
+      // offsetLeft/Top ignore the rise animation's transform, so pins stay exact.
+      const pins = cards.current.map((card) => (card ? { x: card.offsetLeft + card.offsetWidth / 2, y: card.offsetTop + 1 } : { x: 0, y: 0 }))
+      setGeo({ w: el.clientWidth, h: el.clientHeight, pins })
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const grey = geo ? rope(geo.pins[0], geo.pins[1], 0.12) : null
+  const red = geo ? rope(geo.pins[1], geo.pins[2], 0.05) : null
+  const lens = Math.round(Math.min(176, (geo?.w ?? 700) * 0.27))
+  const big = (geo?.w ?? 700) > 520
+
   return (
-    <div className="relative mx-auto aspect-[1.25] w-full max-w-[720px]" aria-label="Harvard Nutrition Source cites a Cochrane review that included the Ishida 2004 trial, retracted in 2025">
-      <svg viewBox="0 0 640 512" className="absolute inset-0 size-full" aria-hidden>
-        <path d="M228 168 C 214 210, 196 236, 160 262" fill="none" stroke="#b8a989" strokeWidth="2.4" className="draw" pathLength={1} style={{ animationDelay: "500ms" }} />
-        <path d="M272 338 C 300 356, 352 356, 386 326" fill="none" stroke="#d4351c" strokeWidth="3.4" className="draw" pathLength={1} style={{ animationDelay: "900ms" }} />
-      </svg>
-      <div className="rise absolute left-[20%] top-[2%] w-[50%] -rotate-[0.6deg]" style={{ animationDelay: "150ms" }}>
-        <IndexCard size="lg" label="Page · Harvard Nutrition Source" title="Vitamin D" />
+    <div
+      ref={board}
+      className="relative mx-auto aspect-[1.25] w-full max-w-[720px]"
+      aria-label="Harvard Nutrition Source cites a Cochrane review that included the Ishida 2004 trial, retracted in 2025"
+    >
+      <div ref={(el) => { cards.current[0] = el }} className="rise absolute left-[22%] top-[3%] z-10 w-[48%] -rotate-[0.6deg]" style={{ animationDelay: "150ms" }}>
+        <IndexCard size={big ? "lg" : "md"} pin={null} label="Page · Harvard Nutrition Source" title="Vitamin D" />
       </div>
-      <div className="rise absolute left-0 top-[51%] w-[43%] rotate-[0.8deg]" style={{ animationDelay: "350ms" }}>
-        <IndexCard size="lg" label="Review · Cochrane 2014" title="Vitamin D and vitamin D analogues for preventing fractures" />
+      <div ref={(el) => { cards.current[1] = el }} className="rise absolute left-0 top-[52%] z-10 w-[43%] rotate-[0.8deg]" style={{ animationDelay: "350ms" }}>
+        <IndexCard size={big ? "lg" : "md"} pin={null} label="Review · Cochrane 2014" title="Vitamin D and vitamin D analogues for preventing fractures" />
       </div>
-      <div className="rise absolute right-0 top-[45%] w-[40%] rotate-[0.4deg]" style={{ animationDelay: "550ms" }}>
-        <IndexCard size="lg" label="Trial · Ishida 2004" title="Yamaguchi osteoporosis study" tone="red" pin="red" stamp="Retracted 2025" stampDelay={1300} />
+      <div ref={(el) => { cards.current[2] = el }} className="rise absolute right-0 top-[46%] z-10 w-[40%] rotate-[0.4deg]" style={{ animationDelay: "550ms" }}>
+        <IndexCard size={big ? "lg" : "md"} pin={null} label="Trial · Ishida 2004" title="Yamaguchi osteoporosis study" tone="red" stamp="Retracted 2025" stampDelay={1300} />
       </div>
-      <div className="absolute z-20" style={{ left: "51%", top: "66%", transform: "translate(-34%,-34%)" }}>
-        <Magnifier quote="an included trial" size={176} />
-      </div>
+      {geo && grey && red ? (
+        <>
+          <svg viewBox={`0 0 ${geo.w} ${geo.h}`} className="pointer-events-none absolute inset-0 z-[5] size-full overflow-visible" aria-hidden>
+            <path d={grey.d} fill="none" stroke="#cbbd9f" strokeWidth="2.2" strokeLinecap="round" className="draw" pathLength={1} style={{ animationDelay: "600ms", filter: "drop-shadow(0 2px 1.5px rgba(0,0,0,.45))" }} />
+          </svg>
+          <svg viewBox={`0 0 ${geo.w} ${geo.h}`} className="pointer-events-none absolute inset-0 z-[15] size-full overflow-visible" aria-hidden>
+            <path d={red.d} fill="none" stroke="#e0412a" strokeWidth="3" strokeLinecap="round" className="draw" pathLength={1} style={{ animationDelay: "1000ms", filter: "drop-shadow(0 3px 2px rgba(0,0,0,.4))" }} />
+          </svg>
+        </>
+      ) : null}
+      {/* pins sit on top of the rope ends */}
+      {geo
+        ? geo.pins.map((p, i) => (
+            <img
+              key={i}
+              src={i === 2 ? "/img/pin-red.webp" : "/img/pin-blue.webp"}
+              alt=""
+              aria-hidden
+              className="pointer-events-none absolute z-20 size-[20px] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_2px_2px_rgba(0,0,0,.5)]"
+              style={{ left: p.x, top: p.y }}
+            />
+          ))
+        : null}
+      {red ? (
+        <div className="absolute z-30" style={{ left: red.mid.x - lens * 0.34, top: red.mid.y - lens * 0.12 }}>
+          <Magnifier quote="an included trial" size={lens} />
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -212,7 +270,13 @@ function LiveDemo() {
             )}
           </div>
         </div>
-        <p className="text-[17px] text-ink-2">At 1 hop this page looks clean. The problem is two steps down.</p>
+        <p className="text-[17px] text-ink-2" aria-live="polite">
+          {depth === 1
+            ? "At 1 hop the page looks clean: nothing it cites directly is flagged."
+            : depth === 2
+              ? "At 2 hops the problem appears: the review it cites used a trial retracted in May 2025."
+              : "At 3 hops the verdict holds: searching deeper finds nothing stronger than that retracted trial."}
+        </p>
       </div>
     </section>
   )

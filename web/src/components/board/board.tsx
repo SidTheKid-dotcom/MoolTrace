@@ -41,7 +41,7 @@ export function Stamp({
 }) {
   return (
     <span
-      className={cn("stamp text-[13px]", TONE_TEXT[tone], animate && "stamp-in", className)}
+      className={cn("stamp whitespace-nowrap text-[13px]", TONE_TEXT[tone], animate && "stamp-in", className)}
       style={animate ? { animationDelay: `${delay}ms` } : undefined}
     >
       {children}
@@ -160,23 +160,75 @@ export function Thread({
   )
 }
 
-/** Brass magnifier (Blender render) with a quote inside the lens. */
+/** Brass magnifier (Blender render) with a quote inside a semi-translucent lens.
+ *  It drifts gently toward the pointer when the pointer comes near (off under reduced motion). */
 export function Magnifier({ quote, size = 132, className }: { quote: string; size?: number; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [offset, setOffset] = useState({ x: 0, y: 0, r: 0 })
+  useEffect(() => {
+    const el = ref.current
+    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+    let frame = 0
+    const onMove = (event: PointerEvent) => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        const r = el.getBoundingClientRect()
+        const cx = r.left + r.width * 0.34
+        const cy = r.top + r.height * 0.34
+        const dx = event.clientX - cx
+        const dy = event.clientY - cy
+        const dist = Math.hypot(dx, dy)
+        const reach = size * 1.9
+        if (dist > reach) {
+          setOffset({ x: 0, y: 0, r: 0 })
+          return
+        }
+        const pull = (1 - dist / reach) * 0.16
+        setOffset({ x: dx * pull, y: dy * pull, r: Math.max(-6, Math.min(6, dx * 0.03)) })
+      })
+    }
+    const reset = () => setOffset({ x: 0, y: 0, r: 0 })
+    window.addEventListener("pointermove", onMove, { passive: true })
+    document.addEventListener("pointerleave", reset)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener("pointermove", onMove)
+      document.removeEventListener("pointerleave", reset)
+    }
+  }, [size])
   return (
     <div
+      ref={ref}
       className={cn("glide pointer-events-none relative", className)}
       style={{ width: size, height: size, animationDelay: "700ms" }}
       aria-label={`Evidence: ${quote}`}
       role="img"
     >
-      <span aria-hidden className="absolute rounded-full bg-[radial-gradient(circle_at_40%_35%,rgba(255,252,244,.97),rgba(238,229,210,.92))]" style={{ left: "4%", top: "4%", width: "60%", height: "60%" }} />
-      <img src="/img/magnifier.webp" alt="" className="absolute inset-0 size-full drop-shadow-[0_10px_14px_rgba(0,0,0,.35)]" />
-      <span
-        className="font-display absolute grid place-items-center text-center italic leading-tight text-ink"
-        style={{ left: "8%", top: "8%", width: "52%", height: "52%", fontSize: Math.max(12, size * 0.095), padding: size * 0.04 }}
+      <div
+        className="absolute inset-0 transition-transform duration-300 ease-out"
+        style={{ transform: `translate(${offset.x}px, ${offset.y}px) rotate(${offset.r}deg)` }}
       >
-        {quote}
-      </span>
+        <span
+          aria-hidden
+          className="absolute rounded-full backdrop-blur-[1.5px]"
+          style={{
+            left: "4%",
+            top: "4%",
+            width: "60%",
+            height: "60%",
+            background:
+              "radial-gradient(circle at 38% 32%, rgba(255,253,247,.78) 0%, rgba(246,239,224,.62) 55%, rgba(226,214,190,.5) 100%)",
+            boxShadow: "inset 0 0 18px rgba(255,255,255,.35), inset 0 -6px 14px rgba(120,96,60,.18)",
+          }}
+        />
+        <img src="/img/magnifier.webp" alt="" className="absolute inset-0 size-full drop-shadow-[0_10px_14px_rgba(0,0,0,.35)]" />
+        <span
+          className="font-display absolute grid place-items-center text-center italic leading-tight text-ink [text-shadow:0_0_6px_rgba(255,250,240,.9)]"
+          style={{ left: "8%", top: "8%", width: "52%", height: "52%", fontSize: Math.max(12, size * 0.095), padding: size * 0.04 }}
+        >
+          {quote}
+        </span>
+      </div>
     </div>
   )
 }
