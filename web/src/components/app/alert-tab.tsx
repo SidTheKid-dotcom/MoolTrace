@@ -26,9 +26,9 @@ export function AlertTab() {
   const total = answers.reduce((sum, item) => sum + (item.count || 1), 0)
   return (
     <div className="flex flex-col gap-5">
-      <p className="text-sm text-muted-foreground">A paper was just retracted. Which answers already shipped rest on it?</p>
+      <p className="text-sm text-ink-2">A paper was just retracted. Which answers already shipped rest on it?</p>
       <form
-        className="flex items-center gap-2 rounded-2xl border bg-card p-2 pl-4 shadow-sm"
+        className="flex items-center gap-2 rounded-2xl border border-hair bg-card-paper p-2 pl-5 shadow-[0_10px_30px_-18px_rgba(22,19,15,.35)]"
         onSubmit={(event) => {
           event.preventDefault()
           if (doi.trim()) void go()
@@ -43,27 +43,27 @@ export function AlertTab() {
         <button
           type="submit"
           disabled={!doi.trim() || busy}
-          className="h-10 rounded-xl bg-foreground px-4 text-sm font-medium text-background disabled:opacity-40"
+          className="h-12 rounded-xl bg-ink px-5 text-[15px] font-semibold text-cream disabled:opacity-40"
         >
           {busy ? "Searching…" : "Find affected answers"}
         </button>
       </form>
-      {error ? <p className="text-sm text-red-700">{error}</p> : null}
+      {error ? <p className="text-sm text-rx">{error}</p> : null}
       {result ? (
         <section className="flex flex-col gap-3" data-testid="alert-result">
-          <h2 className="text-xl font-semibold tracking-tight">
+          <h2 className="font-display text-[40px] leading-none">
             {total} shipped answer{total === 1 ? "" : "s"} rest on this paper
           </h2>
           {answers.map((item, index) => (
-            <div key={`${item.answer_id}-${index}`} className="rounded-2xl border bg-card p-4 text-sm">
-              <p className="text-xs text-muted-foreground">
+            <div key={`${item.answer_id}-${index}`} className="rounded-[20px] border border-hair bg-card-paper p-5 text-sm">
+              <p className="text-xs text-ink-2">
                 {item.count && item.count > 1 ? `${item.count} answers · ` : ""}
                 {(item.urls || []).join(" ") || "answer"} · {item.path}
               </p>
-              {item.rewrite ? <p className="mt-2 rounded-lg bg-emerald-50 p-2 leading-6 text-emerald-900">{item.rewrite}</p> : null}
+              {item.rewrite ? <p className="mt-2 rounded-lg bg-clear-soft p-2 leading-6 text-ink">{item.rewrite}</p> : null}
             </div>
           ))}
-          <p className="text-[11.5px] text-muted-foreground">
+          <p className="text-[11.5px] text-ink-2">
             The graph is walked backwards from the notice. {result.note}
           </p>
         </section>

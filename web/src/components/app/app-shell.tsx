@@ -47,47 +47,52 @@ export function AppShell() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/" className="font-semibold tracking-tight">
-          MoolTrace <span className="font-normal text-muted-foreground">· check the roots</span>
-        </Link>
-        <nav className="flex rounded-xl bg-muted p-1 text-sm" role="tablist">
-          {TABS.map((item) => (
-            <button
-              key={item.id}
-              role="tab"
-              aria-selected={tab === item.id}
-              onClick={() => select(item.id)}
-              className={cn(
-                "rounded-lg px-3 py-1.5 font-medium text-muted-foreground transition",
-                tab === item.id && "bg-card text-foreground shadow-sm",
-              )}
-            >
-              {item.label}
-            </button>
-          ))}
-        </nav>
-      </header>
+    <div className="min-h-full flex-1 bg-paper text-ink">
+      <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-8 px-5 py-6 sm:px-8">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-hair pb-4">
+          <Link href="/" className="font-mono text-[22px] tracking-tight text-ink">
+            mooltrace
+          </Link>
+          <nav className="flex gap-6 text-[16px]" role="tablist">
+            {TABS.map((item) => (
+              <button
+                key={item.id}
+                role="tab"
+                aria-selected={tab === item.id}
+                onClick={() => select(item.id)}
+                className={cn(
+                  "relative pb-2 text-ink-2 transition hover:text-ink",
+                  tab === item.id && "font-semibold text-ink after:absolute after:inset-x-0 after:-bottom-[17px] after:h-[2px] after:bg-ink",
+                )}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+          <Link href="/" className="hidden text-[14px] text-ink-2 hover:text-ink sm:block">
+            How it works
+          </Link>
+        </header>
 
-      <main>
-        <div hidden={tab !== "check"}>
-          <CheckTab initial={initial} />
-        </div>
-        <div hidden={tab !== "agent"}>
-          <AgentTab />
-        </div>
-        <div hidden={tab !== "alert"}>
-          <AlertTab />
-        </div>
-      </main>
+        <main>
+          <div hidden={tab !== "check"}>
+            <CheckTab initial={initial} />
+          </div>
+          <div hidden={tab !== "agent"}>
+            <AgentTab />
+          </div>
+          <div hidden={tab !== "alert"}>
+            <AlertTab />
+          </div>
+        </main>
 
-      <footer className="mt-auto flex flex-wrap gap-x-4 gap-y-1 border-t pt-4 text-[11.5px] text-muted-foreground">
-        <span>Not medical advice. An Expression of Concern is not a retraction. Clear ≠ medically correct.</span>
-        <a className="underline" href={REPO_URL}>Code</a>
-        <span title={MCP_URL}>MCP: /mcp</span>
-        <Link className="underline" href="/classic">Classic view</Link>
-      </footer>
+        <footer className="mt-10 flex flex-wrap gap-x-5 gap-y-1 border-t border-hair pt-4 text-[12px] text-ink-2">
+          <span>Not medical advice. An Expression of Concern is not a retraction. Clear is not a medical-accuracy check.</span>
+          <a className="underline underline-offset-2" href={REPO_URL}>Code</a>
+          <span title={MCP_URL} className="font-mono">MCP · /mcp</span>
+          <Link className="underline underline-offset-2" href="/classic">Classic view</Link>
+        </footer>
+      </div>
     </div>
   )
 }

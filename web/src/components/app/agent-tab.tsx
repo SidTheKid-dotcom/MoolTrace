@@ -6,9 +6,9 @@ import { HARVARD_DRAFT, HARVARD_QUESTION } from "@/lib/presets"
 import { cn } from "@/lib/utils"
 
 const DOT: Record<string, string> = {
-  block: "border-red-500 bg-red-500",
-  warn: "border-amber-500 bg-amber-500",
-  pass: "border-emerald-500 bg-emerald-500",
+  block: "border-rx bg-rx",
+  warn: "border-amber-x bg-amber-x",
+  pass: "border-clear bg-clear",
 }
 
 const WORD: Record<string, string> = { block: "Don't ship", warn: "Review", pass: "Clear" }
@@ -40,7 +40,7 @@ export function AgentTab() {
   return (
     <div className="flex flex-col gap-5">
       <form
-        className="flex items-center gap-2 rounded-2xl border bg-card p-2 pl-4 shadow-sm"
+        className="flex items-center gap-2 rounded-2xl border border-hair bg-card-paper p-2 pl-5 shadow-[0_10px_30px_-18px_rgba(22,19,15,.35)]"
         onSubmit={(event) => {
           event.preventDefault()
           if (question.trim()) void go({ question: question.trim(), draft: "", urls: [], engine: "question", depth: 2 })
@@ -51,13 +51,13 @@ export function AgentTab() {
           onChange={(event) => setQuestion(event.target.value)}
           placeholder="Ask a health question — the agent answers, then checks itself"
           maxLength={300}
-          className="h-10 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
+          className="h-12 min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-2/70"
           aria-label="Health question"
         />
         <button
           type="submit"
           disabled={!question.trim() || busy}
-          className="h-10 rounded-xl bg-foreground px-4 text-sm font-medium text-background disabled:opacity-40"
+          className="h-12 rounded-xl bg-ink px-5 text-[15px] font-semibold text-cream disabled:opacity-40"
         >
           Ask
         </button>
@@ -75,7 +75,7 @@ export function AgentTab() {
               depth: 2,
             })
           }
-          className="rounded-full border px-3 py-1 text-[12.5px] text-muted-foreground hover:text-foreground"
+          className="rounded-full border border-hair bg-card-paper px-3.5 py-1.5 text-[13px] text-ink-2 hover:text-ink"
         >
           Run it on the Harvard vitamin D answer
         </button>
@@ -88,30 +88,30 @@ export function AgentTab() {
               setQuestion(q)
               void go({ question: q, draft: "", urls: [], engine: "question", depth: 2 })
             }}
-            className="rounded-full border px-3 py-1 text-[12.5px] text-muted-foreground hover:text-foreground"
+            className="rounded-full border border-hair bg-card-paper px-3.5 py-1.5 text-[13px] text-ink-2 hover:text-ink"
           >
             {q}
           </button>
         ))}
       </div>
 
-      {error ? <p className="text-sm text-red-700">{error}</p> : null}
+      {error ? <p className="text-sm text-rx">{error}</p> : null}
       {busy ? (
-        <div className="rounded-2xl border p-6 text-sm text-muted-foreground">
+        <div className="rounded-[20px] border border-hair bg-card-paper p-6 text-sm text-ink-2">
           The agent is working — it fetches the cited pages live, up to 2 minutes.
         </div>
       ) : null}
 
       {result ? (
-        <section className="flex flex-col gap-4 rounded-2xl border bg-card p-5" data-testid="agent-result">
-          <p className="text-xs text-muted-foreground">
+        <section className="flex flex-col gap-4 rounded-[20px] border border-hair bg-card-paper p-6 sm:p-8" data-testid="agent-result">
+          <p className="text-xs text-ink-2">
             {result.label}
             {result.elapsed_ms != null ? ` · ${(result.elapsed_ms / 1000).toFixed(0)} s` : ""}
             {result.budget?.spent_usd != null ? ` · $${result.budget.spent_usd.toFixed(3)} spent of $${result.budget.limit_usd}` : ""}
             {result.fallback_reason ? ` · ${result.fallback_reason}` : ""}
           </p>
 
-          <ol className="ml-2 border-l-2 border-border">
+          <ol className="ml-2 border-l-2 border-hair">
             {(result.steps || []).map((step, index) => {
               const v = step.summary?.verdict || ""
               return (
@@ -122,18 +122,18 @@ export function AgentTab() {
                       DOT[v] || "border-zinc-400",
                     )}
                   />
-                  <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[12px]">{step.tool}</code>{" "}
+                  <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-[12px]">{step.tool}</code>{" "}
                   {v ? <span className="font-medium">{WORD[v] || v}</span> : null}
-                  {step.summary?.path ? <span className="text-muted-foreground"> · {step.summary.path}</span> : null}
-                  {step.guard ? <span className="text-muted-foreground"> · added by MoolTrace</span> : null}
-                  {step.ms ? <span className="ml-1 text-xs text-muted-foreground">{Math.round(step.ms)} ms</span> : null}
+                  {step.summary?.path ? <span className="text-ink-2"> · {step.summary.path}</span> : null}
+                  {step.guard ? <span className="text-ink-2"> · added by MoolTrace</span> : null}
+                  {step.ms ? <span className="ml-1 text-xs text-ink-2">{Math.round(step.ms)} ms</span> : null}
                 </li>
               )
             })}
           </ol>
 
           {result.cited_urls?.length ? (
-            <ul className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+            <ul className="flex flex-col gap-0.5 text-xs text-ink-2">
               {result.cited_urls.map((item) => (
                 <li key={item.url} className="truncate">
                   {item.ok ? "✓ checked" : `– ${item.status}`} · {item.url}
@@ -143,18 +143,18 @@ export function AgentTab() {
           ) : null}
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-red-200 bg-red-50/60 p-3 text-sm leading-6">
-              <p className="mb-1 text-xs text-muted-foreground">Without MoolTrace</p>
+            <div className="rounded-xl border border-rx/25 bg-rx-soft p-3 text-sm leading-6">
+              <p className="mb-1 text-xs text-ink-2">Without MoolTrace</p>
               <p className="whitespace-pre-line">{clean(result.without_mooltrace?.text)}</p>
             </div>
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-sm leading-6">
-              <p className="mb-1 text-xs text-muted-foreground">
+            <div className="rounded-xl border border-clear/30 bg-clear-soft p-3 text-sm leading-6">
+              <p className="mb-1 text-xs text-ink-2">
                 Shipped with MoolTrace{verdict ? ` · ${WORD[verdict] || verdict}` : ""}
               </p>
               <p className="whitespace-pre-line">{clean(result.shipped)}</p>
             </div>
           </div>
-          <p className="text-[11.5px] text-muted-foreground">
+          <p className="text-[11.5px] text-ink-2">
             {result.disclosure ? `${result.disclosure} ` : ""}The model picks tools; the graph decides; only tool output ships.
           </p>
         </section>
