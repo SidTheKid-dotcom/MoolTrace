@@ -162,7 +162,8 @@ def test_submission_has_track_links_cypher_algorithms_video_placeholder():
     )
     assert "01 — Context for AI Agents" not in text
     assert DEMO in text
-    assert "_paste after upload_" in text or "paste after upload" in text.lower()
+    assert "https://youtu.be/XZV5lt-FuE8" in text
+    assert "paste after upload" not in text.lower()
     assert "github.com/SidTheKid-dotcom/MoolTrace" in text
     assert "CALL algo.SPpaths" in text
     assert "CALL algo.WCC" in text
