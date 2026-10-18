@@ -2,10 +2,10 @@
 
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link"
-import { ArrowRight, Check, X } from "lucide-react"
+import { ArrowRight, Check, Copy, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { IndexCard, Magnifier, Pin, Reveal, Stamp, Thread } from "@/components/board/board"
-import { EvidencePath } from "@/components/board/evidence-path"
+import { HopGraph } from "@/components/app/hop-graph"
 import { checkAnswer, verdictOf, type Check as CheckResult } from "@/lib/api"
 import { FIELD_SCAN } from "@/lib/field-scan"
 import { MCP_URL, REPO_URL } from "@/lib/presets"
@@ -67,16 +67,16 @@ function HeroBoard() {
     <div
       ref={board}
       className="relative mx-auto aspect-[1.25] w-full max-w-[720px]"
-      aria-label="Harvard Nutrition Source cites a Cochrane review that included the Ishida 2004 trial, retracted in 2025"
+      aria-label="Page: Harvard vitamin D, cites Review: Cochrane 2014 (Avenell), which uses data from Trial: Ishida 2004, retracted May 2025"
     >
       <div ref={(el) => { cards.current[0] = el }} className="rise absolute left-[22%] top-[3%] z-10 w-[48%] -rotate-[0.6deg]" style={{ animationDelay: "150ms" }}>
-        <IndexCard size={big ? "lg" : "md"} pin={null} label="Page · Harvard Nutrition Source" title="Vitamin D" />
+        <IndexCard size={big ? "lg" : "md"} pin={null} label="Page" title="Harvard vitamin D" />
       </div>
       <div ref={(el) => { cards.current[1] = el }} className="rise absolute left-0 top-[52%] z-10 w-[43%] rotate-[0.8deg]" style={{ animationDelay: "350ms" }}>
-        <IndexCard size={big ? "lg" : "md"} pin={null} label="Review · Cochrane 2014" title="Vitamin D and vitamin D analogues for preventing fractures" />
+        <IndexCard size={big ? "lg" : "md"} pin={null} label="Review" title="Cochrane 2014 (Avenell)" />
       </div>
       <div ref={(el) => { cards.current[2] = el }} className="rise absolute right-0 top-[46%] z-10 w-[40%] rotate-[0.4deg]" style={{ animationDelay: "550ms" }}>
-        <IndexCard size={big ? "lg" : "md"} pin={null} label="Trial · Ishida 2004" title="Yamaguchi osteoporosis study" tone="red" stamp="Retracted 2025" stampDelay={1300} />
+        <IndexCard size={big ? "lg" : "md"} pin={null} label="Trial" title="Ishida 2004" tone="red" stamp="Retracted · May 2025" stampDelay={1300} />
       </div>
       {geo && grey && red ? (
         <>
@@ -140,7 +140,7 @@ function Hero() {
               <Link href="/app?preset=harvard-vitamin-d" className="inline-flex items-center gap-2.5 rounded-full bg-cream px-6 py-3.5 text-[16px] font-semibold text-ink transition hover:bg-white">
                 Watch it catch the Harvard page <ArrowRight className="size-5" />
               </Link>
-              <Link href="/app?tab=agent" className="inline-flex items-center rounded-full border border-cream/60 px-6 py-3.5 text-[16px] font-medium text-cream transition hover:border-cream hover:bg-cream/5">
+              <Link href="/app?tab=agent&preset=harvard-vitamin-d" className="inline-flex items-center rounded-full border border-cream/60 px-6 py-3.5 text-[16px] font-medium text-cream transition hover:border-cream hover:bg-cream/5">
                 Run the agent on a draft
               </Link>
             </div>
@@ -159,16 +159,21 @@ function Hero() {
 function LiveDemo() {
   const [depth, setDepth] = useState(1)
   const [check, setCheck] = useState<CheckResult | null>(null)
+  const [shownDepth, setShownDepth] = useState(1)
   const [busy, setBusy] = useState(false)
   const [started, setStarted] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const depthRef = useRef(1)
   const auto = useRef(false)
 
   async function run(d: number) {
     setDepth(d)
     setBusy(true)
     try {
-      setCheck(await checkAnswer({ ...HARVARD, depth: d }))
+      const result = await checkAnswer({ ...HARVARD, depth: d })
+      if (auto.current && d !== depthRef.current) return
+      setShownDepth(d)
+      setCheck(result)
     } catch {
       setCheck(null)
     } finally {
@@ -210,7 +215,7 @@ function LiveDemo() {
           <p className="font-label text-[12px] text-ink-2">Live · Harvard vitamin D page</p>
           <h2 className="font-display mt-2 text-[48px] leading-none sm:text-[60px]">Watch it catch one.</h2>
         </div>
-        <div className="grid grid-cols-1 gap-8 rounded-[24px] border border-hair bg-card-paper p-6 shadow-[0_24px_60px_-40px_rgba(22,19,15,.5)] sm:p-9 lg:grid-cols-[110px_minmax(0,1fr)_260px]">
+        <div className="grid grid-cols-1 gap-8 rounded-[24px] border border-hair bg-card-paper p-6 shadow-[0_24px_60px_-40px_rgba(22,19,15,.5)] sm:p-9 lg:grid-cols-[90px_minmax(0,1fr)_220px]">
           <div className="flex flex-row flex-wrap gap-x-4 gap-y-2 lg:flex-col lg:gap-3" role="radiogroup" aria-label="Depth">
             {[1, 2, 3].map((d) => (
               <button
@@ -218,9 +223,9 @@ function LiveDemo() {
                 type="button"
                 role="radio"
                 aria-checked={depth === d}
-                disabled={busy}
                 onClick={() => {
                   auto.current = true
+                  depthRef.current = d
                   void run(d)
                 }}
                 className="flex items-center gap-3 py-0.5 text-left font-mono text-[15px]"
@@ -233,27 +238,25 @@ function LiveDemo() {
             ))}
             <p className="hidden pt-2 text-[12px] text-ink-2 lg:block">click to look deeper</p>
           </div>
-          <div className={cn("min-h-[190px] transition-opacity", busy && "opacity-50")}>
-            {check?.reasons?.length ? (
-              <EvidencePath reasons={check.reasons} compact />
+          <div className={cn("min-w-0 transition-opacity md:min-h-[140px]", busy && "opacity-50")}>
+            {check ? (
+              <HopGraph check={check} depth={shownDepth} url={HARVARD.urls[0]} compact />
             ) : (
-              <div className="flex max-w-sm items-center pt-4">
-                <div className="min-w-0 flex-1">
-                  <IndexCard label="Page · Harvard Nutrition Source" title="Vitamin D" />
-                </div>
-                <Thread />
-                <span className="shrink-0 font-mono text-[11px] text-clear">{check ? "nothing flagged at 1 hop" : "checking…"}</span>
+              <div className="paper-texture index-card h-[118px] max-w-[240px] rounded-[6px] px-3.5 pt-3">
+                <p className="font-label text-[10.5px] text-ink-2">Page</p>
+                <p className="font-display mt-1 text-[19px]">Harvard vitamin D</p>
+                <p className="mt-3 font-mono text-[11px] text-ink-2">checking…</p>
               </div>
             )}
           </div>
-          <div className="flex flex-col gap-3 border-t border-hair pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+          <div key={`${shownDepth}-${verdict}`} className="rise flex flex-col gap-3 border-t border-hair pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0" style={{ animationDelay: `${(shownDepth + 1) * 120 + 200}ms` }}>
             {verdict === "block" ? (
               <>
                 <div className="flex items-center gap-3">
                   <span className="grid size-10 place-items-center rounded-xl bg-rx-soft text-xl font-bold text-rx">✕</span>
                   <span className="font-display text-[36px] leading-none">Don&apos;t ship</span>
                 </div>
-                <p className="text-[15px] text-ink-2">Rests on research retracted in May 2025, two steps down.</p>
+                <p className="text-[15px] text-ink-2">Rests on research retracted in May 2025, 2 hops down.</p>
                 <span className="inline-flex w-fit items-center gap-2 rounded-lg border border-clear/40 px-2.5 py-1 text-[13px] text-clear"><Check className="size-3.5" /> Citation check: looks fine</span>
                 <span className="inline-flex w-fit items-center gap-2 rounded-lg bg-rx px-2.5 py-1 text-[13px] text-white"><X className="size-3.5" /> MoolTrace: retracted trial found</span>
               </>
@@ -274,8 +277,8 @@ function LiveDemo() {
           {depth === 1
             ? "At 1 hop the page looks clean: nothing it cites directly is flagged."
             : depth === 2
-              ? "At 2 hops the problem appears: the review it cites used a trial retracted in May 2025."
-              : "At 3 hops the verdict holds: searching deeper finds nothing stronger than that retracted trial."}
+              ? "At 2 hops the problem appears: the review the page cites uses data from a trial retracted in May 2025."
+              : "At 3 hops the verdict holds: the graph has nothing further past the retracted trial."}
         </p>
       </div>
     </section>
@@ -292,17 +295,19 @@ function Finding() {
           <p className="font-display text-[120px] leading-[0.9] text-rx sm:text-[150px]">
             {flagged.length} of {FIELD_SCAN.length}
           </p>
-          <h2 className="font-display mt-3 text-[40px] leading-[1.04] sm:text-[54px]">Harvard nutrition pages rest on withdrawn or retracted research.</h2>
-          <p className="mt-4 text-[22px] text-ink-2">A citation check passes all {FIELD_SCAN.length}.</p>
+          <h2 className="font-display mt-3 text-[40px] leading-[1.04] sm:text-[54px]">
+            A citation check passes all {FIELD_SCAN.length} — MoolTrace flags {flagged.length}.
+          </h2>
+          <p className="mt-4 text-[20px] text-ink-2">Harvard nutrition pages that rest on withdrawn or retracted research. I checked both by hand.</p>
         </div>
         <a href="https://doi.org/10.1002/14651858.CD001364.pub5" target="_blank" rel="noreferrer" className="block rotate-[0.8deg] transition hover:rotate-0">
           <div className="paper-texture index-card relative rounded-[6px] p-7">
             <Pin className="size-6" />
             <p className="font-display text-[34px] leading-tight">Zinc for the common cold</p>
-            <p className="font-label mt-2 text-[12px] text-ink-2">Cochrane · 2011 version · cited by Harvard&apos;s zinc page</p>
+            <p className="font-label mt-2 text-[12px] text-ink-2">Review · Cochrane 2011 (Singh) · cited by Harvard zinc</p>
             <p className="mt-4 text-[15px] leading-6 text-ink-2">Withdrawn by Cochrane in April 2015 over concerns about the calculation and analysis of data.</p>
             <span className="absolute -bottom-3 right-4">
-              <Stamp className="text-[20px]">Withdrawn</Stamp>
+              <Stamp className="text-[20px]">Withdrawn by Cochrane · 2015</Stamp>
             </span>
           </div>
         </a>
@@ -317,13 +322,19 @@ function Finding() {
                   page.flag ? "border-rx bg-rx text-white" : "border-hair bg-card-paper text-ink-2 hover:border-ink/40",
                 )}
               >
-                {i + 1}
-                <span className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-10 hidden w-max max-w-[220px] -translate-x-1/2 rounded-lg border border-hair bg-card-paper px-3 py-1.5 text-left font-mono text-[11px] text-ink shadow-lg group-hover:block">
+                <span aria-hidden>{i + 1}</span>
+                <span className="sr-only">{page.name}{page.flag ? ", rests on withdrawn or retracted research" : ", nothing flagged"}</span>
+                <span aria-hidden className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-10 hidden w-max max-w-[220px] -translate-x-1/2 rounded-lg border border-hair bg-card-paper px-3 py-1.5 text-left font-mono text-[11px] text-ink shadow-lg group-hover:block">
                   {page.name}
                   {page.flag ? " · rests on withdrawn or retracted research" : ""}
                 </span>
               </Link>
             ))}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-[13.5px] text-ink" data-testid="tile-legend">
+            <span className="inline-flex items-center gap-2"><span className="size-4 rounded border border-rx bg-rx" aria-hidden /> Rests on withdrawn or retracted research (MoolTrace flags it)</span>
+            <span className="inline-flex items-center gap-2"><span className="size-4 rounded border border-hair bg-card-paper" aria-hidden /> Nothing flagged (both checks pass)</span>
+            <span className="text-ink-2">Click a tile to check that page.</span>
           </div>
           <p className="font-label mt-5 border-t border-hair pt-4 text-[11px] text-ink-2">
             Every page linked from Harvard&apos;s Vitamins &amp; Minerals index · checked 17 Oct 2026 · each hit verified by hand
@@ -374,16 +385,16 @@ function HowItWorks() {
             <div className="relative rounded-2xl border-2 border-dashed border-ink/20 px-4 pb-6 pt-10 sm:px-8">
               <p className="font-label absolute left-6 top-3.5 text-[11px] text-ink-2">The graph · FalkorDB</p>
               <div className="flex flex-col items-stretch md:flex-row md:items-center">
-                <Node label="Page" title="Harvard Nutrition Source" />
-                <Thread vertical className="md:hidden" label="mention 0.55" />
-                <Thread className="hidden md:flex md:!w-28 lg:!w-32" label="mention 0.55" />
-                <Node label="Review" title="Cochrane review, 2014" />
+                <Node label="Page" title="Harvard vitamin D" />
+                <Thread vertical className="md:hidden" label="mentions 0.55" />
+                <Thread className="hidden md:flex md:!w-28 lg:!w-32" label="mentions 0.55" />
+                <Node label="Review" title="Cochrane 2014 (Avenell)" />
                 <Thread vertical className="md:hidden" tone="red" label="uses its data 0.85" />
                 <Thread className="hidden md:flex md:!w-28 lg:!w-36" tone="red" label="uses its data 0.85" />
                 <Node label="Trial" title="Ishida 2004" tone="red" />
                 <Thread vertical className="md:hidden" tone="red" label="flagged by" />
                 <Thread className="hidden md:flex md:!w-24 lg:!w-28" tone="red" label="flagged by" />
-                <Node label="Notice" title="Retraction, May 2025" tone="red" stamp="Retracted" />
+                <Node label="Notice" title="Retracted · May 2025" tone="red" stamp="Retracted" />
               </div>
               <p className="mt-6 text-center font-mono text-[12.5px] text-ink-2">strongest chain: 0.55 × 0.85 = 0.47, found with algo.SPpaths</p>
             </div>
@@ -394,12 +405,12 @@ function HowItWorks() {
                 <p className="flex items-center gap-3 font-display text-[32px] leading-none">
                   <span className="grid size-8 place-items-center rounded-lg bg-rx-soft text-[16px] font-bold text-rx">✕</span>Don&apos;t ship
                 </p>
-                <p className="mt-2 text-[14.5px] text-ink-2">Rests on research retracted in May 2025, two steps down. The path and the sentence behind each hop come with it.</p>
+                <p className="mt-2 text-[14.5px] text-ink-2">Rests on research retracted in May 2025, 2 hops down. The path and the sentence behind each hop come with it.</p>
               </div>
               <div className="flex-1 rounded-2xl border border-clear/30 bg-card-paper p-5 shadow-sm">
                 <p className="font-label text-[10.5px] text-ink-2">The fix</p>
-                <p className="mt-2 text-[14.5px] text-ink-2 line-through decoration-rx decoration-2">Harvard reviews the evidence.</p>
-                <p className="mt-1.5 rounded-md bg-clear-soft px-2.5 py-1.5 text-[14.5px] leading-6">An earlier version cited Ishida et al. 2004. That paper was retracted in May 2025, so that source was removed.</p>
+                <p className="mt-2 text-[14.5px] text-ink-2 line-through decoration-rx decoration-2">Harvard reviews the evidence at nutritionsource.hsph.harvard.edu/vitamin-d.</p>
+                <p className="mt-1.5 rounded-md bg-clear-soft px-2.5 py-1.5 text-[14.5px] leading-6">An earlier version of this answer cited the Harvard Nutrition Source page &ldquo;Vitamin D&rdquo;, which cites Avenell et al. 2014, which uses data from Ishida et al. 2004, a paper that was retracted in May 2025, so that source was removed.</p>
               </div>
             </div>
           </div>
@@ -427,6 +438,28 @@ function HowItWorks() {
         </div>
       </Reveal>
     </section>
+  )
+}
+
+function CopyCode({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <div className="mt-5 flex items-stretch overflow-hidden rounded-xl border border-hair bg-paper">
+      <code className="min-w-0 flex-1 break-all px-4 py-3 font-mono text-[13px]">{text}</code>
+      <button
+        type="button"
+        onClick={() => {
+          void navigator.clipboard?.writeText(text)
+          setCopied(true)
+          setTimeout(() => setCopied(false), 1500)
+        }}
+        className="inline-flex shrink-0 items-center gap-1.5 border-l border-hair px-4 text-[13px] font-semibold hover:bg-card-paper active:scale-95"
+        aria-label="Copy the MCP URL"
+      >
+        {copied ? <Check className="size-4 text-clear" /> : <Copy className="size-4" />}
+        {copied ? "Copied" : "Copy"}
+      </button>
+    </div>
   )
 }
 
@@ -459,14 +492,24 @@ function Agents() {
                 </li>
               ))}
             </ol>
-            <Link href="/app?tab=agent" className="mt-auto inline-flex w-fit items-center gap-2 pt-8 text-[16px] font-semibold underline underline-offset-4">
-              Run the agent <ArrowRight className="size-4" />
+            <div className="mt-8 grid gap-3 text-[14px] leading-6 sm:grid-cols-2">
+              <div className="min-w-0 rounded-xl border border-rx/25 bg-rx-soft p-4 [overflow-wrap:anywhere]">
+                <p className="mb-1 text-[11.5px] text-ink-2">Without MoolTrace · ships as written</p>
+                Vitamin D helps prevent fractures in older adults. Harvard reviews the evidence at nutritionsource.hsph.harvard.edu/vitamin-d.
+              </div>
+              <div className="min-w-0 rounded-xl border border-clear/30 bg-clear-soft p-4 [overflow-wrap:anywhere]">
+                <p className="mb-1 text-[11.5px] text-ink-2">With MoolTrace · checked again: clear</p>
+                Vitamin D helps prevent fractures in older adults (no checked source remains for this claim). An earlier version of this answer cited the Harvard Nutrition Source page &ldquo;Vitamin D&rdquo;, which cites Avenell et al. 2014, which uses data from Ishida et al. 2004, a paper that was retracted in May 2025, so that source was removed.
+              </div>
+            </div>
+            <Link href="/app?tab=agent&preset=harvard-vitamin-d" className="mt-8 inline-flex w-fit items-center gap-2 text-[16px] font-semibold underline underline-offset-4">
+              Run the agent on this draft <ArrowRight className="size-4" />
             </Link>
           </div>
           <div className="rounded-[20px] border border-hair bg-card-paper p-8">
             <h3 className="font-display text-[34px] leading-none">Any agent, over MCP.</h3>
             <p className="mt-3 text-[16px] text-ink-2">Point Claude, Cursor or your own agent at the remote endpoint.</p>
-            <p className="mt-5 break-all rounded-xl border border-hair bg-paper px-4 py-3 font-mono text-[13px]">{MCP_URL}</p>
+            <CopyCode text={MCP_URL} />
             <div className="mt-4 flex flex-wrap gap-2 font-mono text-[13px]">
               {["check_answer", "what_rests_on", "recheck_affected"].map((t) => (
                 <span key={t} className="rounded-lg border border-hair bg-paper px-3 py-1.5">{t}</span>
@@ -483,14 +526,8 @@ function Agents() {
             <div className="rounded-[20px] border border-hair bg-card-paper p-7">
               <h3 className="font-display text-[30px] leading-none">Retractions arrive later.</h3>
               <p className="mt-3 text-[15px] text-ink-2">When a paper is retracted, find every shipped answer that rests on it.</p>
-              <div className="mt-5 flex items-end gap-2">
-                {[1, 2, 3].map((n) => (
-                  <span key={n} className="paper-texture index-card relative h-12 flex-1 rounded-[4px]">
-                    <span className="absolute -right-1 -top-1 size-3 rounded-full bg-rx ring-2 ring-card-paper" />
-                  </span>
-                ))}
-              </div>
-              <p className="font-label mt-3 text-[10.5px] text-ink-2">answers ← Ishida 2004</p>
+              <p className="mt-4 rounded-lg bg-paper px-3 py-2 font-mono text-[12px] leading-5">Trial · Ishida 2004 · Retracted<br />← Review · Cochrane 2014 (Avenell)<br />← Page · Harvard vitamin D<br />← stored answers citing it</p>
+              <Link href="/app?tab=alert" className="mt-3 inline-flex text-[14px] font-semibold underline underline-offset-4">Try the retraction alert →</Link>
             </div>
           </div>
         </div>
@@ -531,7 +568,7 @@ function Closing() {
           </a>
         </div>
       </Reveal>
-      <footer className="mx-auto mt-20 flex max-w-[1180px] flex-wrap justify-center gap-x-6 gap-y-1 border-t border-cream/15 pt-5 text-[12px] text-cream-2">
+      <footer className="mx-auto mt-20 flex max-w-[1180px] flex-wrap justify-center gap-x-6 gap-y-1 border-t border-cream/25 pt-5 text-[12.5px] text-cream">
         <span>Built on FalkorDB · WeMakeDevs × FalkorDB Graph Hacks 2026</span>
         <span>Not medical advice. An Expression of Concern is not a retraction.</span>
       </footer>
