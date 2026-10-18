@@ -205,6 +205,13 @@ class AgentUnavailable(Exception):
         super().__init__(reason)
 
 
+
+def _recheck_summary(recheck: dict[str, Any] | None, fallback: dict[str, Any]) -> dict[str, Any]:
+    """Verdict and exit code from the same recheck; exit 0 is a real value, not missing."""
+    if recheck and recheck.get("decision"):
+        return {"decision": recheck.get("decision"), "exit_code": recheck.get("exit_code")}
+    return {"decision": fallback.get("decision"), "exit_code": fallback.get("exit_code")}
+
 def reset_agent_state() -> None:
     with _lock:
         _hits_by_ip.clear()
@@ -543,7 +550,43 @@ def _step_summary(name: str, result: Any, error: str | None = None) -> dict[str,
         "summary": compact.get("summary") or compact.get("text") or compact.get("explanation"),
         "affected": compact.get("affected"),
         "rewritten": compact.get("rewritten"),
+        **_step_graph(result),
     }
+
+
+def _step_graph(result: Any) -> dict[str, Any]:
+    """Rows the tool got back from the graph, and the chain it walked, for the trace table."""
+    if not isinstance(result, dict):
+        return {"rows": None, "chain": []}
+    reasons = result.get("reasons")
+    reason = (reasons or [None])[0] if isinstance(reasons, list) else None
+    if reason is None and isinstance(result.get("reason"), dict):
+        reason = result["reason"]
+    if isinstance(result.get("paths"), list):
+        rows = len(result["paths"])
+    elif isinstance(reasons, list):
+        rows = len(reasons)
+    elif isinstance(result.get("affected"), int):
+        rows = result["affected"]
+    else:
+        rows = 1 if reason else 0
+    chain = []
+    for index, step in enumerate((reason or {}).get("steps") or []):
+        hop = ((reason or {}).get("hops_evidence") or [])[index - 1] if index else {}
+        chain.append(
+            {
+                "doi": step.get("doi"),
+                "url": step.get("url"),
+                "title": step.get("title"),
+                "year": step.get("year"),
+                "first_author": step.get("first_author"),
+                "reliance": (hop or {}).get("reliance"),
+            }
+        )
+    if chain and reason and reason.get("notice_doi"):
+        chain[-1]["notice_type"] = reason.get("notice_type")
+        chain[-1]["notice_date"] = reason.get("notice_date")
+    return {"rows": rows, "chain": chain}
 
 
 def _execute_tool(name: str, args: dict[str, Any], graph, defaults: dict[str, Any]) -> dict[str, Any]:
@@ -576,6 +619,7 @@ def _execute_tool(name: str, args: dict[str, Any], graph, defaults: dict[str, An
                 merged["engine"],
                 merged["depth"],
                 graph=graph,
+                soften_claims=True,
             )
         elif name == "explain_path":
             payload = explain_path(
@@ -1120,12 +1164,7 @@ def run_retraction_landed(
                 "path": path,
                 "rewrite": rewritten.get("text"),
                 "rewritten": rewritten.get("rewritten"),
-                "recheck": {
-                    "decision": (rewritten.get("recheck") or {}).get("decision")
-                    or item.get("decision"),
-                    "exit_code": (rewritten.get("recheck") or {}).get("exit_code")
-                    or item.get("exit_code"),
-                },
+                "recheck": _recheck_summary(rewritten.get("recheck"), item),
             }
         )
     grouped: dict[tuple, dict[str, Any]] = {}

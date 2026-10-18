@@ -202,8 +202,14 @@ def _notice_label(payload: dict[str, Any]) -> tuple[str, str, str]:
     return label, doi, date
 
 
+def _month_only(value: str) -> str:
+    """Issue dates are stored as the 1st of the month; don't claim a day the source never gave."""
+    text = (value or "").strip()[:10]
+    return text[:7] if re.fullmatch(r"(?:19|20)\d{2}-\d{2}-01", text) else (value or "").strip()
+
+
 def _pretty_date(value: str) -> str:
-    text = (value or "").strip()
+    text = _month_only(value)
     month_only = re.fullmatch(r"((?:19|20)\d{2})-(\d{2})$", text)
     if month_only:
         year, month = month_only.groups()
@@ -224,7 +230,7 @@ def _pretty_date(value: str) -> str:
 
 
 def _date_preposition(value: str) -> str:
-    if re.fullmatch(r"((?:19|20)\d{2})-(\d{2})$", (value or "").strip()):
+    if re.fullmatch(r"((?:19|20)\d{2})-(\d{2})$", _month_only(value)):
         return "in"
     return "on"
 
@@ -316,6 +322,62 @@ def _study_cite(
     return author or "the authors", year or "n.d.", root
 
 
+COCHRANE_PREFIX = "10.1002/14651858."
+
+_SITE_NAMES = {
+    "nutritionsource.hsph.harvard.edu": "Harvard Nutrition Source",
+    "healthline.com": "Healthline",
+    "webmd.com": "WebMD",
+    "medicalnewstoday.com": "Medical News Today",
+    "verywellhealth.com": "Verywell Health",
+    "everydayhealth.com": "Everyday Health",
+}
+
+_HOP_VERBS = {
+    "included": "includes",
+    "relies": "relies on",
+    "uses_data_or_method": "uses data from",
+    "mention": "cites",
+    "background": "mentions",
+}
+
+
+def _flag_phrase(payload: dict[str, Any], root: str, date: str) -> str:
+    """'was retracted in May 2025' or 'was withdrawn by Cochrane on 30 Apr 2015'."""
+    reason = next((item for item in payload.get("reasons") or [] if item.get("code")), {})
+    withdrawn = str(reason.get("code") or "") == "withdrawal"
+    when = _pretty_date(date)
+    if withdrawn:
+        verb = "was withdrawn by Cochrane" if clean_doi(root).startswith(COCHRANE_PREFIX) else "was withdrawn"
+        return f"{verb} {_date_preposition(date)} {when}" if when else f"{verb} (withdrawal date not confirmed)"
+    return f"was retracted {_date_preposition(date)} {when}" if when else "was retracted (retraction date not confirmed)"
+
+
+def _page_chain(payload: dict[str, Any]) -> str:
+    """'the Harvard Nutrition Source page "Vitamin D", which cites Avenell et al. 2014, which uses data from'.
+
+    Only when the deciding path starts at a cited web page. Empty otherwise,
+    so DOI-only drafts keep the short disclosure.
+    """
+    reason = next((item for item in payload.get("reasons") or [] if item.get("code")), {})
+    steps = list(reason.get("steps") or [])
+    hops = list(reason.get("hops_evidence") or [])
+    if len(steps) < 2 or steps[0].get("doi") or not str(steps[0].get("url") or "").startswith("http"):
+        return ""
+    site = site_of(str(steps[0]["url"]))
+    name = _SITE_NAMES.get(site, site)
+    title = re.split(r"\s[\u2022|\u2013-]\s", str(steps[0].get("title") or ""))[0].strip()
+    parts = [f'the {name} page "{title}"' if title else f"a {name} page"]
+    for index, step in enumerate(steps[1:]):
+        verb = _HOP_VERBS.get(str((hops[index] if index < len(hops) else {}).get("reliance") or ""), "cites")
+        if index == len(steps) - 2:
+            parts.append(f"which {verb}")
+            break
+        who = _cite_name(_family_name(step.get("first_author")) or "the authors", _year_text(step.get("year")) or "n.d.")
+        parts.append(f"which {verb} {who}")
+    return ", ".join(parts)
+
+
 def _retraction_sentence(payload: dict[str, Any], span: str = "", graph=None) -> str:
     _label, _notice, date = _notice_label(payload)
     author, year, root = _study_cite(payload, span, graph)
@@ -334,17 +396,14 @@ def _retraction_sentence(payload: dict[str, Any], span: str = "", graph=None) ->
             f"that trial report was retracted and republished {prep} {when}, "
             f"so that source was removed."
         )
-    if not when:
+    flagged = _flag_phrase(payload, root, date)
+    chain = _page_chain(payload)
+    if chain:
         return (
-            f"An earlier version of this answer cited {who}; "
-            f"that paper was retracted (retraction date not confirmed), "
-            f"so that source was removed."
+            f"An earlier version of this answer cited {chain} {who}, "
+            f"a paper that {flagged}, so that source was removed."
         )
-    prep = _date_preposition(date)
-    return (
-        f"An earlier version of this answer cited {who}; "
-        f"that paper was retracted {prep} {when}, so that source was removed."
-    )
+    return f"An earlier version of this answer cited {who}; that paper {flagged}, so that source was removed."
 
 
 def _disclose(payload: dict[str, Any], span: str = "", graph=None) -> str:
@@ -385,11 +444,42 @@ def _replacement(payload: dict[str, Any], graph=None, span: str = "") -> str:
     return _eoc_disclose(payload, span, graph)
 
 
+UNSUPPORTED_NOTE = " (no checked source remains for this claim)"
+
+
+def _soften_unsupported(pieces: list[str], replaced: set[int]) -> list[str]:
+    """When every cited source was dropped, mark the claim the removed citation supported:
+    the uncited sentence directly before it. Every other sentence stays byte-identical."""
+    if any(_has_identifier(piece) for index, piece in enumerate(pieces) if index not in replaced):
+        return pieces
+    out = list(pieces)
+    for index in sorted(replaced):
+        prev = index - 1
+        if prev < 0 or prev in replaced:
+            continue
+        piece = out[prev]
+        body = piece.rstrip()
+        tail = piece[len(body):]
+        if not body or UNSUPPORTED_NOTE.strip() in body:
+            continue
+        stop = body[-1] if body[-1] in ".!?" else ""
+        out[prev] = f"{body[:-1] if stop else body}{UNSUPPORTED_NOTE}{stop or '.'}{tail}"
+    return out
+
+
+def _has_identifier(text: str) -> bool:
+    if text.lstrip().startswith("An earlier version of this answer"):
+        return False
+    found = extract_identifiers(text)
+    return bool(found.dois or found.pmids or found.pmcids or found.urls)
+
+
 def template_rewrite(
     payload: dict[str, Any],
     text: str = "",
     urls: list[str] | None = None,
     graph=None,
+    soften_claims: bool = False,
 ) -> dict[str, Any]:
     dois, flagged_urls = _flagged(payload)
     dropped = sorted(dois | flagged_urls)
@@ -410,14 +500,17 @@ def template_rewrite(
             "untouched": True,
         }
     pieces: list[str] = []
-    changed = False
+    replaced: set[int] = set()
     for span in spans:
         if _span_hits(span, dois, flagged_urls):
             replacement = _replacement(payload, graph, span)
+            replaced.add(len(pieces))
             pieces.append(replacement + (" " if span.endswith(" ") else ""))
-            changed = True
         else:
             pieces.append(span)
+    changed = bool(replaced)
+    if changed and soften_claims and not kept_urls:
+        pieces = _soften_unsupported(pieces, replaced)
     rewritten = original if not changed else "".join(pieces)
     return {
         "text": rewritten,
@@ -433,9 +526,10 @@ def propose_rewrite(
     urls: list[str] | None,
     payload: dict[str, Any],
     graph=None,
+    soften_claims: bool = False,
 ) -> dict[str, Any]:
     url_list = [url.strip() for url in (urls or []) if url and url.strip()]
-    return template_rewrite(payload, text, url_list, graph)
+    return template_rewrite(payload, text, url_list, graph, soften_claims=soften_claims)
 
 
 def _exit_code(payload: dict[str, Any] | None) -> int:
@@ -453,8 +547,11 @@ def rewrite_answer(
     engine: str = "draft",
     depth: int = 2,
     graph=None,
+    soften_claims: bool = False,
 ) -> dict[str, Any]:
-    """Check, rewrite flagged sentences, recheck. Recheck sets the exit code."""
+    """Check, rewrite flagged sentences, recheck. Recheck sets the exit code.
+
+    soften_claims (agent drafts): also mark the claim the removed citation supported."""
     from mooltrace import config as _config
 
     url_list = [url.strip() for url in (urls or []) if url and url.strip()]
@@ -472,7 +569,7 @@ def rewrite_answer(
             "recheck": first,
             "exit_code": code,
         }
-    proposal = propose_rewrite(text, url_list, first, graph)
+    proposal = propose_rewrite(text, url_list, first, graph, soften_claims=soften_claims)
     second = check_answer(
         proposal["text"],
         proposal.get("urls") or [],

@@ -33,7 +33,8 @@ _RETRACT_DISCLOSE = re.compile(
     r"the study this relied on \((?:[^()]|\([^()]*\))*\) was retracted on "
     r".+?\. This claim has been removed\.?"
     r"|An earlier version of this answer cited .{0,240}?"
-    r"(?:was retracted(?: and republished)?(?: on | in |\s+\(retraction date not confirmed\))"
+    r"(?:was (?:retracted(?: and republished)?|withdrawn(?: by Cochrane)?)"
+    r"(?: on | in |\s+\((?:retraction|withdrawal) date not confirmed\))"
     r"|retracted and republished(?: on | in |\s+\(retraction date not confirmed\)))"
     r".*?so (?:this claim|that source) was removed\.?",
     re.I,
@@ -240,3 +241,11 @@ def site_of(url: str) -> str:
     if host.startswith("www."):
         host = host[4:]
     return host
+
+
+def cochrane_withdrawal(work_doi: str, notice_type: str, label: str) -> tuple[str, str]:
+    """Cochrane withdraws reviews; it does not retract them. Retraction Watch files both as
+    retractions, so a 'retraction' on a Cochrane review is stored as a withdrawal."""
+    if (work_doi or "").lower().startswith("10.1002/14651858.") and "retract" in (notice_type or "").lower():
+        return "withdrawal", "Withdrawn by Cochrane"
+    return notice_type, label

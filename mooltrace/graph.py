@@ -17,6 +17,7 @@ from typing import Any
 from mooltrace.clients import InfraError
 from mooltrace.config import GRAPH_NAME, RO_QUERY_TIMEOUT_MS, clamp_depth
 from mooltrace import cypher as C
+from mooltrace.ids import cochrane_withdrawal
 from mooltrace.reliance import UNJUDGED_COST, hop_cost
 
 _WORK_FIELDS = frozenset(
@@ -403,6 +404,29 @@ class Graph:
             {"url": url, "doi": doi, "cost": UNJUDGED_COST},
         )
 
+    def explored(self, answer_id: str, depth: int) -> list[dict[str, Any]]:
+        """Every RESTS_ON chain the check could walk at this depth, for drawing the graph.
+
+        Not used for the verdict; the verdict comes only from algo.SPpaths rows.
+        """
+        hops = max(1, min(int(depth), 3))
+        run = self.run(
+            "explored",
+            f"""
+            MATCH (a:Answer {{id: $answer_id}})-[:CITES]->(s:Source)
+            OPTIONAL MATCH p = (s)-[:RESTS_ON*1..{hops}]->(w:Work)
+            RETURN s.url AS source_url,
+                   s.title AS source_title,
+                   CASE WHEN p IS NULL THEN [] ELSE
+                     [x IN tail(nodes(p)) | {{doi: x.doi, title: x.title, year: x.year, first_author: x.first_author}}]
+                   END AS works,
+                   CASE WHEN p IS NULL THEN [] ELSE [r IN relationships(p) | r.reliance] END AS reliances
+            LIMIT 80
+            """,
+            {"answer_id": answer_id},
+        )
+        return [_plain(row) for row in run.rows]
+
     def merge_notice(
         self,
         notice_doi: str,
@@ -412,6 +436,7 @@ class Graph:
         source: str,
         date: str,
     ) -> None:
+        notice_type, label = cochrane_withdrawal(work_doi, notice_type, label)
         self.merge_work(work_doi)
         self.run(
             "merge_notice",

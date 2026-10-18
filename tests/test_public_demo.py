@@ -179,8 +179,9 @@ HARVARD_REWRITE_DRAFT = (
     f"A nutrition coach cites {HARVARD_URL}."
 )
 ISHIDA_REWRITE = (
-    "An earlier version of this answer cited Ishida et al. 2004; "
-    "that paper was retracted in May 2025, so that source was removed."
+    'An earlier version of this answer cited the Harvard Nutrition Source page "Vitamin D", '
+    "which cites Avenell et al. 2014, which uses data from Ishida et al. 2004, "
+    "a paper that was retracted in May 2025, so that source was removed."
 )
 OLIVE_REWRITE_DRAFT = (
     "Vitamin D status is discussed separately. "

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from mooltrace.ids import normalize_update_type
+from mooltrace.ids import cochrane_withdrawal, normalize_update_type
 from mooltrace.reliance import PATH_RULE, STRONG_RELIANCE, WEIGHT_FLOOR, WEIGHTS
 
 PASSING_NOTE = "cites a flagged study only in passing"
@@ -316,6 +316,17 @@ def coverage_line(expanded: int | None, cited: int | None, depth: int) -> str:
     return f"expanded {done} of {int(cited)} cited works"
 
 
+def _cochrane_reason(reason: dict[str, Any]) -> None:
+    """Graphs written before the Cochrane fix still say 'retraction'; report it as Cochrane did: withdrawn."""
+    if reason.get("code") != "retraction":
+        return
+    kind, label = cochrane_withdrawal(str(reason.get("root_doi") or ""), "retraction", "")
+    if kind == "withdrawal":
+        reason["code"] = "withdrawal"
+        reason["notice_type"] = "withdrawal"
+        reason["notice_label"] = label
+
+
 def decide(
     paths: list[dict[str, Any]],
     *,
@@ -368,6 +379,8 @@ def decide(
         if doi in costs:
             reason["sp_cost"] = costs[doi]
         reason["status"] = "count"
+    for reason in reasons:
+        _cochrane_reason(reason)
     reasons.sort(key=_reason_rank)
     kinds = {reason["code"] for reason in reasons}
     discounted_reasons = [

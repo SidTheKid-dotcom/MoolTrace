@@ -1262,6 +1262,10 @@ def check_answer(
         "limits": traced["limits"],
         **stamp,
     }
+    try:
+        payload["explored"] = graph.explored(traced["answer_id"], traced["depth"])
+    except Exception:
+        payload["explored"] = []
     if verdict.get("error_code"):
         payload["error_code"] = verdict["error_code"]
     if any(_notice_reason(reason) for reason in verdict["reasons"]):
