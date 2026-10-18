@@ -134,7 +134,7 @@ function Hero() {
             </p>
             <div className="rise grid max-w-[600px] gap-2 rounded-2xl border border-cream/15 bg-black/25 p-4 text-[15px] sm:grid-cols-2" style={{ animationDelay: "200ms" }}>
               <p className="flex items-start gap-2 text-cream/85"><Check className="mt-0.5 size-4 shrink-0 text-[#5fd39c]" /> A citation check passes all 35 Harvard nutrition pages.</p>
-              <p className="flex items-start gap-2 text-cream"><X className="mt-0.5 size-4 shrink-0 text-[#ff5a43]" /> MoolTrace flags 2 — both verified by hand.</p>
+              <p className="flex items-start gap-2 text-cream"><X className="mt-0.5 size-4 shrink-0 text-[#ff5a43]" /> MoolTrace flags 2, and I checked both by hand.</p>
             </div>
             <div className="rise flex flex-wrap gap-4" style={{ animationDelay: "240ms" }}>
               <Link href="/app?preset=harvard-vitamin-d" className="inline-flex items-center gap-2.5 rounded-full bg-cream px-6 py-3.5 text-[16px] font-semibold text-ink transition hover:bg-white">
@@ -145,7 +145,7 @@ function Hero() {
               </Link>
             </div>
             <p className="rise font-mono text-[13px] text-cream-2" style={{ animationDelay: "320ms" }}>
-              Not in the graph? We say &ldquo;not checked&rdquo;, never &ldquo;safe&rdquo;.
+              Not in the graph? MoolTrace says &ldquo;not checked&rdquo;, never &ldquo;safe&rdquo;.
             </p>
           </div>
           <HeroBoard />
@@ -335,90 +335,94 @@ function Finding() {
 }
 
 /* ---------- B5 · how it works ---------- */
+function Node({ label, title, tone = "neutral", stamp, className }: { label: string; title: string; tone?: "neutral" | "red"; stamp?: string; className?: string }) {
+  return (
+    <div className={cn("min-w-0 flex-1", className)}>
+      <IndexCard label={label} title={title} tone={tone} pin={tone === "red" ? "red" : "blue"} stamp={stamp} stampDelay={400} />
+    </div>
+  )
+}
+
 function HowItWorks() {
   const steps = [
-    {
-      n: "01",
-      title: "Give it an answer",
-      body: "A draft, the links it cites, or a call from your agent over MCP.",
-      visual: <div className="rounded-2xl rounded-bl-sm border border-hair bg-paper px-3 py-2 text-[13px] text-ink-2">Vitamin D prevents fractures — Harvard</div>,
-    },
-    {
-      n: "02",
-      title: "It builds the citation graph",
-      body: "Pages are resolved to papers (Crossref, OpenAlex, PubMed) and stored in FalkorDB as page → review → trial. Retractions and Expressions of Concern attach as dated notice nodes.",
-      visual: (
-        <div className="flex flex-wrap items-center gap-1 font-mono text-[11px]">
-          <span className="rounded-md border border-hair bg-paper px-2 py-1">Page</span>→<span className="rounded-md border border-hair bg-paper px-2 py-1">Review</span>→
-          <span className="rounded-md border border-hair bg-paper px-2 py-1">Trial</span>←<span className="rounded-md border border-rx/30 bg-rx-soft px-2 py-1 text-rx">Notice</span>
-        </div>
-      ),
-    },
-    {
-      n: "03",
-      title: "It weighs each link",
-      body: "A trial included in a review counts fully; a passing mention counts much less. FalkorDB's shortest-path search finds the strongest chain to any flagged paper.",
-      visual: (
-        <div className="flex flex-col gap-1 font-mono text-[11px]">
-          {[["included", 100], ["uses its data", 85], ["mention", 55], ["background", 20]].map(([k, w]) => (
-            <div key={k} className="flex items-center gap-2">
-              <span className="w-24 text-ink-2">{k}</span>
-              <span className="h-1.5 rounded-full bg-ink/70" style={{ width: `${Number(w) * 0.9}px` }} />
-            </div>
-          ))}
-        </div>
-      ),
-    },
-    {
-      n: "04",
-      title: "It gives a verdict",
-      body: "Don't ship, Review, Clear, or Not checked — always with the path and the sentence behind each hop.",
-      visual: (
-        <div className="flex flex-wrap gap-1.5 text-[12px] font-medium">
-          <span className="rounded-md bg-rx-soft px-2 py-1 text-rx">Don&apos;t ship</span>
-          <span className="rounded-md bg-amber-soft px-2 py-1 text-amber-x">Review</span>
-          <span className="rounded-md bg-clear-soft px-2 py-1 text-clear">Clear</span>
-          <span className="rounded-md bg-paper px-2 py-1 text-ink-2">Not checked</span>
-        </div>
-      ),
-    },
-    {
-      n: "05",
-      title: "It ships the fix",
-      body: "It rewrites only the sentence that leaned on the flagged source, then checks the answer again.",
-      visual: (
-        <div className="text-[13px]">
-          <p className="text-ink-2 line-through decoration-rx decoration-2">…Harvard reviews the evidence.</p>
-          <p className="mt-1 rounded-md bg-clear-soft px-2 py-1">…source removed — retracted May 2025.</p>
-        </div>
-      ),
-    },
+    { n: "1", title: "You give it an answer", body: "Paste a draft or the links it cites. Or let your agent call it over MCP." },
+    { n: "2", title: "It builds the graph", body: "Every page gets resolved to the papers behind it (Crossref, OpenAlex, PubMed) and stored in FalkorDB as page, review and trial. Retractions and concerns hang off the papers they flag." },
+    { n: "3", title: "It weighs every link", body: "A trial the review actually included counts fully. A passing mention barely counts. FalkorDB's shortest path search finds the strongest chain to a flagged paper." },
+    { n: "4", title: "You get a verdict", body: "Don't ship, Review, Clear or Not checked. Always with the path and the sentence behind each hop." },
+    { n: "5", title: "It fixes the answer", body: "Only the sentence that leaned on the bad source changes. Then it checks the answer again." },
   ]
   return (
-    <section id="how" className="bg-paper px-6 pb-24 text-ink sm:px-10">
-      <Reveal className="mx-auto flex max-w-[1180px] flex-col gap-8">
+    <section id="how" className="bg-paper px-6 pb-28 text-ink sm:px-10">
+      <Reveal className="mx-auto flex max-w-[1180px] flex-col gap-10">
         <div>
-          <h2 className="font-display text-[48px] leading-none sm:text-[60px]">How it works</h2>
+          <h2 className="font-display text-[48px] leading-none sm:text-[64px]">How it works</h2>
           <p className="mt-3 text-[19px] text-ink-2">What goes in, what the graph does, what comes out.</p>
         </div>
-        <ol className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+
+        {/* the board: a flowchart drawn as pinned cards and rope */}
+        <div className="relative overflow-hidden rounded-[28px] border border-[#d9ccb2] bg-[#ece2cc] p-6 shadow-[inset_0_2px_30px_rgba(120,96,60,.18)] sm:p-10">
+          <div aria-hidden className="absolute inset-0 bg-[radial-gradient(rgba(90,70,40,.12)_1px,transparent_1.3px)] bg-[length:18px_18px]" />
+          <div className="relative flex flex-col gap-6">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6">
+              <p className="font-label w-12 shrink-0 text-[11px] text-ink-2">In</p>
+              <div className="md:w-[340px]">
+                <Node label="Your answer" title="“Vitamin D prevents fractures.” Source: Harvard" />
+              </div>
+              <p className="text-[14px] text-ink-2 md:max-w-[260px]">A draft, its links, or a call from your agent.</p>
+            </div>
+
+            <div className="relative rounded-2xl border-2 border-dashed border-ink/20 px-4 pb-6 pt-10 sm:px-8">
+              <p className="font-label absolute left-6 top-3.5 text-[11px] text-ink-2">The graph · FalkorDB</p>
+              <div className="flex flex-col items-stretch md:flex-row md:items-center">
+                <Node label="Page" title="Harvard Nutrition Source" />
+                <Thread vertical className="md:hidden" label="mention 0.55" />
+                <Thread className="hidden md:flex md:!w-28 lg:!w-32" label="mention 0.55" />
+                <Node label="Review" title="Cochrane review, 2014" />
+                <Thread vertical className="md:hidden" tone="red" label="uses its data 0.85" />
+                <Thread className="hidden md:flex md:!w-28 lg:!w-36" tone="red" label="uses its data 0.85" />
+                <Node label="Trial" title="Ishida 2004" tone="red" />
+                <Thread vertical className="md:hidden" tone="red" label="flagged by" />
+                <Thread className="hidden md:flex md:!w-24 lg:!w-28" tone="red" label="flagged by" />
+                <Node label="Notice" title="Retraction, May 2025" tone="red" stamp="Retracted" />
+              </div>
+              <p className="mt-6 text-center font-mono text-[12.5px] text-ink-2">strongest chain: 0.55 × 0.85 = 0.47, found with algo.SPpaths</p>
+            </div>
+
+            <div className="flex flex-col gap-3 md:flex-row md:items-stretch md:gap-6">
+              <p className="font-label w-12 shrink-0 self-center text-[11px] text-ink-2">Out</p>
+              <div className="flex-1 rounded-2xl border border-rx/25 bg-card-paper p-5 shadow-sm">
+                <p className="flex items-center gap-3 font-display text-[32px] leading-none">
+                  <span className="grid size-8 place-items-center rounded-lg bg-rx-soft text-[16px] font-bold text-rx">✕</span>Don&apos;t ship
+                </p>
+                <p className="mt-2 text-[14.5px] text-ink-2">Rests on research retracted in May 2025, two steps down. The path and the sentence behind each hop come with it.</p>
+              </div>
+              <div className="flex-1 rounded-2xl border border-clear/30 bg-card-paper p-5 shadow-sm">
+                <p className="font-label text-[10.5px] text-ink-2">The fix</p>
+                <p className="mt-2 text-[14.5px] text-ink-2 line-through decoration-rx decoration-2">Harvard reviews the evidence.</p>
+                <p className="mt-1.5 rounded-md bg-clear-soft px-2.5 py-1.5 text-[14.5px] leading-6">An earlier version cited Ishida et al. 2004. That paper was retracted in May 2025, so that source was removed.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ol className="grid gap-x-8 gap-y-7 sm:grid-cols-2 lg:grid-cols-5">
           {steps.map((step) => (
-            <li key={step.n} className="flex flex-col gap-3 rounded-[20px] border border-hair bg-card-paper p-5">
-              <p className="font-label text-[11px] text-ink-2">{step.n}</p>
-              <p className="text-[19px] font-semibold leading-tight">{step.title}</p>
-              <p className="text-[14px] leading-6 text-ink-2">{step.body}</p>
-              <div className="mt-auto pt-2">{step.visual}</div>
+            <li key={step.n} className="flex flex-col gap-2">
+              <span className="grid size-8 place-items-center rounded-full border border-ink/20 font-mono text-[13px]">{step.n}</span>
+              <p className="text-[18px] font-semibold leading-snug">{step.title}</p>
+              <p className="text-[15.5px] leading-[1.65] text-[#4a443b]">{step.body}</p>
             </li>
           ))}
         </ol>
+
         <div className="grid overflow-hidden rounded-[20px] border border-hair md:grid-cols-2">
           <div className="flex items-center gap-3 bg-clear-soft/70 px-6 py-5 text-[17px]">
             <span className="grid size-7 place-items-center rounded-full bg-clear text-white"><Check className="size-4" /></span>
-            Checking the answer&apos;s own citations → <b className="text-clear">looks fine</b>
+            Checking only the answer&apos;s own citations: <b className="text-clear">looks fine</b>
           </div>
           <div className="flex items-center gap-3 bg-rx-soft px-6 py-5 text-[17px]">
             <span className="grid size-7 place-items-center rounded-full bg-rx text-white"><X className="size-4" /></span>
-            Walking the citation graph → <b className="text-rx">don&apos;t ship</b>
+            Walking the citation graph: <b className="text-rx">don&apos;t ship</b>
           </div>
         </div>
       </Reveal>

@@ -49,7 +49,7 @@ export function AgentTab() {
         <input
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
-          placeholder="Ask a health question — the agent answers, then checks itself"
+          placeholder="Ask a health question. The agent answers, then checks itself."
           maxLength={300}
           className="h-12 min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-2/70"
           aria-label="Health question"
@@ -98,7 +98,7 @@ export function AgentTab() {
       {error ? <p className="text-sm text-rx">{error}</p> : null}
       {busy ? (
         <div className="rounded-[20px] border border-hair bg-card-paper p-6 text-sm text-ink-2">
-          The agent is working — it fetches the cited pages live, up to 2 minutes.
+          The agent is working. It fetches the cited pages live, so this can take up to 2 minutes.
         </div>
       ) : null}
 

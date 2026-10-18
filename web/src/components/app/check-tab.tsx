@@ -355,7 +355,7 @@ export function CheckTab({ initial }: { initial?: { input: Input } }) {
             ) : null}
             {check.reasons?.length ? (
               <button type="button" onClick={() => setDrawer(true)} className="text-[16px] text-ink underline underline-offset-4">
-                Why — evidence and query ↓
+                Why: evidence and query ↓
               </button>
             ) : null}
             {verdict === "pass" ? <span className="text-[13px] text-ink-2">Clear is not a medical-accuracy check.</span> : null}
