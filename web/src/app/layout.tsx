@@ -25,9 +25,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MoolTrace — is your AI's answer resting on retracted research?",
+  title: "MoolTrace — don't ship health answers that rest on retracted research",
   description:
-    "MoolTrace follows every citation in a health answer — page → review → trial — and stops the answer if research underneath was retracted.",
+    "MoolTrace builds a citation graph in FalkorDB from a health answer down to the trials, blocks answers that rest on retracted research, and shows the exact path.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -90,7 +90,6 @@ export function AppShell() {
           <span>Not medical advice. An Expression of Concern is not a retraction. Clear is not a medical-accuracy check.</span>
           <a className="underline underline-offset-2" href={REPO_URL}>Code</a>
           <span title={MCP_URL} className="font-mono">MCP · /mcp</span>
-          <Link className="underline underline-offset-2" href="/classic">Classic view</Link>
         </footer>
       </div>
     </div>

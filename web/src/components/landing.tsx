@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link"
-import { ArrowRight, Check, Copy, X } from "lucide-react"
+import { ArrowRight, Check, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { IndexCard, Magnifier, Pin, Reveal, Stamp, Thread } from "@/components/board/board"
 import { EvidencePath } from "@/components/board/evidence-path"
@@ -64,26 +64,30 @@ function Hero() {
         <div className="grid flex-1 items-center gap-12 py-12 lg:grid-cols-[1fr_1fr]">
           <div className="flex flex-col gap-7">
             <p className="font-label rise text-[12px] text-cream-2">For teams shipping health AI</p>
-            <h1 className="font-display rise text-[clamp(44px,4.6vw,80px)] leading-[0.98] lg:whitespace-nowrap" style={{ animationDelay: "80ms" }}>
-              Every answer has a source.
+            <h1 className="font-display rise text-[clamp(40px,4.1vw,70px)] leading-[1.0]" style={{ animationDelay: "80ms" }}>
+              Your AI cites a page.
               <br />
-              Every source has a source.
+              That page cites a review.
               <br />
-              We follow them to the <span className="text-[#ff5a43]">truth.</span>
+              The review rests on a <span className="text-[#ff5a43]">retracted trial.</span>
             </h1>
-            <p className="rise max-w-[560px] text-[19px] leading-[1.55] text-cream/85" style={{ animationDelay: "160ms" }}>
-              MoolTrace checks what a health answer really rests on — and stops it before it ships if the research underneath was retracted.
+            <p className="rise max-w-[600px] text-[18px] leading-[1.6] text-cream/85" style={{ animationDelay: "160ms" }}>
+              MoolTrace builds a citation graph in FalkorDB from the answer, through each page and review, down to the trials. It blocks the answer if a source it relies on was retracted, warns on an Expression of Concern, shows you the exact path, and drafts a fix.
             </p>
+            <div className="rise grid max-w-[600px] gap-2 rounded-2xl border border-cream/15 bg-black/25 p-4 text-[15px] sm:grid-cols-2" style={{ animationDelay: "200ms" }}>
+              <p className="flex items-start gap-2 text-cream/85"><Check className="mt-0.5 size-4 shrink-0 text-[#5fd39c]" /> A citation check passes all 35 Harvard nutrition pages.</p>
+              <p className="flex items-start gap-2 text-cream"><X className="mt-0.5 size-4 shrink-0 text-[#ff5a43]" /> MoolTrace flags 2 — both verified by hand.</p>
+            </div>
             <div className="rise flex flex-wrap gap-4" style={{ animationDelay: "240ms" }}>
-              <Link href="/app?preset=harvard-vitamin-d" className="inline-flex items-center gap-3 rounded-full bg-cream px-7 py-4 text-[17px] font-semibold text-ink transition hover:bg-white">
-                See it catch one <ArrowRight className="size-5" />
+              <Link href="/app?preset=harvard-vitamin-d" className="inline-flex items-center gap-2.5 rounded-full bg-cream px-6 py-3.5 text-[16px] font-semibold text-ink transition hover:bg-white">
+                Watch it catch the Harvard page <ArrowRight className="size-5" />
               </Link>
-              <Link href="/app?tab=agent" className="inline-flex items-center rounded-full border border-cream/60 px-7 py-4 text-[17px] font-medium text-cream transition hover:border-cream hover:bg-cream/5">
-                Ask the agent
+              <Link href="/app?tab=agent" className="inline-flex items-center rounded-full border border-cream/60 px-6 py-3.5 text-[16px] font-medium text-cream transition hover:border-cream hover:bg-cream/5">
+                Run the agent on a draft
               </Link>
             </div>
             <p className="rise font-mono text-[13px] text-cream-2" style={{ animationDelay: "320ms" }}>
-              2 of 35 Harvard nutrition pages flagged · a citation check passes all 35
+              Not in the graph? We say &ldquo;not checked&rdquo;, never &ldquo;safe&rdquo;.
             </p>
           </div>
           <HeroBoard />
@@ -268,39 +272,81 @@ function Finding() {
 
 /* ---------- B5 · how it works ---------- */
 function HowItWorks() {
+  const steps = [
+    {
+      n: "01",
+      title: "Give it an answer",
+      body: "A draft, the links it cites, or a call from your agent over MCP.",
+      visual: <div className="rounded-2xl rounded-bl-sm border border-hair bg-paper px-3 py-2 text-[13px] text-ink-2">Vitamin D prevents fractures — Harvard</div>,
+    },
+    {
+      n: "02",
+      title: "It builds the citation graph",
+      body: "Pages are resolved to papers (Crossref, OpenAlex, PubMed) and stored in FalkorDB as page → review → trial. Retractions and Expressions of Concern attach as dated notice nodes.",
+      visual: (
+        <div className="flex flex-wrap items-center gap-1 font-mono text-[11px]">
+          <span className="rounded-md border border-hair bg-paper px-2 py-1">Page</span>→<span className="rounded-md border border-hair bg-paper px-2 py-1">Review</span>→
+          <span className="rounded-md border border-hair bg-paper px-2 py-1">Trial</span>←<span className="rounded-md border border-rx/30 bg-rx-soft px-2 py-1 text-rx">Notice</span>
+        </div>
+      ),
+    },
+    {
+      n: "03",
+      title: "It weighs each link",
+      body: "A trial included in a review counts fully; a passing mention counts much less. FalkorDB's shortest-path search finds the strongest chain to any flagged paper.",
+      visual: (
+        <div className="flex flex-col gap-1 font-mono text-[11px]">
+          {[["included", 100], ["uses its data", 85], ["mention", 55], ["background", 20]].map(([k, w]) => (
+            <div key={k} className="flex items-center gap-2">
+              <span className="w-24 text-ink-2">{k}</span>
+              <span className="h-1.5 rounded-full bg-ink/70" style={{ width: `${Number(w) * 0.9}px` }} />
+            </div>
+          ))}
+        </div>
+      ),
+    },
+    {
+      n: "04",
+      title: "It gives a verdict",
+      body: "Don't ship, Review, Clear, or Not checked — always with the path and the sentence behind each hop.",
+      visual: (
+        <div className="flex flex-wrap gap-1.5 text-[12px] font-medium">
+          <span className="rounded-md bg-rx-soft px-2 py-1 text-rx">Don&apos;t ship</span>
+          <span className="rounded-md bg-amber-soft px-2 py-1 text-amber-x">Review</span>
+          <span className="rounded-md bg-clear-soft px-2 py-1 text-clear">Clear</span>
+          <span className="rounded-md bg-paper px-2 py-1 text-ink-2">Not checked</span>
+        </div>
+      ),
+    },
+    {
+      n: "05",
+      title: "It ships the fix",
+      body: "It rewrites only the sentence that leaned on the flagged source, then checks the answer again.",
+      visual: (
+        <div className="text-[13px]">
+          <p className="text-ink-2 line-through decoration-rx decoration-2">…Harvard reviews the evidence.</p>
+          <p className="mt-1 rounded-md bg-clear-soft px-2 py-1">…source removed — retracted May 2025.</p>
+        </div>
+      ),
+    },
+  ]
   return (
     <section id="how" className="bg-paper px-6 pb-24 text-ink sm:px-10">
       <Reveal className="mx-auto flex max-w-[1180px] flex-col gap-8">
         <div>
           <h2 className="font-display text-[48px] leading-none sm:text-[60px]">How it works</h2>
-          <p className="mt-3 text-[19px] text-ink-2">Three steps. No reading required.</p>
+          <p className="mt-3 text-[19px] text-ink-2">What goes in, what the graph does, what comes out.</p>
         </div>
-        <div className="grid gap-5 md:grid-cols-3">
-          <div className="rounded-[20px] border border-hair bg-card-paper p-6">
-            <p className="font-label text-[11px] text-ink-2">01</p>
-            <p className="mt-1 text-[22px] font-semibold">Paste an answer</p>
-            <div className="mt-5 rounded-2xl rounded-bl-sm border border-hair bg-paper px-4 py-3 text-[15px] text-ink-2">Vitamin D prevents fractures — Harvard</div>
-          </div>
-          <div className="rounded-[20px] border border-hair bg-card-paper p-6">
-            <p className="font-label text-[11px] text-ink-2">02</p>
-            <p className="mt-1 text-[22px] font-semibold">Follow every citation</p>
-            <div className="mt-5 flex items-center gap-1 font-mono text-[12px]">
-              <span className="rounded-md border border-hair bg-paper px-2.5 py-1.5">Page</span>
-              <span className="text-ink-2">→</span>
-              <span className="rounded-md border border-hair bg-paper px-2.5 py-1.5">Review</span>
-              <span className="text-rx">→</span>
-              <span className="relative rounded-md border border-rx/30 bg-rx-soft px-2.5 py-1.5 text-rx">Trial</span>
-              <Stamp className="ml-1 text-[10px]">Retracted</Stamp>
-            </div>
-          </div>
-          <div className="rounded-[20px] border border-hair bg-card-paper p-6">
-            <p className="font-label text-[11px] text-ink-2">03</p>
-            <p className="mt-1 text-[22px] font-semibold">Ship the fix</p>
-            <p className="mt-5 text-[14px] text-ink-2 line-through decoration-rx decoration-2">…Harvard reviews the evidence.</p>
-            <p className="mt-1 rounded-md bg-clear-soft px-2 py-1 text-[14px]">…source removed — retracted May 2025.</p>
-            <span className="mt-3 inline-flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-[13px] font-semibold text-cream"><Copy className="size-3.5" /> Copy fixed answer</span>
-          </div>
-        </div>
+        <ol className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          {steps.map((step) => (
+            <li key={step.n} className="flex flex-col gap-3 rounded-[20px] border border-hair bg-card-paper p-5">
+              <p className="font-label text-[11px] text-ink-2">{step.n}</p>
+              <p className="text-[19px] font-semibold leading-tight">{step.title}</p>
+              <p className="text-[14px] leading-6 text-ink-2">{step.body}</p>
+              <div className="mt-auto pt-2">{step.visual}</div>
+            </li>
+          ))}
+        </ol>
         <div className="grid overflow-hidden rounded-[20px] border border-hair md:grid-cols-2">
           <div className="flex items-center gap-3 bg-clear-soft/70 px-6 py-5 text-[17px]">
             <span className="grid size-7 place-items-center rounded-full bg-clear text-white"><Check className="size-4" /></span>

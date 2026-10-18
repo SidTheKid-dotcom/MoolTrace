@@ -25,12 +25,12 @@ const VERDICT: Record<Verdict, { title: string; icon: string; tile: string; text
   block: { title: "Don't ship", icon: "✕", tile: "bg-rx-soft text-rx", text: "text-ink" },
   warn: { title: "Review before shipping", icon: "!", tile: "bg-amber-soft text-amber-x", text: "text-ink" },
   pass: { title: "Clear", icon: "✓", tile: "bg-clear-soft text-clear", text: "text-ink" },
-  empty: { title: "Not in the graph", icon: "?", tile: "bg-amber-soft text-amber-x", text: "text-ink" },
+  empty: { title: "Not checked", icon: "?", tile: "bg-amber-soft text-amber-x", text: "text-ink" },
 }
 
 function reasonLine(check: CheckResult, deciding: Reason | null, depth: number): string {
   const verdict = verdictOf(check)
-  if (verdict === "empty") return "No study is connected to this page. That is not proof it is safe."
+  if (verdict === "empty") return "Nothing in the graph connects this page to a study. That is not proof it is safe."
   if (verdict === "pass") return `No retraction or concern found within ${depth} hop${depth > 1 ? "s" : ""}.`
   const when = monthYear(deciding?.notice_date)
   const word = noticeWord(deciding?.notice_type)
