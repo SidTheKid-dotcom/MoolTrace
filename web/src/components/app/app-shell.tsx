@@ -75,6 +75,9 @@ export function AppShell() {
         </header>
 
         <main>
+          <h1 className="sr-only">
+            MoolTrace pre-ship check · {TABS.find((item) => item.id === tab)?.label}
+          </h1>
           <div hidden={tab !== "check"}>
             <CheckTab initial={initial} />
           </div>

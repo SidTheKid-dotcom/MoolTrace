@@ -18,8 +18,8 @@ function Nav({ dark = true }: { dark?: boolean }) {
     <header className="relative z-10 flex items-center justify-between">
       <span className={cn("font-mono text-[22px] tracking-tight", dark ? "text-cream" : "text-ink")}>mooltrace</span>
       <nav className="flex items-center gap-7 text-[15px]">
-        <a href="#how" className={cn("hidden sm:block", dark ? "text-cream/90 hover:text-cream" : "text-ink-2")}>How it works</a>
-        <a href={REPO_URL} className={cn("hidden underline underline-offset-4 sm:block", dark ? "text-cream/90 hover:text-cream" : "text-ink-2")}>GitHub</a>
+        <a href="#how" className={cn("hidden py-1 sm:block", dark ? "text-cream/90 hover:text-cream" : "text-ink-2")}>How it works</a>
+        <a href={REPO_URL} className={cn("hidden py-1 underline underline-offset-4 sm:block", dark ? "text-cream/90 hover:text-cream" : "text-ink-2")}>GitHub</a>
         <Link href="/app" className="rounded-full bg-cream px-6 py-3 font-semibold text-ink shadow-[0_8px_24px_-10px_rgba(0,0,0,.6)] transition hover:bg-white">
           Open the demo
         </Link>
@@ -210,8 +210,8 @@ function LiveDemo() {
           <p className="font-label text-[12px] text-ink-2">Live · Harvard vitamin D page</p>
           <h2 className="font-display mt-2 text-[48px] leading-none sm:text-[60px]">Watch it catch one.</h2>
         </div>
-        <div className="grid gap-8 rounded-[24px] border border-hair bg-card-paper p-6 shadow-[0_24px_60px_-40px_rgba(22,19,15,.5)] sm:p-9 lg:grid-cols-[110px_minmax(0,1fr)_260px]">
-          <div className="flex flex-row gap-3 lg:flex-col" role="radiogroup" aria-label="Depth">
+        <div className="grid grid-cols-1 gap-8 rounded-[24px] border border-hair bg-card-paper p-6 shadow-[0_24px_60px_-40px_rgba(22,19,15,.5)] sm:p-9 lg:grid-cols-[110px_minmax(0,1fr)_260px]">
+          <div className="flex flex-row flex-wrap gap-x-4 gap-y-2 lg:flex-col lg:gap-3" role="radiogroup" aria-label="Depth">
             {[1, 2, 3].map((d) => (
               <button
                 key={d}
@@ -223,7 +223,7 @@ function LiveDemo() {
                   auto.current = true
                   void run(d)
                 }}
-                className="flex items-center gap-3 text-left font-mono text-[15px]"
+                className="flex items-center gap-3 py-0.5 text-left font-mono text-[15px]"
               >
                 <span className={cn("grid size-5 place-items-center rounded-full border-2 transition", depth === d ? "border-ink bg-ink" : "border-hair")}>
                   {depth === d ? <span className="size-1.5 rounded-full bg-cream" /> : null}
@@ -238,11 +238,11 @@ function LiveDemo() {
               <EvidencePath reasons={check.reasons} compact />
             ) : (
               <div className="flex max-w-sm items-center pt-4">
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <IndexCard label="Page · Harvard Nutrition Source" title="Vitamin D" />
                 </div>
                 <Thread />
-                <span className="font-mono text-[11px] text-clear">{check ? "nothing flagged at 1 hop" : "checking…"}</span>
+                <span className="shrink-0 font-mono text-[11px] text-clear">{check ? "nothing flagged at 1 hop" : "checking…"}</span>
               </div>
             )}
           </div>
@@ -548,12 +548,14 @@ export function Landing() {
   }, [])
   return (
     <div className="flex flex-1 flex-col">
-      <Hero />
-      <LiveDemo />
-      <Finding />
-      <HowItWorks />
-      <Agents />
-      <Closing />
+      <main className="flex flex-1 flex-col">
+        <Hero />
+        <LiveDemo />
+        <Finding />
+        <HowItWorks />
+        <Agents />
+        <Closing />
+      </main>
     </div>
   )
 }

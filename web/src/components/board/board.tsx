@@ -254,7 +254,7 @@ export function Reveal({ children, className, delay = 0 }: { children: ReactNode
   }, [])
   return (
     <div ref={ref} className={cn("reveal", shown && "is-in", className)} style={{ transitionDelay: `${delay}ms` }}>
-      {shown ? children : <div className="invisible">{children}</div>}
+      {children}
     </div>
   )
 }
