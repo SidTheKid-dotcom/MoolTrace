@@ -1,6 +1,6 @@
 # MoolTrace — Graph Hacks submission
 
-Fill the video URL on 18 Oct 2026 after upload. Do not invent it.
+Video: https://youtu.be/XZV5lt-FuE8 · Blog: https://builder.aws.com/content/3KsRYW9Qw6rFlBUyI706IZWvAQq/how-i-built-mooltrace-finding-the-retracted-trial-hiding-two-hops-under-a-health-ai-answer
 
 **Name:** MoolTrace
 
@@ -93,12 +93,13 @@ From `results/baseline_2026-10-16.json` (16 Oct 2026; 52 labelled cases; Direct-
 - Local MCP (one command): `.venv/bin/python -m mooltrace mcp` — full tool list, including local `rewrite_answer`
 - Rewrite is a deterministic template: only sentences that cite flagged work change; every other sentence stays byte-identical. Not an LLM edit.
 
-## Links (paste on 18 Oct)
+## Links
 
 | Field | Value |
 | --- | --- |
-| Public GitHub repo | https://github.com/SidTheKid-dotcom/MoolTrace _(paste after flipping the repo public; currently private)_ |
-| Demo video (YouTube, ≤90 s) | _paste after upload_ |
+| Public GitHub repo | https://github.com/SidTheKid-dotcom/MoolTrace |
+| Demo video (YouTube, 3:05) | https://youtu.be/XZV5lt-FuE8 |
+| Blog post | https://builder.aws.com/content/3KsRYW9Qw6rFlBUyI706IZWvAQq/how-i-built-mooltrace-finding-the-retracted-trial-hiding-two-hops-under-a-health-ai-answer |
 | Hosted demo | https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/ |
 | Remote MCP | https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/mcp |
 

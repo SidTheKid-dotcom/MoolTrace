@@ -1,24 +1,117 @@
-# MoolTrace
+# MoolTrace (मूल, "root")
 
-An agent that checks what a health answer rests on before it ships — page → review → trial → retraction notice, walked in FalkorDB.
+**Checks what a health AI answer rests on before it ships.** Health answers cite trusted pages. Pages cite reviews. Reviews cite trials. When a trial is retracted, the notice lands on the trial, not on your answer. MoolTrace walks that chain in a FalkorDB graph, blocks the answer if it rests on retracted or withdrawn research, shows the exact path with the sentence behind each hop, and fixes only the sentence that leaned on it.
 
-WeMakeDevs × FalkorDB Graph Hacks · **Track 01: Agents That Act on Connected Data**
+**Video (3:05):** https://youtu.be/XZV5lt-FuE8 · **Live:** https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/ (no sign-in) · **Blog:** [How I built MoolTrace](https://builder.aws.com/content/3KsRYW9Qw6rFlBUyI706IZWvAQq/how-i-built-mooltrace-finding-the-retracted-trial-hiding-two-hops-under-a-health-ai-answer) · WeMakeDevs × FalkorDB Graph Hacks 2026, **Track 01: Agents That Act on Connected Data**
 
-- **Live demo (no sign-up):** https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/?preset=harvard-vitamin-d
-- **Remote MCP:** `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/mcp`
-- **Field finding:** of the 35 vitamin and mineral pages on Harvard's Nutrition Source, **2 rest on withdrawn or retracted research** (zinc directly; vitamin D two hops down, via a trial retracted in May 2025). A direct DOI check passes all 35. Hand-checked: [results/field_scan_2026-10-17.md](results/field_scan_2026-10-17.md).
+[![Watch the MoolTrace demo on YouTube (3:05)](https://img.youtube.com/vi/XZV5lt-FuE8/maxresdefault.jpg)](https://youtu.be/XZV5lt-FuE8)
 
-What the agent does: give it a question (or a draft and its sources). It drafts or reads the answer, calls `check_answer` on the evidence graph, and on BLOCK calls `rewrite_answer`, rechecks, and ships only tool output. **A retraction just landed** runs the graph backwards: which stored answers rest on this paper, and the fix for each. The verdict comes from `algo.SPpaths` rows, never from the model.
+[0:00](https://youtu.be/XZV5lt-FuE8?t=0) 35 Harvard pages, 2 flagged · [0:13](https://youtu.be/XZV5lt-FuE8?t=13) The chain to a retracted trial · [0:48](https://youtu.be/XZV5lt-FuE8?t=48) Live: 1 hop says Clear, 2 hops says Don't ship · [1:20](https://youtu.be/XZV5lt-FuE8?t=80) The agent acts · [1:40](https://youtu.be/XZV5lt-FuE8?t=100) A retraction lands after you ship · [1:51](https://youtu.be/XZV5lt-FuE8?t=111) Not in the graph · [1:58](https://youtu.be/XZV5lt-FuE8?t=118) Claude Code over MCP · [2:08](https://youtu.be/XZV5lt-FuE8?t=128) The graph model and `algo.SPpaths` · [2:30](https://youtu.be/XZV5lt-FuE8?t=150) Proof against a DOI-only check
 
-![Harvard vitamin D depth 1 PASS then depth 2 BLOCK](assets/demo-harvard-depth-toggle.gif)
+![Don't ship: the Harvard vitamin D page mentions a Cochrane review that uses data from Ishida 2004, retracted May 2025, with the algo.SPpaths query that decided it](assets/check-dont-ship.png)
 
-Signed-out 1280×800 Playwright Chromium capture of the live demo at `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/?preset=harvard-vitamin-d` on 17 Oct 2026 11:44 UTC (`:mooltrace.api.15` / `:mooltrace.web.16`). GIF is depth 1 **PASS** (0 notice paths) then depth 2 **BLOCK** with the **Why the graph decided** panel visible. The still `assets/demo-harvard-vitamin-d-block.png` is the same signed-out depth-2 **BLOCK** frame. This does not say vitamin D works or does not.
+## Try it in 30 seconds
+- [Harvard vitamin D at 1 hop](https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/app?preset=harvard-vitamin-d&depth=1): **Clear**. Click **2 hops**: **Don't ship**. The page mentions a Cochrane review (weight 0.55), which uses data from Ishida 2004 (0.85), retracted in May 2025. Click **Why: evidence and query** for the sentence behind each hop and the Cypher that ran.
+- [Harvard zinc](https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/app?preset=harvard-zinc): the page cites a Cochrane review that Cochrane **withdrew** in April 2015. One hop, Don't ship.
+- [Run the agent on a draft](https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/app?tab=agent&preset=harvard-vitamin-d): it calls `check_answer`, gets Don't ship, rewrites only the affected sentence, checks again, and shows the trace (tool, args, ms, rows) next to "without MoolTrace".
+- [A retraction just landed](https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/app?tab=alert): give it Ishida 2004 and the graph walks **backwards** to every stored answer that rests on it, with a fix for each.
+- [Not in the graph](https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/app?preset=not-in-graph): an NHS page with no study behind it in the graph says **Not checked — not proof it's safe**, never "safe".
+- **Any agent, over MCP:** add `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/mcp` to Claude Code, Cursor or Claude Desktop (config below). The video shows a real Claude Code session calling it.
+
+<p>
+<img src="assets/agent-trace.png" width="420" alt="Agent run: the path, a trace table of check_answer, explain_path and rewrite_answer, and the draft without and with MoolTrace">
+<img src="assets/retraction-alert.png" width="420" alt="Retraction alert: 1 cited page rests on Ishida 2004; 5 stored answers cite it, each with the same graph-checked fix">
+</p>
+
+## The problem
+- Of the **35** vitamin and mineral pages on Harvard's Nutrition Source, **2 rest on withdrawn or retracted research**: zinc directly, vitamin D two hops down. A check of the DOIs in the answer passes **all 35**. Both hits were checked by hand: [results/field_scan_2026-10-17.md](results/field_scan_2026-10-17.md).
+- Vitamin D: the page cites Avenell 2014 (Cochrane). Its full text says "Ishida 2004, an included trial, has been retracted." The May 2025 retraction notice (PMID 40222753) says "the evidence presented below strongly argues for scientific misconduct."
+- This is not one bad page. Xu et al., *BMJ* 2025 listed systematic reviews whose results were distorted by retracted trials. On 40 of them, a DOI-only check flags **none**.
+
+## Who uses it, and what changes
+| Person | Decision | What MoolTrace gives them |
+|---|---|---|
+| Team shipping a health chatbot, symptom checker or nutrition coach | "Can this answer go out?" | Clear / Review / Don't ship / Not checked, the path, the sentence behind each hop, and a CI exit code |
+| The agent itself | "Do I ship this draft?" | Fixed tools over MCP. It ships only tool output: the checked rewrite, or the draft unchanged when Clear |
+| Whoever owns answers already shipped | "A paper was just retracted. What do we fix?" | Every stored answer that rests on it, found by walking the graph backwards, with a drafted fix |
+
+**Clear is not a medical-accuracy check.** MoolTrace reports a path to a publisher notice. It never says a food or supplement works or doesn't.
+
+## Proof numbers
+| Test | DOI-only check (graph taken out) | MoolTrace | Source |
+|---|---|---|---|
+| Harvard Nutrition Source field scan, 35 pages | 0 flagged | **2 flagged**, both verified by hand | `results/field_scan_2026-10-17.md` |
+| 52 answers we labelled (rules written before the run) | recall 0.43, precision 1.0 | **recall 1.00, precision 0.90** | `results/baseline_2026-10-16.json` |
+| VITALITY: 40 reviews distorted by retracted trials (Xu et al., *BMJ* 2025, an answer key we did not write) | 0 / 40 | **31 / 40** reach the same retracted trial at depth 2; **1 / 40** false alarm on controls | `results/vitality_2026-10-17.json` |
+| Seeded gate, run 3 times | — | 7 / 7 caught, 0 / 6 false alarms | `results/gate_2026-10-17_t26r3_run*.json` |
+
+362 tests run offline in an unshared network namespace (`pytest -q`, 18 Oct 2026). Every number above can be re-run with the command in **Honest results** below.
+
+## How MoolTrace uses FalkorDB
+| Part | Job | Why a graph |
+|---|---|---|
+| One FalkorDB graph (FalkorDBLite 0.10.0, embedded; persisted to disk) | Stores answers, cited pages, papers, notices and every `RESTS_ON` hop with its sentence, source and fetch time | Pages, reviews and trials are shared across answers. Each new check reuses what earlier checks fetched |
+| `algo.SPpaths` with `weightProp: 'cost'`, `cost = −ln(weight)` | **Decides the verdict.** Finds the strongest chain of reliance from each cited page to any flagged paper | Stronger reliance means a shorter path, so the shortest path is the strongest chain (0.55 × 0.85 = 0.47). If the algorithm errors, the check returns exit 3, not a verdict |
+| Reverse Cypher (`what_rests_on`, `recheck_affected`) | "A retraction just landed": from the notice back to every stored answer | The same edges answer the opposite question in one query |
+| `algo.WCC` | Groups affected answers into fix clusters | Not used for the verdict |
+| `GRAPH.RO_QUERY` | Read-only barrier for the `ro_cypher` MCP tool | An agent can inspect the graph but `CREATE` is rejected |
+
+The model never writes Cypher. It picks from fixed tools (`check_answer`, `explain_path`, `rewrite_answer`, `what_rests_on`); every query is in [`mooltrace/cypher.py`](mooltrace/cypher.py). `algo.pageRank` was tried and deliberately **not** used: it never changed a verdict ([`tests/test_pagerank_unused.py`](tests/test_pagerank_unused.py)). Take FalkorDB out and only the DOIs in the answer are left to check: 0 of 35 Harvard pages flagged, 0 of 40 VITALITY reviews.
+
+## Architecture
+```mermaid
+flowchart LR
+  IN[Draft, cited URLs, or an agent over MCP] --> API[FastAPI: check_answer]
+  API --> FETCH[Fetch page, resolve DOIs: Crossref, OpenAlex, PubMed, Europe PMC, Semantic Scholar]
+  FETCH --> REL[Reliance label from the citing sentence: included, relies, uses data, mention]
+  REL --> G[(FalkorDB: Answer, Source, Work, Notice)]
+  G --> SP[algo.SPpaths over cost = -ln weight]
+  SP --> V[Verdict + path + sentences + Cypher]
+  V --> RW[rewrite_answer: template fix, then check again]
+  AG[Agent: gpt-5.4-mini picks tools] --> API
+  G --> REV[what_rests_on: notice back to stored answers]
+  V --> UI[Next.js app] & MCP[Remote MCP /mcp] & CI[CLI exit codes 0 / 1 / 2 / 3]
+```
+
+## What it does when unsure
+- **Not in the graph** is its own verdict: "Not checked — not proof it's safe".
+- A hop with no sentence behind it is **unverified** and only warns. It never silently passes.
+- A retraction reached only through passing **mentions** asks for review instead of blocking: the paper before it cites the trial but doesn't rely on its data.
+- An **Expression of Concern is not a retraction**: it warns, never blocks. A Cochrane **withdrawal** is labelled as a withdrawal, never called a retraction.
+- Issue dates the publisher gives only as a month are shown as a month ("May 2025"), never a guessed day.
+- If the agent skips a check or a rewrite, MoolTrace runs it and labels the step "added by MoolTrace". Its own words are shown only as a labelled note and dropped if they cite anything not in the tool results.
+- The public demo has a hard $40 model spend cap, 6 runs per 10 minutes per IP and 150 a day. Past that, it runs a labelled rule-based fallback with the same tools.
+
+## UI labels and CLI verdicts
+| In the app | CLI / API `decision` | Exit code |
+|---|---|---|
+| Clear | `pass` | 0 |
+| Review before shipping | `warn` | 2 |
+| Not checked — not proof it's safe | `warn` (nothing in the graph) | 2 |
+| Don't ship | `block` | 1 |
+| (error) | infra error | 3 |
+
+The sections below use the CLI names (`pass` / `warn` / `block`).
+
+## Hackathon requirements, and where to find them
+| Requirement (Graph Hacks rules) | Where |
+|---|---|
+| Public source-code repository | This repo (MIT) |
+| README with setup instructions | [Run locally](#run-locally), [Demo](#demo) (Docker Compose), [MCP](#mcp) |
+| Graph data model | [Graph model](#graph-model) |
+| The Cypher queries / graph algorithms the product depends on | [Graph model](#graph-model) and [`mooltrace/cypher.py`](mooltrace/cypher.py) |
+| Demo video showing the working project | https://youtu.be/XZV5lt-FuE8 |
+| Live deployment | https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com |
+| Track entered | Track 01: Agents That Act on Connected Data |
+| FalkorDB is the primary graph DB and does real work | [How MoolTrace uses FalkorDB](#how-mooltrace-uses-falkordb); [Why a graph](#why-a-graph) |
+| AI coding assistants disclosed | [AI-use disclosure](#ai-use-disclosure) |
+| Built during the event | First commit 15 Oct 2026, last code commit 18 Oct 2026 (`git log`) |
+
+A five-minute path for judges: [JUDGES.md](JUDGES.md). Written claims and their sources: [CLAIMS.md](CLAIMS.md).
 
 Local MCP (one command): `.venv/bin/python -m mooltrace mcp`
 
 ## Run locally
-
-WeMakeDevs × FalkorDB Graph Hacks, Track 01: **Agents That Act on Connected Data**.
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -e .
@@ -26,9 +119,8 @@ export MOOLTRACE_MAILTO=you@example.com
 .venv/bin/python -m mooltrace check --url https://www.healthline.com/nutrition/cinnamon-and-diabetes --summary
 ```
 
-Expect **WARN (exit 2)** on that cinnamon URL (Expression of Concern, not a retraction). The live demo BLOCK above is the Harvard vitamin D path (Avenell 2014 pooled Ishida 2004). Timed from a fresh clone in `/tmp` on 16 Oct 2026: quickstart **65.06 s** (clone 3.02 s + `pip install -e .` 9.67 s + cinnamon `--summary` 52.37 s, exit 2). Earlier same-day cold `--summary` repeats were 47.09 s / 49.18 s / 49.10 s (see **Honest results** and [CLAIMS.md](CLAIMS.md)). Five-minute path: [JUDGES.md](JUDGES.md). WeMakeDevs judging guide table (graph vs no-graph, depth toggle, not-in-graph, tools): [JUDGES.md](JUDGES.md).
+Expect **WARN (exit 2)** on that cinnamon URL (Expression of Concern, not a retraction). The live demo's Don't ship (BLOCK) is the Harvard vitamin D path (Avenell 2014 uses data from Ishida 2004). Timed from a fresh clone in `/tmp` on 16 Oct 2026: quickstart **65.06 s** (clone 3.02 s + `pip install -e .` 9.67 s + cinnamon `--summary` 52.37 s, exit 2). Earlier same-day cold `--summary` repeats were 47.09 s / 49.18 s / 49.10 s (see **Honest results** and [CLAIMS.md](CLAIMS.md)). Five-minute path: [JUDGES.md](JUDGES.md). WeMakeDevs judging guide table (graph vs no-graph, depth toggle, not-in-graph, tools): [JUDGES.md](JUDGES.md).
 
-**Who it is for:** teams shipping health AI — symptom checkers, nutrition coaches, patient chatbots. Paste an answer and the pages it cites. MoolTrace follows page → review → trial in FalkorDB and returns pass / warn / block before you ship. It reports a path to a publisher notice. It does not say the draft is medically correct or incorrect. **Pass is not a medical-accuracy check.**
 
 ## Decision
 
@@ -398,11 +490,35 @@ Xu et al., *BMJ* 2025 ([PMC12015725](https://pmc.ncbi.nlm.nih.gov/articles/PMC12
 
 Same-trial recall means a path reached the **same** retracted trial DOI VITALITY names (or the notice DOI when OSF stored the notice). Direct-DOI never leaves the review DOI, so 0/40 is coverage, not a hop failure. A counted retraction on a *different* paper is a miss. Full misses: `results/vitality_2026-10-17.md`.
 
+## What is not built
+- MoolTrace does not judge medical accuracy. Clear means no path to a publisher notice within the hops searched, nothing more.
+- Reliance labels come from citing sentences. When no sentence is found, the hop is "unverified" and only warns. The salt-and-sodium BLOCK in the field scan was left out of the headline because its "relies" hop rests on a reference title, not a sentence.
+- Depth stops at 3 hops. Coverage beyond that is not shown.
+- The live demo is one small server with embedded FalkorDBLite. Pasted URLs are fetched live only for 8 publishers (Harvard Nutrition Source, Healthline, WebMD, Medical News Today, Verywell, Everyday Health, PubMed, doi.org).
+- The retraction alert is on demand. Nothing watches Crossref for new notices yet.
+
+## What's next
+- Watch Crossref and Retraction Watch for new notices and run `what_rests_on` automatically, so teams hear about a retraction the day it lands.
+- Read reliance from more full-text sources, so fewer hops stay "unverified".
+- Run the field scan on other trusted health sites, and publish each hit with its path.
+
+## What I learned
+- **The notice is attached to the trial, not to the answer.** A check that only looks at the DOIs in an answer passed all 35 Harvard pages and 0 of 40 distorted reviews. The problem is in how records connect, which is what a graph is for.
+- **"Mentions" and "included" are different claims.** Weighting each hop by how much the citing paper relies on the next one is what separates a real block from a passing reference.
+- **Metadata dates can mislead.** Crossref copies Ishida 2004's 2004 publication date onto its retraction. The real notice is May 2025, which PubMed confirms.
+- **Labels matter.** Retraction Watch files Cochrane withdrawals as retractions. Cochrane withdraws reviews; MoolTrace now says so.
+- **Saying "I don't know" is a feature.** "Not checked" and "unverified" are honest outcomes, not failures.
+
+## Feedback on FalkorDB
+- **`algo.SPpaths` with `weightProp`** fit this problem exactly: storing `cost = −ln(weight)` turned "strongest chain of reliance" into a shortest-path query, and the deciding Cypher stays short enough to show users in the UI.
+- **FalkorDBLite** made an embedded graph trivial for tests and a one-container deploy. *Suggestion:* a note in the docs on which `algo.*` procedures each FalkorDBLite build registers (here `algo.pageRank` was present and `algo.MaxFlow` was not) would save a probe.
+- **Variable-length paths:** we match `FLAGS` in a separate `MATCH` so the notice hop is not bound into the path. *Suggestion:* a short example of that pattern in the Cypher docs.
+
 ## AI-use disclosure
 
 I am the solo author (Siddhant Vishnu). I chose the problem and the Harvard vitamin D hero, set the product rules (reliance policy; an Expression of Concern is warn, not a retraction; honest negatives; no invented numbers), reviewed the results, and own the decisions.
 
-AI coding assistants wrote most of the code. Cursor agents running Grok 4.6 wrote it from task specs; planning, specs, review and, from the evening of 17 Oct 2026, direct code changes were done with Claude (Anthropic) in Claude Code. The in-app agent calls Azure OpenAI `gpt-5.4-mini`. Facts and publisher notices come from public APIs (OpenAlex, Crossref, NCBI, Semantic Scholar, PMC), not from a model. Verdicts come from `algo.SPpaths` rows, not from a model. Rewrite is a deterministic template; it is not an LLM edit.
+AI coding assistants wrote most of the code. Cursor agents running Grok 4.6 wrote it from task specs; planning, specs, review and, from the evening of 17 Oct 2026, direct code changes were done with Claude (Anthropic) in Claude Code. The demo video was built with Claude Code and Cursor agents (HyperFrames for the motion graphics, faster-whisper for word timings); it is narrated in my own voice. The in-app agent calls Azure OpenAI `gpt-5.4-mini`. Facts and publisher notices come from public APIs (OpenAlex, Crossref, NCBI, Semantic Scholar, PMC), not from a model. Verdicts come from `algo.SPpaths` rows, not from a model. Rewrite is a deterministic template; it is not an LLM edit.
 
 ## Demo checklist
 
@@ -412,8 +528,13 @@ AI coding assistants wrote most of the code. Cursor agents running Grok 4.6 wrot
 4. `python -m mooltrace batch examples/lancet.jsonl --fail-on block` (exit 1) → block on the retraction notice, not the earlier EoC.
 5. UI presets are Harvard vitamin D (block at depth 2/3, path strength 0.47), Healthline olive oil (warn at depth 3, path strength 0.30; pass at depth 1), Healthline cinnamon (warn, path strength 0.55), the clean DOI, and **Not in the graph** (WARN, expanded 0 of 0 cited works). The Cypher panel shows `algo.SPpaths`. Rewrite and recheck on a warn.
 6. `ro_cypher` with `CONTAINS 'set'` is allowed; `CREATE` is rejected; GRAPH.RO_QUERY is the write barrier.
-7. Public repo, ≤90 s video, Track 01 **Agents That Act on Connected Data**, AWS/FalkorDB shown, AI tools listed.
+7. Public repo, 3:05 video (https://youtu.be/XZV5lt-FuE8), Track 01 **Agents That Act on Connected Data**, FalkorDB shown, AI tools listed.
 8. `python -m pytest tests/test_labelled.py` (schema). Optional live: `python -m mooltrace labelled --limit 2`.
-9. Submission drafts: `SUBMISSION.md`, `VIDEO_SCRIPT.md`, `SHIP_CHECKLIST.md`. Video and public-repo flip are not done in this checkout.
+9. Submission: `SUBMISSION.md`. Video: https://youtu.be/XZV5lt-FuE8. Blog: [How I built MoolTrace](https://builder.aws.com/content/3KsRYW9Qw6rFlBUyI706IZWvAQq/how-i-built-mooltrace-finding-the-retracted-trial-hiding-two-hops-under-a-health-ai-answer).
 
-License: MIT. Copyright holder matches the GitHub profile name for `SidTheKid-dotcom` (Siddhant Vishnu).
+## Credits and licences
+- Code: MIT (see `LICENSE`). Copyright holder matches the GitHub profile name for `SidTheKid-dotcom` (Siddhant Vishnu).
+- Data comes from public scholarly APIs: Crossref (including Retraction Watch data via `updated-by`), OpenAlex, NCBI PubMed E-utilities, Europe PMC / PMC full text, Semantic Scholar citation contexts, DataCite. Consumer health pages are fetched to read their citations; their text is not redistributed.
+- Answer key for the VITALITY test: Xu et al., *BMJ* 2025 ([PMC12015725](https://pmc.ncbi.nlm.nih.gov/articles/PMC12015725/)).
+- Video: narrated by Siddhant in his own voice. The music bed and sound effects are synthesised in code; no stock audio. Product footage is a real browser session on the live site.
+- Fonts: Instrument Serif, Inter, Geist Mono, Noto Serif Devanagari (SIL Open Font License, via Google Fonts).

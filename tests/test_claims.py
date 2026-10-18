@@ -94,9 +94,10 @@ def test_judges_is_five_minute_path():
     for needle in (
         TRACK,
         DEMO,
-        "Harvard vitamin D (block)",
-        "Healthline olive oil (warn)",
-        "BLOCK",
+        "app?preset=harvard-vitamin-d&depth=1",
+        "Healthline · olive oil",
+        "Don't ship",
+        "Not checked — not proof it's safe",
         "0.30",
         "10.1056/nejmc1806491",
         "examples/lancet.jsonl --fail-on block",
@@ -105,7 +106,7 @@ def test_judges_is_five_minute_path():
         "what_rests_on",
         "mooltrace.mcp_server",
         ".venv/bin/python -m mooltrace mcp",
-        "Why the graph decided",
+        "Why: evidence and query",
     ):
         assert needle in judges, needle
     assert "click" in judges.lower()

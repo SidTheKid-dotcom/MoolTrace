@@ -46,15 +46,12 @@ def test_ci_fixture_file_has_no_known_block_case():
 
 TRACK = "Agents That Act on Connected Data"
 DEMO = "https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/"
-TAGLINE = (
-    "An agent that checks what a health answer rests on before it ships — "
-    "page → review → trial → retraction notice, walked in FalkorDB."
-)
-WHAT_IT_DOES = (
-    "What the agent does: give it a question (or a draft and its sources)."
-)
+TAGLINE = "**Checks what a health AI answer rests on before it ships.**"
+VIDEO = "https://youtu.be/XZV5lt-FuE8"
+WHAT_IT_DOES = "MoolTrace walks that chain in a FalkorDB graph"
 MCP_ONE = ".venv/bin/python -m mooltrace mcp"
-HERO_STEM = "assets/demo-harvard-depth-toggle"
+HERO_STEM = "assets/check-dont-ship.png"
+HERO_FILE = ROOT / "assets" / "check-dont-ship.png"
 HERO_GIF = ROOT / "assets" / "demo-harvard-depth-toggle.gif"
 HERO_PNG = ROOT / "assets" / "demo-harvard-vitamin-d-block.png"
 HERO_LIVE = (
@@ -107,7 +104,7 @@ def test_readme_names_no_sources_and_fixture_recheck():
     assert "no_sources" in text
     assert "fresh fixture recheck" in text
     assert "not persistent monitoring" in text
-    assert text.splitlines()[2].startswith("An agent that checks what a health answer rests on")
+    assert text.splitlines()[2].startswith(TAGLINE)
     assert DEMO in "\n".join(text.splitlines()[:8])
     assert "rewrite_answer" in text
     assert "algo.SPpaths" in text
@@ -120,16 +117,17 @@ def test_readme_top_follows_p3_13():
     text = (ROOT / "README.md").read_text()
     order = [
         TAGLINE,
+        VIDEO,
         DEMO,
-        WHAT_IT_DOES,
         HERO_STEM,
+        "## Try it in 30 seconds",
+        "## How MoolTrace uses FalkorDB",
+        "## Hackathon requirements, and where to find them",
         MCP_ONE,
         "python3 -m venv .venv",
-        "symptom checkers, nutrition coaches, patient chatbots",
         "| pass | 0 |",
         "| block | 1 |",
         "| error | 3 |",
-        "```mermaid",
         "Answer -->|CITES| Source",
         "CALL algo.SPpaths",
         "mooltrace batch examples/answers.jsonl --fail-on block",
@@ -139,6 +137,7 @@ def test_readme_top_follows_p3_13():
         "## Prior art",
     ]
     assert TRACK in text
+    assert "symptom checker" in text
     last = -1
     for marker in order:
         index = _first(text, marker)
@@ -155,31 +154,23 @@ def test_readme_top_follows_p3_13():
 def test_readme_top_is_ten_second_fold():
     text = (ROOT / "README.md").read_text()
     fold = text.split("\n## ", 1)[0]
-    for needle in (TAGLINE, WHAT_IT_DOES, DEMO, HERO_STEM, MCP_ONE):
+    for needle in (TAGLINE, WHAT_IT_DOES, VIDEO, DEMO, HERO_STEM, TRACK):
         assert needle in fold, needle
-    assert TAGLINE not in WHAT_IT_DOES
-    assert fold.index(TAGLINE) < fold.index(DEMO) < fold.index(WHAT_IT_DOES)
-    assert fold.index(DEMO) < fold.index(HERO_STEM) < fold.index(MCP_ONE)
+    assert fold.index(TAGLINE) < fold.index(VIDEO) < fold.index(HERO_STEM)
     assert "python3 -m venv" not in fold
     assert "```mermaid" not in fold
-    assert "Who it is for" not in fold
-    assert "depth 1" in fold.lower()
-    assert "block" in fold.lower()
-    heroes = list((ROOT / "assets").glob("demo-harvard-depth-toggle.*"))
-    assert heroes, "hero image or GIF missing from assets/"
-    assert all(path.suffix.lower() in {".gif", ".png", ".webp"} for path in heroes)
-    caption = fold.split(HERO_STEM, 1)[1]
-    assert "signed-out" in caption.lower() or "signed out" in caption.lower()
+    assert "don't ship" in fold.lower()
+    assert HERO_FILE.is_file()
+    assert HERO_FILE.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
     assert "synthetic" not in fold.lower()
 
 
 def test_hero_assets_are_live_signed_out_captures_not_localhost():
     text = (ROOT / "README.md").read_text()
     fold = text.split("\n## ", 1)[0]
-    caption = fold.split(HERO_STEM, 1)[1]
-    assert HERO_LIVE in caption
-    assert "127.0.0.1:4318" not in caption
-    assert "why the graph decided" in caption.lower()
+    hero_line = next(line for line in fold.splitlines() if HERO_STEM in line)
+    assert "algo.SPpaths" in hero_line
+    assert "127.0.0.1" not in fold
     assert HERO_GIF.is_file()
     assert HERO_PNG.is_file()
     assert _gif_size(HERO_GIF) == (1280, 800)

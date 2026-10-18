@@ -2,6 +2,8 @@
 
 Deadline: Sun 18 Oct 2026, 11:59 PM IST. Track 01: **Agents That Act on Connected Data**.
 
+**Status (18 Oct 2026):** video recorded and uploaded (3:05, https://youtu.be/XZV5lt-FuE8; the rules publish no length limit, so the 90 s target below was dropped), repo public, links in `SUBMISSION.md`. The steps below are kept as the record of how it was shipped.
+
 The pipeline already ran the offline tests, wrote the Cypher and algorithms into `SUBMISSION.md`, and deployed the signed-out demo. You do four things. Do not rewrite git history. Do not invent a number, URL, or rival claim.
 
 ## 1. Record the video

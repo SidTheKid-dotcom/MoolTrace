@@ -8,7 +8,7 @@ WeMakeDevs COO judging guide (15 Oct 2026): https://www.wemakedevs.org/blogs/how
 
 | Guide item | Where MoolTrace does it |
 | --- | --- |
-| Graph does work the agent could not do without it | Same Harvard URL: Direct-DOI would ship (`mooltrace/graph_why.py:44`); graph depth 2 **BLOCK** (`examples/presets_recorded.json:472`; live signed-out `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/?preset=harvard-vitamin-d`). Recorded agent: with MCP ships the rewrite (`examples/agent_runs/2026-10-17/run_a_with_mooltrace.txt:2`); without ships the Harvard citation (`examples/agent_runs/2026-10-17/run_b_without_mooltrace.txt:4`). Labelled no-graph misses: `results/baseline_2026-10-16.json`. |
+| Graph does work the agent could not do without it | Same Harvard URL: Direct-DOI would ship (`mooltrace/graph_why.py:44`); graph depth 2 **BLOCK** (`examples/presets_recorded.json:472`; live signed-out `https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/app?preset=harvard-vitamin-d`). Recorded agent: with MCP ships the rewrite (`examples/agent_runs/2026-10-17/run_a_with_mooltrace.txt:2`); without ships the Harvard citation (`examples/agent_runs/2026-10-17/run_b_without_mooltrace.txt:4`). Labelled no-graph misses: `results/baseline_2026-10-16.json`. |
 | Same question at depth 1, then deeper, with the path | Live signed-out Harvard toggle this session: depth 1 **PASS** (exit 0, 0 notice paths, Why `Graph depth 1: 0 notice paths → PASS`) then depth 2 **BLOCK** (exit 1, `mention` × `uses_data_or_method`, Why panel names Ishida 2004). Recorded: `examples/presets_recorded.json:459` / `examples/presets_recorded.json:472`. UI nudge `web/src/components/pre-ship.tsx:737`. |
 | Ask something not in the graph and let it say so | Click **Not in the graph** on the live demo. WARN, “Nothing in the graph connects this answer to a study. This is not proof it is safe; the source may not be modelled.” (`mooltrace/decision.py:41`, `mooltrace/decision.py:471`; preset `web/src/components/pre-ship.tsx:174`). |
 | Fixed tool catalogue; model never writes Cypher; params validated | Hosted MCP is only `check_answer`, `what_rests_on`, `recheck_affected` (`mooltrace/mcp_http.py:3`). Depth is `Field(ge=1, le=3)` (`mooltrace/mcp_http.py:78`). Local stdio also exposes `ro_cypher` (`mooltrace/mcp_server.py:249`); writes are rejected. In-app agent (`POST /nw/agent`, `mooltrace/api.py:186`) may call only `check_answer`, `explain_path`, `rewrite_answer`, `what_rests_on` (`mooltrace/agent.py:118`). URLs go through the public-demo allow-list; DOIs must already be in the graph. The model does not compose the verdict query. |
@@ -17,17 +17,25 @@ WeMakeDevs COO judging guide (15 Oct 2026): https://www.wemakedevs.org/blogs/how
 | Memory is more nodes | Each check `MERGE`s an `Answer` node (`mooltrace/graph.py:242`); `what_rests_on` counts stored answers (`mooltrace/mcp_http.py:103`). There is no dated “answered from memory” outcome. |
 | Return the path with the answer; check the sentence against graph rows | `nodes(path)` and hop sentences return with the verdict (`mooltrace/cypher.py:69`; Why panel `web/src/components/pre-ship.tsx:301`). Rewrite text is filled from those rows (`mooltrace/rewrite.py:3`). In-app agent grounding (`mooltrace/agent.py:749`): every DOI, author-year, and URL in the shipped text must appear in the tool results, else the deterministic rewrite is shipped. This is not Blast Radius `accepts()`. |
 
-## 1. Open the live demo, click BLOCK, read the path (90 s)
+## 1. Open the live demo, see 1 hop then 2 hops, read the path (90 s)
 
-https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/
+Demo video (3:05): https://youtu.be/XZV5lt-FuE8
 
-Click **Harvard vitamin D (block)**. You should see **BLOCK** (exit 1), path strength **0.47**, hops `mention` 0.55 × `uses_data_or_method` 0.85, and Ishida 2004 retraction `10.1016/j.amjmed.2025.03.001` (2025-05). `Decided by: algo.SPpaths`. The **Why the graph decided** panel reads `Direct DOI check: 0 notices → would ship  |  Graph depth 2: retraction 10.1016/j.amjmed.2025.03.001 (2025-05) → BLOCK`. The Cochrane review called Ishida an included trial. This does not say vitamin D works or does not.
+Open https://mooltrace.h9g8gwz2b559t.ap-south-1.cs.amazonlightsail.com/app?preset=harvard-vitamin-d&depth=1 (no sign-up). You should see **Clear** (exit 0): the page → Cochrane 2014 (Avenell), no notice within 1 hop.
 
-Click **Healthline olive oil (warn)**. Toggle **depth 1**: **PASS** (0 notice paths). Toggle **depth 3**: **WARN** (exit 2), path strength **0.30**, both hops `mention` 0.55, Estruch 2013 retraction `10.1056/nejmc1806491` (2018-06-13). The review did not appear to rely on the trial. The 2013 trial was retracted and republished in 2018 after re-analysis. This does not say olive oil or the Mediterranean diet works or does not.
+Click **2 hops**. You should see **Don't ship** (exit 1): Page · Harvard vitamin D → *mentions* → Review · Cochrane 2014 (Avenell) → *uses its data* → Trial · Ishida 2004, **Retracted · May 2025** (notice `10.1016/j.amjmed.2025.03.001`). The panel under the graph is the `algo.SPpaths` query that decided it. **Why: evidence and query →** opens the sentence behind each hop (weights 0.55 and 0.85, path strength 0.47). The Cochrane review called Ishida an included trial. This does not say vitamin D works or does not.
 
-Click **Healthline cinnamon (warn)** for an Expression of Concern (`relies` 1.0, path strength **0.55**). Depth 1 is PASS; depth 2/3 is WARN. An Expression of Concern is not a retraction.
+Click **3 hops**: the verdict holds and the third column says "Nothing further in the graph at this hop".
 
-Click **Not in the graph**. This is the NHS page “How to wash your hands” (`https://www.nhs.uk/live-well/best-way-to-wash-your-hands/`), fetched 2026-10-16T20:22:08+00:00, content hash `5c015843460b0e872bd9a0b01bf0c5bf91a810a04a9f21b72b0574b525495329`. The page has no scholarly citations. You should see **WARN** and “Nothing in the graph connects this answer to a study. This is not proof it is safe; the source may not be modelled.” Coverage: **expanded 0 of 0 cited works**. That is not a pass, and it is not proof the page is safe.
+Click **Harvard · zinc**: Don't ship at 1 hop. The page cites a Cochrane review **withdrawn by Cochrane** in April 2015 (shown as a withdrawal, never a retraction).
+
+Click **Healthline · olive oil**: **Review before shipping** (exit 2) at 2–3 hops. Both hops are mentions (path strength 0.30), so the paper before the retracted Estruch 2013 trial only cites it and does not rely on its data. Retraction notice `10.1056/nejmc1806491` (2018-06-13): the 2013 trial was retracted and republished in 2018 after re-analysis. This does not say olive oil or the Mediterranean diet works or does not.
+
+Click **Not in the graph** (NHS “How to wash your hands”, `https://www.nhs.uk/live-well/best-way-to-wash-your-hands/`, fetched 2026-10-16T20:22:08+00:00). You should see **Not checked — not proof it's safe**: nothing in the graph connects this page to a study. That is not a pass.
+
+Then open the **Agent** tab and click **Run it on the Harvard vitamin D draft** (trace of `check_answer` → `explain_path` → `rewrite_answer` with ms and rows, and the draft without vs with MoolTrace), and the **Retraction alert** tab (Ishida 2004 → every stored answer that rests on it, with a fix).
+
+UI labels map to the CLI as Clear = `pass` (0), Review / Not checked = `warn` (2), Don't ship = `block` (1). The older UI with the same presets is still at `/classic`.
 
 Every verdict also prints a coverage line (`expanded X of Y cited works`) instead of treating leftover expansion as a scary incomplete flag when a notice path already decides.
 
